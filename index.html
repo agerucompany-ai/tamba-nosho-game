@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商クラフト v4 — 里山リアル牧場物語</title>
+<title>丹波農商クラフト v6 — 里山リアル牧場物語</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{width:100%;height:100%;overflow:hidden;font-family:'Hiragino Maru Gothic ProN','Yu Gothic',sans-serif;touch-action:none;background:#8ecbe6;user-select:none;-webkit-user-select:none;}
@@ -64,6 +64,11 @@
   .craftrow{display:flex;align-items:center;gap:8px;padding:8px 4px;border-bottom:1px solid #e6d5b8;}
   .craftrow .em{font-size:24px;width:30px;text-align:center;}
   #glbNote{position:fixed;left:8px;bottom:calc(150px + env(safe-area-inset-bottom));z-index:10;padding:4px 9px;font-size:11px;color:#5a3714;display:none;background:rgba(255,253,245,.8);border-radius:9px;border:2px solid #c9a86f;pointer-events:none;}
+  #pcGuide{position:fixed;left:50%;top:calc(84px + env(safe-area-inset-top));transform:translateX(-50%);z-index:26;display:none;width:min(470px,92vw);padding:14px 16px 12px;opacity:1;transition:opacity .9s;}
+  #pcGuide h3{color:#5a3714;font-size:16px;margin-bottom:8px;text-align:center;}
+  #pcGuide .gl{display:flex;align-items:center;gap:8px;padding:3px 2px;font-size:13.5px;color:#5a3714;font-weight:bold;}
+  #pcGuide .gk{flex:0 0 auto;min-width:118px;text-align:center;background:#f0e2cc;border:2px solid #c9a86f;border-radius:8px;padding:2px 8px;font-size:12.5px;color:#6a4a25;}
+  #pcGuideClose{margin-top:10px;width:100%;padding:8px;font-size:14px;font-weight:bold;color:#fff;background:#e8743f;border:3px solid #a04515;border-radius:11px;box-shadow:0 3px 0 #a04515;cursor:pointer;}
 </style>
 </head>
 <body>
@@ -82,6 +87,16 @@
 <button class="abtn" id="jumpBtn">ジャンプ</button>
 <div id="hotwrap"><div id="hotbar"></div></div>
 <div id="glbNote">3Dキャラよみこみ中…</div>
+<div class="panel" id="pcGuide">
+  <h3>🖥 PCそうさガイド</h3>
+  <div class="gl"><span class="gk">🖱 クリック</span>クリックした場所へ歩く</div>
+  <div class="gl"><span class="gk">WASD / 矢印キー</span>移動（Shiftおしながらで走る）</div>
+  <div class="gl"><span class="gk">🖱 ドラッグ</span>視点をまわす</div>
+  <div class="gl"><span class="gk">E / 右下ボタン</span>掘る・こわす</div>
+  <div class="gl"><span class="gk">Q / 右クリック</span>使う・おく</div>
+  <div class="gl"><span class="gk">スペース</span>ジャンプ　<span class="gk" style="min-width:auto;">M</span>メニュー</div>
+  <button id="pcGuideClose">とじる（しばらくすると自動で消えるよ）</button>
+</div>
 <div id="toast"></div>
 <div class="ov" id="menu"><div class="panel ovbox" id="menuBox"></div></div>
 <div id="charSel">
@@ -97,7 +112,9 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
 <script>
 /* =====================================================================
-   丹波農商クラフト v4 — マイクラ×牧場物語で体験する丹波農商のリアル7事業
+   丹波農商クラフト v6 — マイクラ×牧場物語で体験する丹波農商のリアル7事業
+   v6: PC操作改善 — クリックした場所へ自動歩行(point-to-walk)/Shiftで走る/
+       IME対策(e.codeでWASD判定)/PC操作ガイド表示（モバイル操作は従来のまま）
    単一HTML / three.js r128 / iPhone Safari 最優先
    - チャンク合成メッシュのボクセル世界（掘る/置く/建てる）
    - クラフト（板・柵・道具）/ 牛舎を自分で建築→黒毛和牛を飼う
@@ -662,7 +679,7 @@ function makeAnimRig(model,walkClip,idleClip){
 function rigPlay(rig,name,mag){
   const to=name==='walk'?rig.actWalk:rig.actIdle;
   if(!to)return;
-  const ts=name==='walk'?(1.3+1.1*Math.min(mag||0,1)):1.0;
+  const ts=name==='walk'?(1.3+1.1*Math.min(mag||0,1.8)):1.0; // v6: 走り(Shift)はmag>1でさらに速く
   if(rig.cur===name){to.timeScale=ts;return;}
   const from=rig.cur==='walk'?rig.actWalk:rig.actIdle;
   to.timeScale=ts;
@@ -1196,7 +1213,7 @@ function setHTML(){
   '<div class="row"><div class="em">💾</div><div class="info"><b>セーブ</b><small>自動でも30秒ごとに保存されるよ</small></div><button class="buy" onclick="saveGame(true)">保存する</button></div>'+
   '<div class="row"><div class="em">🔊</div><div class="info"><b>効果音</b><small>音のオン/オフ</small></div><button class="buy" onclick="toggleSound()">'+(state.sound?'ON':'OFF')+'</button></div>'+
   '<div class="row"><div class="em">🗑</div><div class="info"><b>データリセット</b><small>さいしょからやりなおす（2回おしてね）</small></div><button class="buy orange" onclick="resetGame()">リセット</button></div>'+
-  '<p style="font-size:11.5px">📖 あそびかた：左下スティックで移動 / 画面ドラッグで見回す / ＋印をブロックに合わせて「掘る」「使う」。ホットバーで道具や置く物をえらぼう。PCはWASD移動・E=掘る・Q=使う・スペース=ジャンプ。</p>';
+  '<p style="font-size:11.5px">📖 あそびかた：左下スティックで移動 / 画面ドラッグで見回す / ＋印をブロックに合わせて「掘る」「使う」。ホットバーで道具や置く物をえらぼう。PCは🖱クリックした場所へ移動・WASD/矢印キー移動・Shiftで走る・E=掘る・Q/右クリック=使う・スペース=ジャンプ・M=メニュー。</p>';
 }
 let resetConfirm=0;
 function resetGame(){
@@ -1283,12 +1300,54 @@ function expandFarmSilent(n){
 }
 
 // ---------- 操作 ----------
+// v6: デスクトップ判定（タッチ非対応=PC）。PCはクリック移動/Shift走り/e.codeフォールバックを有効化
+const IS_DESKTOP=!(('ontouchstart' in window)||navigator.maxTouchPoints>0);
 let joyVec={x:0,y:0},joyId=null,camId=null,camLast={x:0,y:0},camYaw=Math.PI,camPitch=0.42;
 const keys={};
+// IME(日本語入力)中は e.key が 'Process' になるため e.code でも判定する
+const CODEKEY={KeyW:'w',KeyA:'a',KeyS:'s',KeyD:'d',ArrowUp:'arrowup',ArrowDown:'arrowdown',ArrowLeft:'arrowleft',ArrowRight:'arrowright',ShiftLeft:'shift',ShiftRight:'shift',Space:' ',KeyE:'e',KeyQ:'q',KeyM:'m'};
+// v6: クリック移動(point-to-walk)の状態
+const pw={target:null,stuck:0,px:0,pz:0};
+window.__v4dbg.pw=pw;
+let moveMarker=null;
+function showMoveMarker(bx,bz){
+  if(!moveMarker){
+    moveMarker=new THREE.Mesh(new THREE.RingGeometry(0.22,0.42,20),new THREE.MeshBasicMaterial({color:0xffee55,transparent:true,opacity:0.85,side:THREE.DoubleSide,depthWrite:false}));
+    moveMarker.rotation.x=-Math.PI/2;scene.add(moveMarker);
+  }
+  const my=surfY(bx,bz,player.y);
+  moveMarker.position.set(bx+0.5,my+0.06,bz+0.5);
+  moveMarker.visible=true;
+}
+function hideMoveMarker(){if(moveMarker)moveMarker.visible=false;}
+function cancelMoveTarget(){pw.target=null;pw.stuck=0;hideMoveMarker();}
+// クリック位置→ワールドの地面ブロックへレイマーチし、そこを目的地に設定
+function clickToMove(sx,sy){
+  const ndc=new THREE.Vector2((sx/innerWidth)*2-1,-(sy/innerHeight)*2+1);
+  const rc=new THREE.Raycaster();rc.setFromCamera(ndc,camera);
+  const origin=rc.ray.origin,dir=rc.ray.direction;
+  let prev=null;
+  for(let t=0.4;t<90;t+=0.08){
+    const p=origin.clone().add(dir.clone().multiplyScalar(t));
+    const bx=Math.floor(p.x),by=Math.floor(p.y),bz=Math.floor(p.z);
+    if(by>WH)continue;
+    if(by<0)break;
+    if(prev&&prev[0]===bx&&prev[1]===by&&prev[2]===bz)continue;
+    prev=[bx,by,bz];
+    if(getB(bx,by,bz)&&inWorld(bx,bz)){
+      pw.target={x:bx+0.5,z:bz+0.5};
+      pw.stuck=0;pw.px=player.x;pw.pz=player.z;
+      showMoveMarker(bx,bz);
+      sfx(560,.05,'sine',.03);
+      return true;
+    }
+  }
+  return false;
+}
 function bindControls(){
   const joy=document.getElementById('joy'),knob=document.getElementById('joyKnob'),el=renderer.domElement;
   const start=e=>{for(const t of(e.changedTouches||[e])){const id=t.identifier!==undefined?t.identifier:'m',x=t.clientX,y=t.clientY;
-    if(x<innerWidth*0.45&&joyId===null){joyId=id;joy.style.display='block';joy.style.left=x+'px';joy.style.top=y+'px';knob.style.left='50%';knob.style.top='50%';joyVec={x:0,y:0};}
+    if(!IS_DESKTOP&&x<innerWidth*0.45&&joyId===null){joyId=id;joy.style.display='block';joy.style.left=x+'px';joy.style.top=y+'px';knob.style.left='50%';knob.style.top='50%';joyVec={x:0,y:0};}
     else if(camId===null){camId=id;camLast={x,y};}}};
   const move=e=>{for(const t of(e.changedTouches||[e])){const id=t.identifier!==undefined?t.identifier:'m';
     if(id===joyId){const cx=parseFloat(joy.style.left),cy=parseFloat(joy.style.top);let dx=t.clientX-cx,dy=t.clientY-cy;const l=Math.hypot(dx,dy),m=46;if(l>m){dx=dx/l*m;dy=dy/l*m;}knob.style.left=(50+dx/m*42)+'%';knob.style.top=(50+dy/m*42)+'%';joyVec={x:dx/m,y:dy/m};}
@@ -1300,21 +1359,34 @@ function bindControls(){
   el.addEventListener('touchmove',e=>{e.preventDefault();move(e);},{passive:false});
   el.addEventListener('touchend',e=>{e.preventDefault();end(e);},{passive:false});
   el.addEventListener('touchcancel',e=>{end(e);},{passive:false});
-  el.addEventListener('mousedown',e=>{start(e);});
+  let mDown=null; // v6: ドラッグ(視点)とクリック(移動)の判別用
+  el.addEventListener('mousedown',e=>{mDown={x:e.clientX,y:e.clientY};start(e);});
   addEventListener('mousemove',e=>{if(joyId!==null||camId!==null)move(e);});
   addEventListener('mouseup',e=>{end(e);});
   el.addEventListener('contextmenu',e=>{e.preventDefault();doUse();});
-  el.addEventListener('click',e=>{if(Math.abs(e.movementX||0)<3)doDig();});
+  el.addEventListener('click',e=>{
+    if(IS_DESKTOP){
+      // PC: ドラッグでなければ「クリックした場所へ移動」
+      const drag=mDown?Math.hypot(e.clientX-mDown.x,e.clientY-mDown.y):0;
+      if(drag<5)clickToMove(e.clientX,e.clientY);
+    }else if(Math.abs(e.movementX||0)<3)doDig(); // モバイル従来: タップ=掘る
+  });
   document.addEventListener('gesturestart',e=>e.preventDefault());
   addEventListener('keydown',e=>{
+    // v6: IME中は e.key='Process' になるため e.code を優先してキー判定
+    const ck=CODEKEY[e.code],k=ck||e.key.toLowerCase();
     keys[e.key.toLowerCase()]=true;
-    if(e.key==='e'||e.key==='E')doDig();
-    if(e.key==='q'||e.key==='Q')doUse();
-    if(e.key===' '){e.preventDefault();jump();}
-    if(e.key==='m'||e.key==='M')openMenu();
+    if(ck)keys[ck]=true;
+    if(k==='e')doDig();
+    if(k==='q')doUse();
+    if(k===' '){e.preventDefault();jump();}
+    if(k==='m')openMenu();
     const n=parseInt(e.key);if(n>=1&&n<=9){state.selSlot=n-1;renderHotbar();}
   });
-  addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+  addEventListener('keyup',e=>{
+    keys[e.key.toLowerCase()]=false;
+    const ck=CODEKEY[e.code];if(ck)keys[ck]=false;
+  });
   const bind=(id,fn,repeat)=>{
     const b=document.getElementById(id);
     let iv=null;
@@ -1353,9 +1425,29 @@ function animate(ts){
   let ix=joyVec.x,iz=joyVec.y;
   if(keys['w']||keys['arrowup'])iz-=1;if(keys['s']||keys['arrowdown'])iz+=1;
   if(keys['a']||keys['arrowleft'])ix-=1;if(keys['d']||keys['arrowright'])ix+=1;
+  const manual=Math.hypot(ix,iz)>0.12; // 手動入力(キー/スティック)があるか
+  // v6: クリック移動(point-to-walk)。手動入力があれば即キャンセル
+  if(pw.target){
+    if(manual)cancelMoveTarget();
+    else{
+      const tdx=pw.target.x-player.x,tdz=pw.target.z-player.z,tdl=Math.hypot(tdx,tdz);
+      if(tdl<0.6)cancelMoveTarget(); // 到着
+      else{
+        const a=Math.atan2(tdx,tdz)-camYaw;
+        ix=Math.sin(a);iz=Math.cos(a);
+        // 進めていない(段差/障害物)なら停止
+        const moved=Math.hypot(player.x-pw.px,player.z-pw.pz);
+        if(moved<0.012)pw.stuck+=dt;else pw.stuck=0;
+        pw.px=player.x;pw.pz=player.z;
+        if(pw.stuck>0.9)cancelMoveTarget();
+      }
+    }
+  }
   const mag=Math.hypot(ix,iz),moving=mag>0.12;
+  // v6: Shiftで走る（キーボード移動・クリック移動どちらでも有効）
+  const sprint=!!keys['shift']&&moving;
   if(moving){
-    const ang=Math.atan2(ix,iz)+camYaw,sp=4.6*dt;
+    const ang=Math.atan2(ix,iz)+camYaw,sp=(sprint?7.8:4.6)*dt;
     const nx=player.x+Math.sin(ang)*sp*Math.min(mag,1),nz=player.z+Math.cos(ang)*sp*Math.min(mag,1);
     const cx=Math.max(0.5,Math.min(WS-0.5,nx)),cz=Math.max(0.5,Math.min(WS-0.5,nz));
     const gy=surfY(Math.floor(cx),Math.floor(cz),player.y);
@@ -1366,7 +1458,7 @@ function animate(ts){
       if(gy1-player.y<=1.25)player.x=cx;
       else if(gy2-player.y<=1.25)player.z=cz;
     }
-    player.dir=ang;walk+=dt*9;
+    player.dir=ang;walk+=dt*(sprint?14:9);
   }
   const gy=surfY(Math.floor(player.x),Math.floor(player.z),player.y);
   player.vy-=16*dt;player.y+=player.vy*dt;
@@ -1379,7 +1471,7 @@ function animate(ts){
     avatar.rotation.y+=d*Math.min(1,dt*12);
     if(avatarGlb&&playerRig){
       // 状態機械: 移動=walk（スティック倒し量でtimeScale＝走り表現）/ 静止=idle
-      if(moving)rigPlay(playerRig,'walk',mag);
+      if(moving)rigPlay(playerRig,'walk',sprint?mag*1.7:mag);
       else rigPlay(playerRig,'idle',0);
       playerRig.mixer.update(Math.min(0.1,dt));
     }else if(avatarVox){
@@ -1482,6 +1574,23 @@ function animate(ts){
   renderer.render(scene,camera);
 }
 
+// ---------- PC操作ガイド（デスクトップのみ表示、自動フェード） ----------
+let pcGuideTimer=null;
+function hidePCGuide(){
+  const g=document.getElementById('pcGuide');
+  if(!g||g.style.display==='none')return;
+  g.style.opacity='0';
+  setTimeout(()=>{g.style.display='none';},950);
+}
+function showPCGuide(){
+  const g=document.getElementById('pcGuide');
+  if(!g)return;
+  g.style.display='block';g.style.opacity='1';
+  document.getElementById('pcGuideClose').onclick=()=>{clearTimeout(pcGuideTimer);hidePCGuide();};
+  clearTimeout(pcGuideTimer);
+  pcGuideTimer=setTimeout(hidePCGuide,14000); // 14秒で自動フェード
+}
+
 // ---------- 起動 ----------
 let charPreviews=[];
 function startGame(charKey,saveData){
@@ -1512,7 +1621,12 @@ function startGame(charKey,saveData){
     updateHUD();
     document.getElementById('loading').style.display='none';
     toast(CHARS[state.char].name+'として丹波の里へようこそ！');
-    setTimeout(()=>toast('左下タッチで移動 / 右ドラッグで見回そう'),2200);
+    if(IS_DESKTOP){
+      setTimeout(()=>toast('🖱 クリックした場所へ歩くよ / WASD移動・Shiftで走る'),2200);
+      showPCGuide();
+    }else{
+      setTimeout(()=>toast('左下タッチで移動 / 右ドラッグで見回そう'),2200);
+    }
     requestAnimationFrame(animate);
   },50);
 }
