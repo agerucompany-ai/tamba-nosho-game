@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商クラフト v6 — 里山リアル牧場物語</title>
+<title>丹波農商クラフト v7 — 里山リアル牧場物語</title>
+<link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{width:100%;height:100%;overflow:hidden;font-family:'Hiragino Maru Gothic ProN','Yu Gothic',sans-serif;touch-action:none;background:#8ecbe6;user-select:none;-webkit-user-select:none;}
@@ -58,7 +59,9 @@
   #charSel .sub{color:#5a3714;font-size:12.5px;text-align:center;max-width:360px;line-height:1.55;}
   .cards{display:flex;gap:9px;flex-wrap:wrap;justify-content:center;}
   .card{width:146px;padding:10px;text-align:center;cursor:pointer;}
-  .card canvas{width:96px;height:96px;} .card b{display:block;color:#5a3714;font-size:15px;margin-top:2px;} .card small{display:block;color:#8a6a45;font-size:10.5px;line-height:1.35;}
+  .card img{width:112px;height:120px;object-fit:contain;background:#fff;border:2px solid #e6d5b8;border-radius:12px;display:block;margin:0 auto;}
+  .card .pfall{width:112px;height:120px;background:#fff;border:2px solid #e6d5b8;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:50px;margin:0 auto;}
+  .card b{display:block;color:#5a3714;font-size:15px;margin-top:4px;} .card small{display:block;color:#8a6a45;font-size:10.5px;line-height:1.35;}
   .card:active{transform:translateY(2px);}
   #contBtn{display:none;}
   .craftrow{display:flex;align-items:center;gap:8px;padding:8px 4px;border-bottom:1px solid #e6d5b8;}
@@ -112,7 +115,15 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
 <script>
 /* =====================================================================
-   丹波農商クラフト v6 — マイクラ×牧場物語で体験する丹波農商のリアル7事業
+   丹波農商クラフト v7 — マイクラ×牧場物語で体験する丹波農商のリアル7事業
+   v7: バグ修正
+   - キャラ選択カードを本物の立ち絵PNG(char_min/portrait/)に差し替え。
+     カード毎のWebGLプレビュー(3つの余分なWebGLコンテキスト)を廃止。
+   - 建物の壁の中に入って地中(y=0)に落ち出られなくなるバグを修正:
+     surfY()が「立てる隙間の無い柱(壁など)」で0を返し段差チェックを素通り
+     していたのが根本原因 → 立てない柱はWH+3を返して進入ブロック。
+     もし地中に埋まっても地表へ自動復帰。クリック移動で壁を指した時は
+     手前の空きセルを目的地に。詰み防止レスキュー(3秒進めない穴→救出)追加。
    v6: PC操作改善 — クリックした場所へ自動歩行(point-to-walk)/Shiftで走る/
        IME対策(e.codeでWASD判定)/PC操作ガイド表示（モバイル操作は従来のまま）
    単一HTML / three.js r128 / iPhone Safari 最優先
@@ -212,15 +223,20 @@ function gset(x,y,z,t){const k=key(x,y,z);if(t)grid[k]=t;else delete grid[k];}
 function inWorld(x,z){return x>=0&&x<WS&&z>=0&&z<WS;}
 function topY(x,z){for(let y=WH;y>=0;y--){const t=getB(x,y,z);if(t&&!BI[t].water)return y;}return -1;}
 // 屋根の下も歩けるように：今の高さから近い「頭上が空いた床」を探す
+// v7: 立てる床が無い柱(建物の壁・木の幹など)は 0 ではなく WH+3 を返す。
+//     旧版は 0 を返したため段差チェックを素通りして壁の中に入り、
+//     地中(y=0)に落ちて二度と出られなくなっていた（落とし穴バグの根本原因）。
 function surfY(x,z,py){
+  let sawSolid=false;
   for(let y=Math.min(WH,Math.floor(py+1.35));y>=0;y--){
     const t=getB(x,y,z);
     if(t&&!BI[t].water){
+      sawSolid=true;
       const a1=getB(x,y+1,z),a2=getB(x,y+2,z);
       if((!a1||BI[a1].water)&&(!a2||BI[a2].water))return y+1;
     }
   }
-  return 0;
+  return sawSolid?WH+3:0; // 立てない柱=進入不可(WH+3)。完全な空柱のみ0
 }
 function topAny(x,z){for(let y=WH;y>=0;y--){if(getB(x,y,z))return y;}return -1;}
 function h2(x,z){const n=Math.sin(x*127.1+z*311.7)*43758.5453;return n-Math.floor(n);}
@@ -1315,7 +1331,8 @@ function showMoveMarker(bx,bz){
     moveMarker=new THREE.Mesh(new THREE.RingGeometry(0.22,0.42,20),new THREE.MeshBasicMaterial({color:0xffee55,transparent:true,opacity:0.85,side:THREE.DoubleSide,depthWrite:false}));
     moveMarker.rotation.x=-Math.PI/2;scene.add(moveMarker);
   }
-  const my=surfY(bx,bz,player.y);
+  let my=surfY(bx,bz,player.y);
+  if(my>WH)my=topAny(bx,bz)+1; // v7: 立てない柱でもマーカーは見える高さに
   moveMarker.position.set(bx+0.5,my+0.06,bz+0.5);
   moveMarker.visible=true;
 }
@@ -1326,7 +1343,7 @@ function clickToMove(sx,sy){
   const ndc=new THREE.Vector2((sx/innerWidth)*2-1,-(sy/innerHeight)*2+1);
   const rc=new THREE.Raycaster();rc.setFromCamera(ndc,camera);
   const origin=rc.ray.origin,dir=rc.ray.direction;
-  let prev=null;
+  let prev=null,lastAir=null;
   for(let t=0.4;t<90;t+=0.08){
     const p=origin.clone().add(dir.clone().multiplyScalar(t));
     const bx=Math.floor(p.x),by=Math.floor(p.y),bz=Math.floor(p.z);
@@ -1335,12 +1352,16 @@ function clickToMove(sx,sy){
     if(prev&&prev[0]===bx&&prev[1]===by&&prev[2]===bz)continue;
     prev=[bx,by,bz];
     if(getB(bx,by,bz)&&inWorld(bx,bz)){
-      pw.target={x:bx+0.5,z:bz+0.5};
+      // v7: 壁など「立てない柱」をクリックした時は、手前の空きセルを目的地にする
+      let tx=bx,tz=bz;
+      if(surfY(bx,bz,by+1.2)>WH&&lastAir&&inWorld(lastAir[0],lastAir[2])){tx=lastAir[0];tz=lastAir[2];}
+      pw.target={x:tx+0.5,z:tz+0.5};
       pw.stuck=0;pw.px=player.x;pw.pz=player.z;
-      showMoveMarker(bx,bz);
+      showMoveMarker(tx,tz);
       sfx(560,.05,'sine',.03);
       return true;
     }
+    lastAir=[bx,by,bz];
   }
   return false;
 }
@@ -1355,9 +1376,9 @@ function bindControls(){
   const end=e=>{for(const t of(e.changedTouches||[e])){const id=t.identifier!==undefined?t.identifier:'m';
     if(id===joyId){joyId=null;joy.style.display='none';joyVec={x:0,y:0};}
     if(id===camId)camId=null;}};
-  el.addEventListener('touchstart',e=>{e.preventDefault();ac();start(e);},{passive:false});
-  el.addEventListener('touchmove',e=>{e.preventDefault();move(e);},{passive:false});
-  el.addEventListener('touchend',e=>{e.preventDefault();end(e);},{passive:false});
+  el.addEventListener('touchstart',e=>{if(e.cancelable)e.preventDefault();ac();start(e);},{passive:false});
+  el.addEventListener('touchmove',e=>{if(e.cancelable)e.preventDefault();move(e);},{passive:false});
+  el.addEventListener('touchend',e=>{if(e.cancelable)e.preventDefault();end(e);},{passive:false});
   el.addEventListener('touchcancel',e=>{end(e);},{passive:false});
   let mDown=null; // v6: ドラッグ(視点)とクリック(移動)の判別用
   el.addEventListener('mousedown',e=>{mDown={x:e.clientX,y:e.clientY};start(e);});
@@ -1390,7 +1411,7 @@ function bindControls(){
   const bind=(id,fn,repeat)=>{
     const b=document.getElementById(id);
     let iv=null;
-    const down=e=>{e.preventDefault();ac();fn();if(repeat)iv=setInterval(fn,300);};
+    const down=e=>{if(e.cancelable)e.preventDefault();ac();fn();if(repeat)iv=setInterval(fn,300);};
     const up=e=>{if(iv){clearInterval(iv);iv=null;}};
     b.addEventListener('touchstart',down,{passive:false});
     b.addEventListener('touchend',up);b.addEventListener('touchcancel',up);
@@ -1402,6 +1423,33 @@ function bindControls(){
   document.getElementById('menuOpenBtn').addEventListener('click',openMenu);
 }
 function jump(){if(player.onGround){player.vy=6;player.onGround=false;sfx(400,.05,'sine',.03);}}
+
+// ---------- v7: 詰み防止レスキュー ----------
+// 入力しているのに3秒間まったく進めず、四方どこへも登れない「穴」に居る時だけ
+// 近くの安全な地面へワープさせる（万一の詰み対策。通常の壁押しでは発動しない）
+const resq={t:0,px:0,pz:0};
+function maybeRescue(){
+  const px=Math.floor(player.x),pz=Math.floor(player.z);
+  for(const d of[[1,0],[-1,0],[0,1],[0,-1]]){
+    const sy=surfY(px+d[0],pz+d[1],player.y);
+    if(sy-player.y<=1.25)return; // どこかへ動ける＝穴ではない
+  }
+  for(let r=1;r<=8;r++){
+    for(let dx=-r;dx<=r;dx++)for(let dz=-r;dz<=r;dz++){
+      if(Math.max(Math.abs(dx),Math.abs(dz))!==r)continue;
+      const x=px+dx,z=pz+dz;
+      if(!inWorld(x,z))continue;
+      const sy=surfY(x,z,WH);
+      if(sy<1||sy>WH)continue;
+      const at=getB(x,sy,z);
+      if(at&&BI[at].water)continue; // 水の中へは飛ばさない
+      player.x=x+0.5;player.z=z+0.5;player.y=sy;player.vy=0;player.onGround=true;
+      cancelMoveTarget();
+      toast('⛑ 穴から救出したよ！');sfx(700,.1,'sine',.05);
+      return;
+    }
+  }
+}
 
 // ---------- エリア名 ----------
 function areaName(x,z){
@@ -1460,6 +1508,12 @@ function animate(ts){
     }
     player.dir=ang;walk+=dt*(sprint?14:9);
   }
+  // v7: 詰み防止（入力があるのに全く進めない状態が3秒続き、四方が登れない穴なら救出）
+  if(moving){
+    if(Math.hypot(player.x-resq.px,player.z-resq.pz)<0.008)resq.t+=dt;else resq.t=0;
+    if(resq.t>3){resq.t=0;maybeRescue();}
+  }else resq.t=0;
+  resq.px=player.x;resq.pz=player.z;
   const gy=surfY(Math.floor(player.x),Math.floor(player.z),player.y);
   player.vy-=16*dt;player.y+=player.vy*dt;
   if(player.y<=gy){player.y=gy;player.vy=0;player.onGround=true;}
@@ -1490,9 +1544,13 @@ function animate(ts){
     }
     const dx=u.tx-m.position.x,dz=u.tz-m.position.z,dl=Math.hypot(dx,dz);
     if(dl>0.4){
-      m.position.x+=dx/dl*dt*0.8;m.position.z+=dz/dl*dt*0.8;
-      m.rotation.y=Math.atan2(dx,dz)-Math.PI/2;
-      m.position.y=surfY(Math.floor(m.position.x),Math.floor(m.position.z),m.position.y);
+      // v7: 牛も壁の中(立てない柱)には入らない。入れないなら目的地を選び直す
+      const nx=m.position.x+dx/dl*dt*0.8,nz=m.position.z+dz/dl*dt*0.8;
+      const sy=surfY(Math.floor(nx),Math.floor(nz),m.position.y);
+      if(sy-m.position.y<=1.3){
+        m.position.x=nx;m.position.z=nz;m.position.y=sy;
+        m.rotation.y=Math.atan2(dx,dz)-Math.PI/2;
+      }else u.t=4;
     }
     u.moo-=dt;
     if(u.moo<0){u.moo=20+Math.random()*30;if(Math.hypot(m.position.x-player.x,m.position.z-player.z)<14)mooSfx();}
@@ -1592,12 +1650,9 @@ function showPCGuide(){
 }
 
 // ---------- 起動 ----------
-let charPreviews=[];
 function startGame(charKey,saveData){
   document.getElementById('charSel').style.display='none';
   document.getElementById('loading').style.display='flex';
-  // キャラ選択プレビューを破棄
-  for(const p of charPreviews){p.stop=true;try{p.r.dispose();}catch(e){}}
   setTimeout(()=>{
     state=saveData?saveData.state:freshState();
     if(!saveData){state.char=charKey;}
@@ -1634,19 +1689,13 @@ function initCharSelect(){
   const cc=document.getElementById('charCards');
   Object.entries(CHARS).forEach(([k,c])=>{
     const card=document.createElement('div');card.className='panel card';
-    const cv=document.createElement('canvas');cv.width=cv.height=190;card.appendChild(cv);
-    let prev={stop:false};
-    try{
-      const r=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});
-      r.setSize(190,190,false);prev.r=r;
-      const sc=new THREE.Scene();
-      const cam=new THREE.PerspectiveCamera(40,1,0.1,50);cam.position.set(0,1.2,4);cam.lookAt(0,1,0);
-      sc.add(new THREE.HemisphereLight(0xffffff,0x777777,1.2));
-      const dl=new THREE.DirectionalLight(0xffffff,0.8);dl.position.set(2,4,3);sc.add(dl);
-      const av=buildVoxAvatar(c);sc.add(av);
-      (function spin(){if(prev.stop)return;requestAnimationFrame(spin);av.rotation.y+=0.02;r.render(sc,cam);})();
-    }catch(e){}
-    charPreviews.push(prev);
+    // v7: 本物の登場人物の立ち絵PNGを表示（旧ボクセル人形のWebGLプレビューは廃止。
+    //     カード毎の余分なWebGLコンテキスト3つが無くなりiOSにも優しい）
+    const img=document.createElement('img');
+    img.src='char_min/portrait/'+k+'.png';
+    img.alt=c.name;img.draggable=false;
+    img.onerror=()=>{const f=document.createElement('div');f.className='pfall';f.textContent='👨‍🌾';img.replaceWith(f);};
+    card.appendChild(img);
     const label=document.createElement('div');
     label.innerHTML='<b>'+c.name+'</b><small>'+c.role+'</small><small>'+c.desc+'</small>';
     card.appendChild(label);
