@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>たんばのうしょう ぼくじょうものがたり v11</title>
+<title>たんばのうしょう ぼくじょうものがたり v12</title>
 <link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -101,6 +101,19 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
 <script>
 /* =====================================================================
+   たんばのうしょう ぼくじょうものがたり v12 — Meshy製かわいいチビキャラに全差し替え
+   v12: 登場人物をMeshy製チビキャラ(char_min/m*_walk.glb / m*_run.glb)に統一
+   - 主人公=mhero、NPC=matsushi/myusuke/mnaoto（Tripo版 hero_・atsushi_ 系は不使用）
+   - 各GLBはDraco圧縮・skin=1・クリップ1本(walk/run)。runクリップは別GLBだが
+     同一Mixamoスケルトンなので1つのmixerに載せ替えて crossFade(0.2) で切替。
+   - idleクリップが無いため、静止時はwalkクリップ(クローン)を time≈0 で
+     paused にして自然な立ちポーズで停止（A-pose棒立ちを回避）。NPCも同様。
+   - スケール補正: Meshyのスキンドメッシュは Box3.setFromObject がバインド
+     ポーズ由来で極小(≈0.013)を返すため、mixerを1フレーム進めてから
+     SkinnedMesh.boneTransform でスキン後の実頂点をサンプリングして実身長を
+     推定→目標身長(主人公1.3/大人1.55)へスケール。接地も実測minYで補正。
+   - Hips.positionのXZを先頭フレームに固定(その場アニメ化、Y上下動は残す)。
+   以下v11の説明:
    たんばのうしょう ぼくじょうものがたり v11 — スマホ操作＆カメラ改善
    v11: スマホ実機フィードバック対応
    - フローティングジョイスティックを全画面に: UIボタン以外どこを最初に
@@ -158,8 +171,9 @@
 'use strict';
 
 // ---------- キャラ定義 ----------
-// 主人公＝麦わら帽子の農家キッズ（Tripo製3D）。大人3人はお手伝いNPC。
-const HERO={walk:'char_min/hero_walk.glb',idle:'char_min/hero_idle.glb',
+// 主人公＝麦わら帽子の農家キッズ（Meshy製チビキャラ）。大人3人はお手伝いNPC。
+// v12: 全員Meshy製(m*_walk/m*_run)。walk=歩き、run=走り。idleはwalkの静止で代用。
+const HERO={walk:'char_min/mhero_walk.glb',run:'char_min/mhero_run.glb',
   vox:{skin:'#f0c49a',cheek:'#ff8a6a',hair:'#4a3018',cap:'#e0b84f',shirt:'#4a7ad8',pants:'#3a5aa8',shoe:'#8a5a2b'}};
 const CHARS={
   atsushi:{name:'あつしさん',role:'ぼくじょうの おにいさん',skin:'#e8b98c',cheek:'#ff7a5a',hair:'#1c1712',cap:'#111',shirt:'#20386a',pants:'#2a2a2a',shoe:'#5a3a1a',spot:'barn',
@@ -784,10 +798,10 @@ function buildVoxAvatar(cfg){
   g.userData={armL,armR,legL,legR,parts:true};
   return g;
 }
-// ---------- リグ付き全身GLB（characters2/） ----------
-const CHAR_H=1.7;              // プレイヤー/NPCの身長（ワールド単位）
-const GLB_ROT=-Math.PI/2;      // Tripoモデルの正面(-X)→ゲームの正面(+Z)へ回頭補正
-window.__v4dbg={playerGlb:false,npcGlb:0,errors:[],colliders:decoColliders};
+// ---------- リグ付き全身GLB（char_min/ Meshy製チビキャラ） ----------
+const CHAR_H=1.55;             // NPC(大人)の身長（ワールド単位）
+const MGLB_ROT=0;              // Meshy(Mixamoリグ)は+Z正面＝ゲームの正面。補正なし
+window.__v4dbg={playerGlb:false,npcGlb:0,errors:[],colliders:decoColliders,scales:{}};
 let gltfLoaderInst=null;
 function getLoader(){
   if(!gltfLoaderInst&&window.THREE&&THREE.GLTFLoader){try{
@@ -806,61 +820,111 @@ function loadGLB(url,onProg){
     l.load(url,res,onProg,rej);
   });
 }
-// walk/idleクリップのRoot.position(ルートモーション)を除去：その場アニメ化
-function stripRootMotion(clip){
-  if(clip)clip.tracks=clip.tracks.filter(t=>t.name!=='Root.position');
+// v12: Hips.position(ルートモーション)のXZを先頭フレームに固定＝その場アニメ化。
+//      Yの上下動(バウンス)は残す。Root/Armatureのpositionトラックも同様。
+function pinHipsXZ(clip){
+  if(!clip)return clip;
+  for(const t of clip.tracks){
+    if(/\.position$/.test(t.name)&&/(Hips|Root|Armature)/.test(t.name)){
+      const v=t.values;
+      for(let i=3;i<v.length;i+=3){v[i]=v[0];v[i+2]=v[2];}
+    }
+  }
   return clip;
 }
-// bboxで身長スケール正規化＋min.yを0に合わせて接地、XZ中心化、向き補正
-function rigWrap(model,height){
+// v12: Meshyスキンドメッシュの「スキン後の実寸」を測る。
+// Box3.setFromObject はバインドポーズ由来で極小(≈0.013)を返すため使えない。
+// SkinnedMesh.boneTransform で実際にスキン変形した頂点をサンプリングする。
+function skinnedBounds(model){
+  model.updateMatrixWorld(true);
+  const v=new THREE.Vector3();
+  let minX=1e9,maxX=-1e9,minY=1e9,maxY=-1e9,minZ=1e9,maxZ=-1e9,found=false;
+  model.traverse(o=>{
+    if(o.isSkinnedMesh&&o.geometry&&o.geometry.attributes.position&&o.skeleton){
+      found=true;
+      const pos=o.geometry.attributes.position;
+      const step=Math.max(1,Math.floor(pos.count/1500));
+      for(let i=0;i<pos.count;i+=step){
+        o.boneTransform(i,v);
+        v.applyMatrix4(o.matrixWorld);
+        if(v.x<minX)minX=v.x; if(v.x>maxX)maxX=v.x;
+        if(v.y<minY)minY=v.y; if(v.y>maxY)maxY=v.y;
+        if(v.z<minZ)minZ=v.z; if(v.z>maxZ)maxZ=v.z;
+      }
+    }
+  });
+  return found?{minX,maxX,minY,maxY,minZ,maxZ,h:maxY-minY}:null;
+}
+// v12: スキン後実寸で目標身長へスケール＋接地(足=y0)＋XZ中心化＋向き補正。
+// 呼ぶ前に mixer.update() で1フレーム進めてポーズを確定させておくこと。
+function meshyWrap(model,mixer,height,dbgKey){
   model.traverse(n=>{if(n.isMesh){
     n.castShadow=true;n.frustumCulled=false;
-    // Tripo製PBRが暗く潰れないよう補正：非金属・拡散主体・baseColorはsRGB
     const mats=Array.isArray(n.material)?n.material:[n.material];
     mats.forEach(m=>{ if(!m)return;
       if('metalness' in m)m.metalness=0;
-      if('roughness' in m)m.roughness=Math.min(m.roughness??1,0.9);
+      if('roughness' in m)m.roughness=Math.min(m.roughness??1,0.95);
       if(m.map)m.map.encoding=THREE.sRGBEncoding;
       if('envMapIntensity' in m)m.envMapIntensity=1;
       m.needsUpdate=true;
     });
   }});
-  const box=new THREE.Box3().setFromObject(model);
-  const size=box.getSize(new THREE.Vector3());
-  const sc=height/Math.max(size.y,0.01);
-  model.position.set(-(box.min.x+box.max.x)/2,-box.min.y,-(box.min.z+box.max.z)/2);
+  if(mixer)mixer.update(0.034); // スケルトンを実ポーズに更新してから実測
+  let b=skinnedBounds(model);
+  if(!b||b.h<0.02){ // 保険: 実測に失敗したらbbox(不正確)で代用
+    const box=new THREE.Box3().setFromObject(model);
+    const s=box.getSize(new THREE.Vector3());
+    b={minX:box.min.x,maxX:box.max.x,minY:box.min.y,maxY:box.max.y,minZ:box.min.z,maxZ:box.max.z,h:Math.max(s.y,0.01)};
+  }
+  const sc=height/b.h;
+  model.position.set(-(b.minX+b.maxX)/2,-b.minY,-(b.minZ+b.maxZ)/2);
   const inner=new THREE.Group(); inner.add(model);
   inner.scale.setScalar(sc);
-  inner.rotation.y=GLB_ROT;
+  inner.rotation.y=MGLB_ROT;
   const wrap=new THREE.Group(); wrap.add(inner);
+  if(dbgKey)window.__v4dbg.scales[dbgKey]={rawH:+b.h.toFixed(4),scale:+sc.toFixed(4),target:height};
   return wrap;
 }
-// mixer＋walk/idleアクション（idle.glbのクリップをwalk.glbのモデルに載せ替え）
-function makeAnimRig(model,walkClip,idleClip){
+// v12: mixer＋walk/run/idleアクション。
+// - walk/runは別GLBのクリップだが同一Mixamoスケルトンなので1mixerに登録できる。
+// - idle専用クリップは無い→walkクリップのクローンを time≈0 で paused にし、
+//   自然な立ちポーズ(walkの1フレーム目)で静止させる（A-pose棒立ち回避）。
+const IDLE_T=0.03; // walkクリップ内の「立ちポーズ」に使う時刻
+function makeAnimRig(model,walkClip,runClip){
   const mixer=new THREE.AnimationMixer(model);
-  const rig={mixer,cur:'',actWalk:null,actIdle:null};
-  if(walkClip)rig.actWalk=mixer.clipAction(stripRootMotion(walkClip));
-  if(idleClip)rig.actIdle=mixer.clipAction(stripRootMotion(idleClip));
-  const first=rig.actIdle||rig.actWalk;
-  if(first){first.play();rig.cur=first===rig.actIdle?'idle':'walk';}
+  const rig={mixer,cur:'',actWalk:null,actRun:null,actIdle:null};
+  if(walkClip){
+    const wc=pinHipsXZ(walkClip);
+    rig.actWalk=mixer.clipAction(wc);
+    const ic=wc.clone(); ic.name=wc.name+'__idle';
+    rig.actIdle=mixer.clipAction(ic);
+    rig.actIdle.play(); rig.actIdle.time=IDLE_T; rig.actIdle.paused=true;
+    rig.cur='idle';
+  }
+  if(runClip)rig.actRun=mixer.clipAction(pinHipsXZ(runClip));
   return rig;
 }
-// idle⇔walkをcrossFadeで切替。走り相当はtimeScaleで表現（クリップはwalkのみ）
-// v11: 第3引数は実移動速度(units/s)。速度に比例したtimeScaleで足滑りを抑える
+// idle⇔walk⇔runをcrossFade(0.2)で切替。spd=実移動速度(units/s)→timeScaleで足滑り低減
 function rigPlay(rig,name,spd){
-  const to=name==='walk'?rig.actWalk:rig.actIdle;
+  const to=name==='walk'?rig.actWalk:(name==='run'?rig.actRun:rig.actIdle);
   if(!to)return;
-  const ts=name==='walk'?Math.max(1.2,Math.min(0.52*(spd||0),4.4)):1.0;
-  if(rig.cur===name){to.timeScale=ts;return;}
-  const from=rig.cur==='walk'?rig.actWalk:rig.actIdle;
-  to.timeScale=ts;
-  to.reset().play();
+  if(name==='walk')to.timeScale=Math.max(0.9,Math.min(0.42*(spd||0),3.2));
+  else if(name==='run')to.timeScale=Math.max(0.75,Math.min(0.13*(spd||0),1.75));
+  if(rig.cur===name)return;
+  const from=rig.cur==='walk'?rig.actWalk:(rig.cur==='run'?rig.actRun:rig.actIdle);
+  if(name==='idle'){
+    to.paused=false;to.enabled=true;to.play();
+    to.time=IDLE_T;to.paused=true; // 立ちポーズで静止
+    to.setEffectiveTimeScale(1);to.setEffectiveWeight(1);
+  }else{
+    to.reset().play();
+  }
   if(from&&from!==to)from.crossFadeTo(to,0.2,false);
   rig.cur=name;
 }
 
 // ---------- プレイヤー（麦わら帽子の農家キッズ） ----------
-const HERO_H=1.25; // 子どもの身長
+const HERO_H=1.3; // 子どもの身長（ブロック1〜2個分・牛/柵と釣り合う大きさ）
 const player={x:27.5,y:4,z:32.5,vy:0,dir:0,onGround:true};
 window.__v4dbg.player=player; // 検証用参照
 let avatar=null;// 全体グループ
@@ -873,7 +937,7 @@ function initAvatar(){
   scene.add(avatar);
   loadPlayerGLB();
 }
-// 主人公：hero_walk.glb＋hero_idle.glbを読み、完了したらボクセルと差し替え
+// 主人公：mhero_walk.glb＋mhero_run.glbを読み、完了したらボクセルと差し替え
 function loadPlayerGLB(){
   const note=document.getElementById('glbNote');
   if(!getLoader()){loadNPCGLBs();return;}
@@ -882,12 +946,13 @@ function loadPlayerGLB(){
     try{
       const wg=await loadGLB(HERO.walk,x=>{
         if(x.total)note.textContent='3Dキャラよみこみ中… '+Math.round(x.loaded/x.total*50)+'%';});
-      const ig=await loadGLB(HERO.idle,x=>{
+      const rg=await loadGLB(HERO.run,x=>{
         if(x.total)note.textContent='3Dキャラよみこみ中… '+(50+Math.round(x.loaded/x.total*50))+'%';});
       const model=wg.scene;
-      const wrap=rigWrap(model,HERO_H);
-      playerRig=makeAnimRig(model,wg.animations&&wg.animations[0],ig.animations&&ig.animations[0]);
-      window.__v4dbg.playerRig=playerRig; // v11: 検証用
+      // walkモデルにrun.glbのクリップを載せ替え（同一Mixamoスケルトン）
+      playerRig=makeAnimRig(model,wg.animations&&wg.animations[0],rg.animations&&rg.animations[0]);
+      const wrap=meshyWrap(model,playerRig.mixer,HERO_H,'hero');
+      window.__v4dbg.playerRig=playerRig; // 検証用
       avatarGlb=wrap;
       if(avatarVox){avatar.remove(avatarVox);}
       avatar.add(avatarGlb);
@@ -902,16 +967,17 @@ function loadPlayerGLB(){
     loadNPCGLBs(); // プレイヤーの後に順次（同時ロードを絞る）
   })();
 }
-// NPC：idle.glbを1体ずつ順番に読み込み（同時ロード1本）
+// NPC：m*_walk.glbを1体ずつ順番に読み込み（同時ロード1本）。
+// 立ち姿はwalkの1フレーム目で静止（idleクリップは無い）。
 function loadNPCGLBs(){
   if(!getLoader())return;
   (async()=>{
     for(const n of npcs){
       try{
-        const g=await loadGLB('char_min/'+n.key+'_idle.glb');
+        const g=await loadGLB('char_min/m'+n.key+'_walk.glb');
         const model=g.scene;
-        const wrap=rigWrap(model,CHAR_H);
-        n.rig=makeAnimRig(model,null,g.animations&&g.animations[0]);
+        n.rig=makeAnimRig(model,g.animations&&g.animations[0],null);
+        const wrap=meshyWrap(model,n.rig.mixer,CHAR_H,'npc_'+n.key);
         if(n.vox){n.mesh.remove(n.vox);n.vox=null;}
         n.mesh.add(wrap);
         window.__v4dbg.npcGlb++;
@@ -931,7 +997,7 @@ function initNPCs(){
     const vox=buildVoxAvatar(cfg); g.add(vox); // GLB読込完了までボクセル
     const y=topY(Math.floor(pos[0]),Math.floor(pos[1]))+1;
     g.position.set(pos[0],y,pos[1]);
-    g.rotation.y=Math.PI;
+    g.rotation.y=0; // v12: Meshyモデルは+Z正面。南(プレイヤーが来る側)を向いて立つ
     const lb=labelSprite(cfg.name,2);lb.position.set(0,2.4,0);g.add(lb);
     scene.add(g);
     npcs.push({mesh:g,vox,rig:null,key:k,cfg,lastTalk:-999,t:Math.random()*10});
@@ -1756,9 +1822,11 @@ function animate(ts){
     while(d>Math.PI)d-=Math.PI*2;while(d<-Math.PI)d+=Math.PI*2;
     avatar.rotation.y+=d*Math.min(1,dt*12);
     if(avatarGlb&&playerRig){
-      // v11: 実移動速度(units/s)を渡してtimeScaleを決める＝足滑り低減
-      if(moving)rigPlay(playerRig,'walk',curSpd);
-      else rigPlay(playerRig,'idle',0);
+      // v12: 移動中=walk、ダッシュ(Shift)/ジョイほぼ全倒し=run、静止=idle(walk静止)
+      if(moving){
+        const running=(sprint||Math.hypot(joyVec.x,joyVec.y)>0.92)&&playerRig.actRun;
+        rigPlay(playerRig,running?'run':'walk',curSpd);
+      }else rigPlay(playerRig,'idle',0);
       playerRig.mixer.update(Math.min(0.1,dt));
     }else if(avatarVox){
       const sw=Math.sin(walk)*(moving?0.6:0);
