@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>たんばのうしょう ぼくじょうものがたり v10</title>
+<title>たんばのうしょう ぼくじょうものがたり v11</title>
 <link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -101,6 +101,18 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
 <script>
 /* =====================================================================
+   たんばのうしょう ぼくじょうものがたり v11 — スマホ操作＆カメラ改善
+   v11: スマホ実機フィードバック対応
+   - フローティングジョイスティックを全画面に: UIボタン以外どこを最初に
+     タッチしてもその場にジョイが出て移動（旧: 左45%限定）。
+   - 再エンゲージ修正: 指を離したら確実にリセット。touchend欠落など
+     迷子タッチもtouchstart時に掃除して「次に触っても動けない」を解消。
+   - 移動を走り速度に: 基本7.5/s(旧4.6)・PC Shiftで9.8/s。倒し量に比例。
+     歩行アニメtimeScaleも実速度から算出して足滑りを低減。
+   - モバイルのカメラ回転は2本指ドラッグ(1本指は常に移動/タップ)。
+     PCは従来どおり(ドラッグでカメラ/クリックで移動)。
+   - 追従カメラを引き(cdist 6.2→8.4, 高さも微調整)で周囲が見やすく。
+   以下v10の説明:
    たんばのうしょう ぼくじょうものがたり v10 — やさしい牧場物語ふう
    v10: 大改修（子ども向け・かんたん操作）
    - 主人公＝Tripo製3Dの農家キッズ(char_min/hero_walk.glb / hero_idle.glb)。
@@ -226,6 +238,7 @@ function initThree(){
   hemi=new THREE.HemisphereLight(0xbfe3ff,0x6b8f3a,0.7); scene.add(hemi);
   moonL=new THREE.DirectionalLight(0x8fa8ff,0); moonL.position.set(-20,40,-10); scene.add(moonL);
   worldGroup=new THREE.Group(); scene.add(worldGroup);
+  window.__v4dbg.camObj=camera; // v11: 検証用
 }
 
 // ---------- ボクセルデータ ----------
@@ -833,10 +846,11 @@ function makeAnimRig(model,walkClip,idleClip){
   return rig;
 }
 // idle⇔walkをcrossFadeで切替。走り相当はtimeScaleで表現（クリップはwalkのみ）
-function rigPlay(rig,name,mag){
+// v11: 第3引数は実移動速度(units/s)。速度に比例したtimeScaleで足滑りを抑える
+function rigPlay(rig,name,spd){
   const to=name==='walk'?rig.actWalk:rig.actIdle;
   if(!to)return;
-  const ts=name==='walk'?(1.3+1.1*Math.min(mag||0,1.8)):1.0; // v6: 走り(Shift)はmag>1でさらに速く
+  const ts=name==='walk'?Math.max(1.2,Math.min(0.52*(spd||0),4.4)):1.0;
   if(rig.cur===name){to.timeScale=ts;return;}
   const from=rig.cur==='walk'?rig.actWalk:rig.actIdle;
   to.timeScale=ts;
@@ -873,6 +887,7 @@ function loadPlayerGLB(){
       const model=wg.scene;
       const wrap=rigWrap(model,HERO_H);
       playerRig=makeAnimRig(model,wg.animations&&wg.animations[0],ig.animations&&ig.animations[0]);
+      window.__v4dbg.playerRig=playerRig; // v11: 検証用
       avatarGlb=wrap;
       if(avatarVox){avatar.remove(avatarVox);}
       avatar.add(avatarGlb);
@@ -1414,7 +1429,7 @@ function setHTML(){
   '<div class="row"><div class="em">💾</div><div class="info"><b>セーブ</b><small>じどうでも 30びょうごとに ほぞんされるよ</small></div><button class="buy" onclick="saveGame(true)">ほぞん</button></div>'+
   '<div class="row"><div class="em">🔊</div><div class="info"><b>こうかおん</b><small>おとの オン/オフ</small></div><button class="buy" onclick="toggleSound()">'+(state.sound?'ON':'OFF')+'</button></div>'+
   '<div class="row"><div class="em">🗑</div><div class="info"><b>さいしょから</b><small>データを けして やりなおす（2かい おしてね）</small></div><button class="buy orange" onclick="resetGame()">リセット</button></div>'+
-  '<p style="font-size:11.5px">📖 あそびかた：がめんを タップすると そこへ あるくよ。はたけ・うし・木の ちかくで タップ か みぎしたの「つかう/とる」ボタンで なんでも できる。ひだりしたを タッチすると ジョイスティック。PCは クリックいどう・WASD・E/スペース=つかう・M=メニュー。</p>';
+  '<p style="font-size:11.5px">📖 あそびかた：がめんの すきなところに ゆびを おくと ジョイスティックが でて うごけるよ（おおきく たおすと はしる！）。ちょんと タップすると そこへ あるく。カメラは 2ほんめの ゆびで ドラッグ。はたけ・うし・木の ちかくで タップ か みぎしたの「つかう/とる」ボタン。PCは クリックいどう・WASD（Shiftで はしる）・E/スペース=つかう・M=メニュー。</p>';
 }
 let resetConfirm=0;
 function resetGame(){
@@ -1514,6 +1529,8 @@ const CODEKEY={KeyW:'w',KeyA:'a',KeyS:'s',KeyD:'d',ArrowUp:'arrowup',ArrowDown:'
 // v6: クリック移動(point-to-walk)の状態
 const pw={target:null,stuck:0,px:0,pz:0};
 window.__v4dbg.pw=pw;
+// v11: 検証用（タッチ/ジョイ状態の可視化）
+window.__v4dbg.joyState=()=>({joyId,camId,joyVec:{...joyVec},camYaw,camPitch});
 let moveMarker=null;
 function showMoveMarker(bx,bz){
   if(!moveMarker){
@@ -1560,9 +1577,15 @@ function clickToMove(sx,sy){
 function bindControls(){
   const joy=document.getElementById('joy'),knob=document.getElementById('joyKnob'),el=renderer.domElement;
   const taps={}; // v10: タップ判定 {id:{x,y,moved}}
+  // v11: ジョイスティックの状態を確実にリセット（再エンゲージ不能バグ対策）
+  const resetJoy=()=>{joyId=null;joy.style.display='none';joyVec={x:0,y:0};};
   const start=e=>{for(const t of(e.changedTouches||[e])){const id=t.identifier!==undefined?t.identifier:'m',x=t.clientX,y=t.clientY;
     taps[id]={x,y,moved:false};
-    if(!IS_DESKTOP&&x<innerWidth*0.45&&joyId===null){joyId=id;joy.style.display='block';joy.style.left=x+'px';joy.style.top=y+'px';knob.style.left='50%';knob.style.top='50%';joyVec={x:0,y:0};}
+    if(!IS_DESKTOP){
+      // v11: 全画面フローティングジョイ。1本目の指=移動、2本目の指=カメラ回転
+      if(joyId===null){joyId=id;joy.style.display='block';joy.style.left=x+'px';joy.style.top=y+'px';knob.style.left='50%';knob.style.top='50%';joyVec={x:0,y:0};}
+      else if(camId===null){camId=id;camLast={x,y};}
+    }
     else if(camId===null){camId=id;camLast={x,y};}}};
   const move=e=>{for(const t of(e.changedTouches||[e])){const id=t.identifier!==undefined?t.identifier:'m';
     if(taps[id]&&Math.hypot(t.clientX-taps[id].x,t.clientY-taps[id].y)>9)taps[id].moved=true;
@@ -1572,9 +1595,16 @@ function bindControls(){
     // v10: 動かさずに離した＝タップ→その場所へ歩く/さわる（左半分でも有効）
     if(taps[id]&&!taps[id].moved)clickToMove(t.clientX,t.clientY);
     delete taps[id];
-    if(id===joyId){joyId=null;joy.style.display='none';joyVec={x:0,y:0};}
+    if(id===joyId)resetJoy();
     if(id===camId)camId=null;}};
-  el.addEventListener('touchstart',e=>{if(e.cancelable)e.preventDefault();ac();start(e);},{passive:false});
+  el.addEventListener('touchstart',e=>{if(e.cancelable)e.preventDefault();ac();
+    // v11: 迷子タッチの掃除。端末がtouchend/cancelを落としてjoyId/camIdが残ると
+    //      「次に触っても動けない」ため、生きているタッチに無いIDはここで解放する
+    const live=new Set();for(const t of e.touches)live.add(t.identifier);
+    if(joyId!==null&&joyId!=='m'&&!live.has(joyId))resetJoy();
+    if(camId!==null&&camId!=='m'&&!live.has(camId))camId=null;
+    for(const k in taps)if(k!=='m'&&!live.has(+k))delete taps[k];
+    start(e);},{passive:false});
   el.addEventListener('touchmove',e=>{if(e.cancelable)e.preventDefault();move(e);},{passive:false});
   el.addEventListener('touchend',e=>{if(e.cancelable)e.preventDefault();end(e);},{passive:false});
   el.addEventListener('touchcancel',e=>{end(e);},{passive:false});
@@ -1685,8 +1715,11 @@ function animate(ts){
   const mag=Math.hypot(ix,iz),moving=mag>0.12;
   // v6: Shiftで走る（キーボード移動・クリック移動どちらでも有効）
   const sprint=!!keys['shift']&&moving;
+  // v11: 基本速度を走りに引き上げ(4.6→7.5/s)。倒し量に比例＝フル倒しで走り
+  let curSpd=0;
   if(moving){
-    const ang=Math.atan2(ix,iz)+camYaw,sp=(sprint?7.8:4.6)*dt*Math.min(mag,1);
+    curSpd=(sprint?9.8:7.5)*Math.min(mag,1);
+    const ang=Math.atan2(ix,iz)+camYaw,sp=curSpd*dt;
     // v9: プレイヤー円(半径PLAYER_R)でX軸→Z軸を別々に解決＝壁沿いをなめらかにスライド。
     //     万一グリッドにめり込んでいる時は判定を免除して脱出だけ許す
     const escG=circleBlockedGrid(player.x,player.z,player.y);
@@ -1694,7 +1727,7 @@ function animate(ts){
     if((escG||!circleBlockedGrid(nx,player.z,player.y))&&!circleBlockedDeco(nx,player.z,player.x,player.z,player.y))player.x=nx;
     const nz=Math.max(0.5,Math.min(WS-0.5,player.z+Math.cos(ang)*sp));
     if((escG||!circleBlockedGrid(player.x,nz,player.y))&&!circleBlockedDeco(player.x,nz,player.x,player.z,player.y))player.z=nz;
-    player.dir=ang;walk+=dt*(sprint?14:9);
+    player.dir=ang;walk+=dt*curSpd*1.9; // v11: 足の振りも実速度に連動
   }
   // v7: 詰み防止（入力があるのに全く進めない状態が3秒続き、四方が登れない穴なら救出）
   if(moving){
@@ -1723,8 +1756,8 @@ function animate(ts){
     while(d>Math.PI)d-=Math.PI*2;while(d<-Math.PI)d+=Math.PI*2;
     avatar.rotation.y+=d*Math.min(1,dt*12);
     if(avatarGlb&&playerRig){
-      // 状態機械: 移動=walk（スティック倒し量でtimeScale＝走り表現）/ 静止=idle
-      if(moving)rigPlay(playerRig,'walk',sprint?mag*1.7:mag);
+      // v11: 実移動速度(units/s)を渡してtimeScaleを決める＝足滑り低減
+      if(moving)rigPlay(playerRig,'walk',curSpd);
       else rigPlay(playerRig,'idle',0);
       playerRig.mixer.update(Math.min(0.1,dt));
     }else if(avatarVox){
@@ -1785,7 +1818,7 @@ function animate(ts){
     }
   }
   // --- カメラ（地形にめり込まないよう手前で止める） ---
-  const cdist=6.2,chh=3.2;
+  const cdist=8.4,chh=3.6; // v11: 少し引きに(6.2→8.4)して周囲が見えるように
   const camX=player.x-Math.sin(camYaw)*cdist*Math.cos(camPitch*0.6);
   const camZ=player.z-Math.cos(camYaw)*cdist*Math.cos(camPitch*0.6);
   const camY=player.y+chh+camPitch*3.4;
@@ -1878,7 +1911,7 @@ function startGame(saveData){
       setTimeout(()=>toast('🖱 クリックした ばしょへ あるくよ / はたけや うしも クリックしてみてね'),2200);
       showPCGuide();
     }else{
-      setTimeout(()=>toast('タップした ばしょへ あるくよ / はたけや うしを タップしてみてね'),2200);
+      setTimeout(()=>toast('がめんの どこでも ゆびを おくと うごけるよ / カメラは 2ほんゆび'),2200);
     }
     requestAnimationFrame(animate);
   },50);
