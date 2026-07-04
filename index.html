@@ -1470,9 +1470,11 @@ function animate(ts){
   requestAnimationFrame(animate);
   const dt=Math.min((ts-lastT)/1000||0.016,0.1);lastT=ts;
   // --- 入力 ---
-  let ix=joyVec.x,iz=joyVec.y;
-  if(keys['w']||keys['arrowup'])iz-=1;if(keys['s']||keys['arrowdown'])iz+=1;
-  if(keys['a']||keys['arrowleft'])ix-=1;if(keys['d']||keys['arrowright'])ix+=1;
+  // v8: 移動が180°反転していた不具合を修正。ジョイスティック/WASDの入力を符号反転
+  //     （クリック移動は下のpw.targetブロックでix,izを別途上書きするので影響しない）
+  let ix=-joyVec.x,iz=-joyVec.y;
+  if(keys['w']||keys['arrowup'])iz+=1;if(keys['s']||keys['arrowdown'])iz-=1;
+  if(keys['a']||keys['arrowleft'])ix+=1;if(keys['d']||keys['arrowright'])ix-=1;
   const manual=Math.hypot(ix,iz)>0.12; // 手動入力(キー/スティック)があるか
   // v6: クリック移動(point-to-walk)。手動入力があれば即キャンセル
   if(pw.target){
