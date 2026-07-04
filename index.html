@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>たんばのうしょう ぼくじょうものがたり v12</title>
+<title>丹波農商 牧場物語 v13</title>
 <link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -67,40 +67,56 @@
 <div id="game"></div>
 <div id="top">
   <div class="panel stat" id="money">￥1,000</div>
-  <div class="panel stat" id="day">1にちめ・あさ</div>
-  <div class="panel stat" id="place">たんばのさと</div>
+  <div class="panel stat" id="day">1日目・朝</div>
+  <div class="panel stat" id="place">丹波の里</div>
 </div>
 <div id="quest">🎯 …</div>
 <div id="menuBtn"><div class="mbtn" id="menuOpenBtn">☰ メニュー</div></div>
 <div id="joy"><div id="joyKnob"></div></div>
-<div id="actHint">🌱 たねをまく</div>
-<button class="abtn" id="useBtn">つかう<br>とる</button>
-<div id="glbNote">3Dキャラよみこみ中…</div>
+<div id="actHint">🌱 種をまく</div>
+<button class="abtn" id="useBtn">使う<br>取る</button>
+<div id="glbNote">3Dキャラ読み込み中…</div>
 <div class="panel" id="pcGuide">
-  <h3>🖥 PCそうさガイド</h3>
-  <div class="gl"><span class="gk">🖱 クリック</span>クリックした ばしょへ あるく</div>
-  <div class="gl"><span class="gk">WASD / 矢印キー</span>いどう（Shiftで はしる）</div>
-  <div class="gl"><span class="gk">🖱 ドラッグ</span>カメラを まわす</div>
-  <div class="gl"><span class="gk">E / スペース</span>つかう・とる（ちかくのもの）</div>
+  <h3>🖥 PC操作ガイド</h3>
+  <div class="gl"><span class="gk">🖱 クリック</span>クリックした場所へ歩く</div>
+  <div class="gl"><span class="gk">WASD / 矢印キー</span>移動（Shiftで走る）</div>
+  <div class="gl"><span class="gk">🖱 ドラッグ</span>カメラを回す</div>
+  <div class="gl"><span class="gk">E / スペース</span>使う・取る（近くの物）</div>
   <div class="gl"><span class="gk">M</span>メニュー</div>
-  <button id="pcGuideClose">とじる（しばらくすると じどうで きえるよ）</button>
+  <button id="pcGuideClose">閉じる（しばらくすると自動で消えます）</button>
 </div>
 <div id="toast"></div>
 <div class="ov" id="menu"><div class="panel ovbox" id="menuBox"></div></div>
 <div id="seedPick"><div class="panel" id="seedPickBox"></div></div>
 <div id="title">
-  <h1>🌾 たんばのうしょう<br>ぼくじょうものがたり</h1>
-  <div class="sub">たんばの さとやまで、たねを まいて・うしを そだてて・しゅっかしよう！<br>むずかしい そうさは なし。タップだけで あそべるよ 🐄🌰🍚</div>
+  <h1>🌾 丹波農商<br>牧場物語</h1>
+  <div class="sub">丹波の里山で、種をまいて・牛を育てて・出荷しよう！<br>難しい操作はなし。タップだけで遊べるよ 🐂🌰🍚</div>
   <button class="bigbtn" id="newBtn">▶ はじめる</button>
-  <button class="bigbtn orange" id="contBtn">💾 つづきから</button>
+  <button class="bigbtn orange" id="contBtn">💾 続きから</button>
 </div>
-<div id="loading">よみこみちゅう…</div>
+<div id="loading">読み込み中…</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
 <script>
 /* =====================================================================
+   丹波農商 牧場物語 v13 — 見やすさ・分かりやすさ改善
+   v13: ユーザー要望3点対応
+   ① NPC「顔が後ろ向き」修正: Meshyキャラの背面(上着の縦縫い目・帽子の
+      星ロゴ)が正面に見えるため、一度よそを向くと「体は正面なのに顔が無い」
+      ように見えていた(旧v12は会話時に瞬間スナップ回転+25秒間向き固定)。
+      → 近く(8ブロック以内)にいる間は毎フレームなめらかにプレイヤーの方へ
+      向き直り、顔と体が常にプレイヤーへ向くようにした。
+      (Meshyクリップにはキャラ別のHipsヨーオフセット(あつし≈-69°等)が
+       焼き込まれているがスキン後の見た目は正常なのでトラックは不変更)
+   ② 全ひらがなUI→常用漢字を使った自然な日本語に全面書き換え
+      (エリア名/ボタン/メニュー/クエスト/NPC台詞/操作ガイド/トースト)
+   ③ マップの文字看板を削減し「アイコン+見た目」で分かるように:
+      大きな文字スプライトを丸いアイコン看板(絵文字)に変更し、
+      文字ラベルは近づいた時(6ブロック以内)だけ小さく表示。
+      NPCの名前ラベルも近距離のみ表示。画面のごちゃつきを解消。
+   以下v12の説明:
    たんばのうしょう ぼくじょうものがたり v12 — Meshy製かわいいチビキャラに全差し替え
    v12: 登場人物をMeshy製チビキャラ(char_min/m*_walk.glb / m*_run.glb)に統一
    - 主人公=mhero、NPC=matsushi/myusuke/mnaoto（Tripo版 hero_・atsushi_ 系は不使用）
@@ -176,15 +192,15 @@
 const HERO={walk:'char_min/mhero_walk.glb',run:'char_min/mhero_run.glb',
   vox:{skin:'#f0c49a',cheek:'#ff8a6a',hair:'#4a3018',cap:'#e0b84f',shirt:'#4a7ad8',pants:'#3a5aa8',shoe:'#8a5a2b'}};
 const CHARS={
-  atsushi:{name:'あつしさん',role:'ぼくじょうの おにいさん',skin:'#e8b98c',cheek:'#ff7a5a',hair:'#1c1712',cap:'#111',shirt:'#20386a',pants:'#2a2a2a',shoe:'#5a3a1a',spot:'barn',
-    line:'うしは あいじょうで そだつんだよ！えさを あげて、いっぱい なでてあげてね🐄',
-    line2:'たんばのうしょうは くろげわぎゅうを たいせつに そだてているんだ。'},
-  yusuke:{name:'ゆうすけさん',role:'くさ・くり・おこめの おにいさん',skin:'#e5b184',cheek:'#e88a6a',hair:'#6a4526',beard:true,shirt:'#3a3a3f',pants:'#33302a',shoe:'#2a2a2a',spot:'pasture',
-    line:'ぼくそうちの くさを タップして あつめよう！うしの えさに なるよ🌿',
-    line2:'たなだの おこめと、きたの おかの くりも よろしくね🌰'},
-  naoto:{name:'なおとさん',role:'かこう・たいひの おにいさん',skin:'#eac199',cheek:'#e89a7a',hair:'#241a12',glasses:true,ponytail:true,shirt:'#2f5fa8',pants:'#22262a',shoe:'#333',spot:'compost',
-    line:'うしのふんと くさで「たいひ」が できるんだ。はたけに まくと 2ばい そだつよ！',
-    line2:'きかいを かうと おこめや くりが おいしい しょくひんに へんしんするよ🍱'},
+  atsushi:{name:'あつしさん',role:'牧場のお兄さん',skin:'#e8b98c',cheek:'#ff7a5a',hair:'#1c1712',cap:'#111',shirt:'#20386a',pants:'#2a2a2a',shoe:'#5a3a1a',spot:'barn',
+    line:'牛は愛情で育つんだよ！えさをあげて、いっぱいなでてあげてね🐂',
+    line2:'丹波農商は黒毛和牛を大切に育てているんだ。'},
+  yusuke:{name:'ゆうすけさん',role:'牧草・栗・お米のお兄さん',skin:'#e5b184',cheek:'#e88a6a',hair:'#6a4526',beard:true,shirt:'#3a3a3f',pants:'#33302a',shoe:'#2a2a2a',spot:'pasture',
+    line:'牧草地の草をタップして集めよう！牛のえさになるよ🌿',
+    line2:'棚田のお米と、北の丘の栗もよろしくね🌰'},
+  naoto:{name:'なおとさん',role:'加工・堆肥のお兄さん',skin:'#eac199',cheek:'#e89a7a',hair:'#241a12',glasses:true,ponytail:true,shirt:'#2f5fa8',pants:'#22262a',shoe:'#333',spot:'compost',
+    line:'牛のふんと草で「堆肥」ができるんだ。畑にまくと2倍育つよ！',
+    line2:'機械を買うとお米や栗がおいしい食品に変身するよ🍱'},
 };
 
 // ---------- ブロック定義 ----------
@@ -208,12 +224,12 @@ const BI={
 
 // ---------- 資源メタ ----------
 const RES={
- grass:{n:'ぼくそう',em:'🌿'},hay:{n:'ほしくさ',em:'🟨'},
- rice:{n:'おこめ(もみ)',em:'🌾'},polishedrice:{n:'はくまい',em:'🍚'},bean:{n:'くろまめ',em:'🫘'},
- veg:{n:'やさい',em:'🥬'},chestnut:{n:'くり',em:'🌰'},chestnutproc:{n:'くりスイーツ',em:'🍡'},
- foodproc:{n:'かこうしょくひん',em:'🍱'},compost:{n:'たいひ',em:'💩'},manure:{n:'うしのふん',em:'🟤'},
- milk:{n:'ぎゅうにゅう',em:'🥛'},
- rice_seed:{n:'いねのなえ',em:'🌱'},bean_seed:{n:'くろまめのたね',em:'🫛'},veg_seed:{n:'やさいのたね',em:'🥕'},
+ grass:{n:'牧草',em:'🌿'},hay:{n:'干し草',em:'🟨'},
+ rice:{n:'お米(もみ)',em:'🌾'},polishedrice:{n:'白米',em:'🍚'},bean:{n:'黒豆',em:'🫘'},
+ veg:{n:'野菜',em:'🥬'},chestnut:{n:'栗',em:'🌰'},chestnutproc:{n:'栗スイーツ',em:'🍡'},
+ foodproc:{n:'加工食品',em:'🍱'},compost:{n:'堆肥',em:'🟫'},manure:{n:'牛のふん',em:'🟤'},
+ milk:{n:'牛乳',em:'🥛'},
+ rice_seed:{n:'稲の苗',em:'🌱'},bean_seed:{n:'黒豆の種',em:'🫛'},veg_seed:{n:'野菜の種',em:'🥕'},
 };
 const PRICE={grass:5,hay:15,rice:80,polishedrice:200,bean:120,veg:80,chestnut:100,chestnutproc:250,foodproc:300,compost:100,milk:150};
 const WAGYU_PRICE=8000,HEART_BONUS=400;
@@ -566,14 +582,14 @@ function regrowChestnuts(){
   chestnutTrees.forEach((t,i)=>{
     if(!state.treeFruit[i]){state.treeFruit[i]=true;if(treeFruitMeshes[i])treeFruitMeshes[i].visible=true;n++;}
   });
-  if(n>0)toast('🌰 くりの木に みが なったよ！');
+  if(n>0)toast('🌰 栗の木に実がなったよ！');
 }
 
 // ---------- 作物 ----------
 const CROPMETA={
-  rice:{n:'いね',stages:[0x8fce6a,0xa9d465,0xe0c94e],time:26,yield:'rice',num:2,em:'🌾'},
-  bean:{n:'くろまめ',stages:[0x7ec46a,0x4f8f3a,0x2f6b24],time:30,yield:'bean',num:2,em:'🫘'},
-  veg:{n:'やさい',stages:[0x9ed46a,0x6fbf4a,0x4faf3f],time:22,yield:'veg',num:2,em:'🥬'},
+  rice:{n:'稲',stages:[0x8fce6a,0xa9d465,0xe0c94e],time:26,yield:'rice',num:2,em:'🌾'},
+  bean:{n:'黒豆',stages:[0x7ec46a,0x4f8f3a,0x2f6b24],time:30,yield:'bean',num:2,em:'🫘'},
+  veg:{n:'野菜',stages:[0x9ed46a,0x6fbf4a,0x4faf3f],time:22,yield:'veg',num:2,em:'🥬'},
 };
 const cropMeshes={};
 const cropGeo=(()=>{const g=new THREE.BufferGeometry();
@@ -598,7 +614,7 @@ function removeCropMesh(k){const m=cropMeshes[k];if(m){worldGroup.remove(m);dele
 function refreshCropMesh(k){removeCropMesh(k);if(state.crops[k])addCropMesh(k,state.crops[k]);}
 function plantCrop(x,y,z,type){
   const k=key(x,y,z);
-  if(state.crops[k]){toast('ここには もう うえてあるよ');return false;}
+  if(state.crops[k]){toast('ここにはもう植えてあるよ');return false;}
   state.crops[k]={type,stage:0,t:0,w:0};
   state.planted++;
   addCropMesh(k,state.crops[k]); return true;
@@ -647,6 +663,27 @@ function labelSprite(text,scale=3){
   m.scale.set(scale,scale*0.25,1); return m;
 }
 function roundRect(g,x,y,w,h,r){g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath();}
+// v13: 丸いアイコン看板（絵文字）。文字の代わりに絵で場所を示す
+function iconSprite(emoji,scale=1.5){
+  const cv=document.createElement('canvas');cv.width=cv.height=128;
+  const g=cv.getContext('2d');
+  g.fillStyle='rgba(255,253,245,0.95)';g.beginPath();g.arc(64,64,58,0,7);g.fill();
+  g.strokeStyle='#8a5a2b';g.lineWidth=7;g.beginPath();g.arc(64,64,54,0,7);g.stroke();
+  g.font='68px sans-serif';g.textAlign='center';g.textBaseline='middle';
+  g.fillText(emoji,64,70);
+  const t=new THREE.CanvasTexture(cv);
+  const m=new THREE.Sprite(new THREE.SpriteMaterial({map:t,depthTest:true}));
+  m.scale.set(scale,scale,1);return m;
+}
+// v13: 近づいた時だけ見える文字ラベルの管理（常時ベタ貼りの文字を削減）
+const nearLabels=[]; // {sp,x,z,r}
+function addNearLabel(sp,x,z,r){sp.visible=false;nearLabels.push({sp,x,z,r:r||6});}
+function updateNearLabels(){
+  for(const L of nearLabels){
+    const v=Math.hypot(L.x-player.x,L.z-player.z)<L.r;
+    if(L.sp.visible!==v)L.sp.visible=v;
+  }
+}
 function hayRoll(x,z){
   const y=topY(Math.floor(x),Math.floor(z))+1;
   const g=new THREE.Group();
@@ -657,16 +694,21 @@ function hayRoll(x,z){
   g.position.set(x,y-1+0.02,z);decoGroup.add(g);
   addDecoCollider(x,z,0.75,y); // v9: 衝突
 }
-function addSign(x,z,text){
+// v13: エリア看板＝アイコン(常時)＋文字(近づいた時だけ)。大きな文字ベタ貼りを廃止
+function addSign(x,z,emoji,text){
   const y=topY(Math.floor(x),Math.floor(z))+1;
-  const s=labelSprite(text,3.4); s.position.set(x,y+1.6,z); decoGroup.add(s);
+  const grp=new THREE.Group();
+  const ic=iconSprite(emoji,1.5); ic.position.set(x,y+1.7,z); grp.add(ic);
+  const s=labelSprite(text,2.2); s.position.set(x,y+2.75,z); grp.add(s);
+  addNearLabel(s,x,z,6);
+  decoGroup.add(grp);
   addDecoCollider(x,z,0.28,y); // v9: 衝突
-  return s;
+  return grp;
 }
 let barnSign=null;
 function updateBarnSign(){
   if(barnSign){decoGroup.remove(barnSign);}
-  barnSign=addSign(25.5,17.5,state.barnBuilt?'🐄 ぎゅうしゃ':'🐄 ぎゅうしゃ よていち');
+  barnSign=addSign(25.5,17.5,'🐂',state.barnBuilt?'牛舎':'牛舎予定地');
 }
 let tractorMesh=null,polisherMesh=null,processorMesh=null,compostShedMesh=null;
 function buildTractor(){
@@ -682,20 +724,23 @@ function buildTractor(){
   const y=topY(33,25)+1;g.position.set(33.5,y-1+0.02,25.5);g.rotation.y=-0.5;
   decoGroup.add(g);tractorMesh=g;
   addDecoCollider(33.5,25.5,1.05,y); // v9: 衝突
-  const s=labelSprite('🚜 トラクター',2.6);s.position.set(33.5,y+1.7,25.5);g.userData={sign:s};decoGroup.add(s);
+  const s=labelSprite('トラクター',2);s.position.set(33.5,y+1.9,25.5);g.userData={sign:s};decoGroup.add(s);
+  addNearLabel(s,33.5,25.5,5); // v13: 文字は近づいた時だけ
 }
-function machineBox(x,z,color,text){
+function machineBox(x,z,color,emoji,text){
   const y=topY(x,z)+1;
   const g=new THREE.Group();
   const base=new THREE.Mesh(new THREE.BoxGeometry(1.4,1.2,1.2),new THREE.MeshLambertMaterial({color}));base.position.y=0.6;base.castShadow=true;g.add(base);
   const hop=new THREE.Mesh(new THREE.BoxGeometry(1,0.6,0.9),new THREE.MeshLambertMaterial({color:0x888888}));hop.position.y=1.4;g.add(hop);
   g.position.set(x+0.5,y-1+0.02,z+0.5);decoGroup.add(g);
   addDecoCollider(x+0.5,z+0.5,0.9,y); // v9: 衝突
-  const s=labelSprite(text,3);s.position.set(x+0.5,y+1.9,z+0.5);decoGroup.add(s);
+  const ic=iconSprite(emoji,1.3);ic.position.set(x+0.5,y+1.9,z+0.5);decoGroup.add(ic); // v13: アイコン常時
+  const s=labelSprite(text,2);s.position.set(x+0.5,y+2.8,z+0.5);decoGroup.add(s);
+  addNearLabel(s,x+0.5,z+0.5,5); // v13: 文字は近づいた時だけ
   return g;
 }
-function buildPolisher(){if(!polisherMesh)polisherMesh=machineBox(21,36,0xdedede,'🌾 せいまいき');}
-function buildProcessor(){if(!processorMesh)processorMesh=machineBox(32,22,0x4a7fb5,'🍱 かこうき');}
+function buildPolisher(){if(!polisherMesh)polisherMesh=machineBox(21,36,0xdedede,'🍚','精米機');}
+function buildProcessor(){if(!processorMesh)processorMesh=machineBox(32,22,0x4a7fb5,'🍱','加工機');}
 function buildCompostShed(){
   if(compostShedMesh)return;
   const g=new THREE.Group();
@@ -705,7 +750,9 @@ function buildCompostShed(){
   const y=topY(43,31)+1;
   g.position.set(42,y-1+0.02,30.5);decoGroup.add(g);compostShedMesh=g;
   [[42,30.5],[45,30.5],[42,33.5],[45,33.5]].forEach(p=>addDecoCollider(p[0],p[1],0.3,y)); // v9: 柱の衝突
-  const s=labelSprite('💩 たいひごや',3);s.position.set(43.5,y+2.6,32);decoGroup.add(s);
+  const ic=iconSprite('🟫',1.3);ic.position.set(43.5,y+2.9,32);decoGroup.add(ic); // v13
+  const s=labelSprite('堆肥小屋',2);s.position.set(43.5,y+3.7,32);decoGroup.add(s);
+  addNearLabel(s,43.5,32,5);
 }
 // v10: ショップ屋台と出荷箱（近づいてタップでメニュー）
 const SHOP_POS={x:24.5,z:32.5},SHIP_POS={x:30.5,z:32.5};
@@ -717,7 +764,9 @@ function buildShopStand(){
   [[-0.8,-0.5],[0.8,-0.5],[-0.8,0.5],[0.8,0.5]].forEach(p=>{const post=new THREE.Mesh(new THREE.BoxGeometry(0.1,1.8,0.1),new THREE.MeshLambertMaterial({color:0x8a5a2b}));post.position.set(p[0],0.9,p[1]);g.add(post);});
   g.position.set(SHOP_POS.x,y-1+0.02,SHOP_POS.z);decoGroup.add(g);
   addDecoCollider(SHOP_POS.x,SHOP_POS.z,0.9,y);
-  const s=labelSprite('🛒 おみせ',3);s.position.set(SHOP_POS.x,y+2.2,SHOP_POS.z);decoGroup.add(s);
+  const ic=iconSprite('🛒',1.5);ic.position.set(SHOP_POS.x,y+2.4,SHOP_POS.z);decoGroup.add(ic); // v13
+  const s=labelSprite('お店',1.8);s.position.set(SHOP_POS.x,y+3.4,SHOP_POS.z);decoGroup.add(s);
+  addNearLabel(s,SHOP_POS.x,SHOP_POS.z,6);
 }
 function buildShipBox(){
   const g=new THREE.Group();
@@ -726,7 +775,9 @@ function buildShipBox(){
   const lid=new THREE.Mesh(new THREE.BoxGeometry(1.4,0.12,1.1),new THREE.MeshLambertMaterial({color:0x9a6b3a}));lid.position.y=0.95;g.add(lid);
   g.position.set(SHIP_POS.x,y-1+0.02,SHIP_POS.z);decoGroup.add(g);
   addDecoCollider(SHIP_POS.x,SHIP_POS.z,0.8,y);
-  const s=labelSprite('📦 しゅっかばこ',3);s.position.set(SHIP_POS.x,y+1.7,SHIP_POS.z);decoGroup.add(s);
+  const ic=iconSprite('📦',1.5);ic.position.set(SHIP_POS.x,y+1.8,SHIP_POS.z);decoGroup.add(ic); // v13
+  const s=labelSprite('出荷箱',1.8);s.position.set(SHIP_POS.x,y+2.8,SHIP_POS.z);decoGroup.add(s);
+  addNearLabel(s,SHIP_POS.x,SHIP_POS.z,6);
 }
 // v10: 牧草地の草むら（タップで ぼくそう ゲット、翌日はえる）
 const TUFT_SPOTS=[[37.5,10.5],[40.5,12.5],[43.5,10.5],[46.5,13.5],[38.5,16.5],[42.5,18.5],[46.5,17.5],[44.5,15.5],[39.5,19.5],[47.5,11.5]];
@@ -750,12 +801,13 @@ function updateTufts(){
 function buildDecor(){
   scene.add(decoGroup);
   hayRoll(38.5,11.5);hayRoll(41,17.2);hayRoll(45.5,10.3);hayRoll(44,19.5);
-  addSign(27.5,30.8,'かこうじょう');
+  // v13: 看板はアイコン＋近距離のみ文字
+  addSign(27.5,30.8,'🏭','加工場');
   updateBarnSign();
-  addSign(13.5,36.2,'🌾 たなだ');
-  addSign(42,30.2,'たいひば');
-  addSign(17,11.8,'🌰 くりえん');
-  addSign(37,14.5,'🌿 ぼくそうち');
+  addSign(13.5,36.2,'🌾','棚田');
+  addSign(42,30.2,'🟫','堆肥場');
+  addSign(17,11.8,'🌰','栗園');
+  addSign(37,14.5,'🌿','牧草地');
   buildShopStand();buildShipBox();buildTufts();
   buildTractor(); // かざり（のうかの トラクター）
   if(state.has.polisher)buildPolisher();
@@ -945,9 +997,9 @@ function loadPlayerGLB(){
   (async()=>{
     try{
       const wg=await loadGLB(HERO.walk,x=>{
-        if(x.total)note.textContent='3Dキャラよみこみ中… '+Math.round(x.loaded/x.total*50)+'%';});
+        if(x.total)note.textContent='3Dキャラ読み込み中… '+Math.round(x.loaded/x.total*50)+'%';});
       const rg=await loadGLB(HERO.run,x=>{
-        if(x.total)note.textContent='3Dキャラよみこみ中… '+(50+Math.round(x.loaded/x.total*50))+'%';});
+        if(x.total)note.textContent='3Dキャラ読み込み中… '+(50+Math.round(x.loaded/x.total*50))+'%';});
       const model=wg.scene;
       // walkモデルにrun.glbのクリップを載せ替え（同一Mixamoスケルトン）
       playerRig=makeAnimRig(model,wg.animations&&wg.animations[0],rg.animations&&rg.animations[0]);
@@ -958,11 +1010,11 @@ function loadPlayerGLB(){
       avatar.add(avatarGlb);
       note.style.display='none';
       window.__v4dbg.playerGlb=true;
-      toast('✨ 3Dキャラのよみこみ完了！');
+      toast('✨ 3Dキャラの読み込み完了！');
     }catch(e){
       note.style.display='none';
       window.__v4dbg.errors.push('player:'+(e&&e.message||e));
-      toast('3Dモデルが読めないので かわりのキャラで あそぶよ');
+      toast('3Dモデルが読めないので代わりのキャラで遊ぶよ');
     }
     loadNPCGLBs(); // プレイヤーの後に順次（同時ロードを絞る）
   })();
@@ -989,7 +1041,7 @@ function loadNPCGLBs(){
 // ---------- NPC（大人3人＝お手伝い） ----------
 const npcs=[];
 function initNPCs(){
-  const spots={barn:[25.5,17.2],pasture:[39.5,13.5],compost:[41.5,35.5]};
+  const spots={barn:[27.6,17.0],pasture:[39.5,13.5],compost:[41.5,35.5]}; // v13: 牛舎看板と重ならない位置に
   for(const k in CHARS){
     const cfg=CHARS[k];
     const pos=spots[cfg.spot];
@@ -998,7 +1050,8 @@ function initNPCs(){
     const y=topY(Math.floor(pos[0]),Math.floor(pos[1]))+1;
     g.position.set(pos[0],y,pos[1]);
     g.rotation.y=0; // v12: Meshyモデルは+Z正面。南(プレイヤーが来る側)を向いて立つ
-    const lb=labelSprite(cfg.name,2);lb.position.set(0,2.4,0);g.add(lb);
+    const lb=labelSprite(cfg.name,1.7);lb.position.set(0,2.3,0);g.add(lb);
+    addNearLabel(lb,pos[0],pos[1],6); // v13: 名前は近づいた時だけ(近似位置で判定)
     scene.add(g);
     npcs.push({mesh:g,vox,rig:null,key:k,cfg,lastTalk:-999,t:Math.random()*10});
   }
@@ -1086,28 +1139,28 @@ function toast(msg){
 }
 function timeLabel(){
   const t=state.time;
-  if(t<0.17)return'あさ';if(t<0.34)return'ひる';if(t<0.5)return'ゆうがた';return'よる';
+  if(t<0.17)return'朝';if(t<0.34)return'昼';if(t<0.5)return'夕方';return'夜';
 }
 function updateHUD(){
   document.getElementById('money').textContent='￥'+state.money.toLocaleString();
-  document.getElementById('day').textContent=state.day+'にちめ・'+timeLabel();
+  document.getElementById('day').textContent=state.day+'日目・'+timeLabel();
   updateQuest();
 }
 // クエスト（やさしいチュートリアル：1つずつ）
 const QUESTS=[
- {t:'🎯 みなみの はたけを タップして たねを まこう',c:()=>state.planted>0},
- {t:'🎯 めが でたら タップして みずを あげよう💧',c:()=>state.wateredN>0},
- {t:'🎯 そだったら タップで しゅうかく！',c:()=>state.harvestN>0},
- {t:'🎯 📦しゅっかばこ か メニューの💰うるで うろう',c:()=>state.soldN>0},
- {t:'🎯 🛒おみせで「ぎゅうしゃ」を かおう（たてて くれるよ）',c:()=>state.barnBuilt},
- {t:'🎯 🛒おみせで こうしを むかえよう🐄',c:()=>state.cows.length>0},
- {t:'🎯 うしを タップ→えさやり＆なでなで しよう💕',c:()=>state.fedN>0&&state.pettedN>0},
- {t:'🎯 おとなの うしから ぎゅうにゅうを とろう🥛',c:()=>state.milkN>0},
- {t:'🌟 くり・たなだ・きかいも ためして 7つのおしごとを ぜんぶ たいけんしよう！',c:()=>false},
+ {t:'🎯 南の畑をタップして種をまこう',c:()=>state.planted>0},
+ {t:'🎯 芽が出たらタップして水をあげよう💧',c:()=>state.wateredN>0},
+ {t:'🎯 育ったらタップで収穫！',c:()=>state.harvestN>0},
+ {t:'🎯 📦出荷箱かメニューの💰売るで売ろう',c:()=>state.soldN>0},
+ {t:'🎯 🛒お店で「牛舎」を買おう（建ててくれるよ）',c:()=>state.barnBuilt},
+ {t:'🎯 🛒お店で子牛を迎えよう🐂',c:()=>state.cows.length>0},
+ {t:'🎯 牛をタップ→えさやり＆なでなでしよう💕',c:()=>state.fedN>0&&state.pettedN>0},
+ {t:'🎯 大人の牛から牛乳をしぼろう🥛',c:()=>state.milkN>0},
+ {t:'🌟 栗・棚田・機械も試して7つの仕事を全部体験しよう！',c:()=>false},
 ];
 function updateQuest(){
   while(state.questDone<QUESTS.length-1&&QUESTS[state.questDone].c()){
-    state.questDone++;fanfare();toast('✅ もくひょう たっせい！');
+    state.questDone++;fanfare();toast('✅ 目標達成！');
   }
   document.getElementById('quest').textContent=QUESTS[state.questDone].t;
 }
@@ -1147,25 +1200,25 @@ function actCrop(k){
     addRes(meta.yield,meta.num);
     state.harvestN++;
     burst(p[0],p[1],p[2],meta.stages[2]);
-    toast('🎉 '+meta.em+' '+RES[meta.yield].n+'を '+meta.num+'こ しゅうかく！');
+    toast('🎉 '+meta.em+' '+RES[meta.yield].n+'を'+meta.num+'個収穫！');
     sfxSeq([[620,.08,'triangle'],[880,.1,'triangle']]);
     delete state.crops[k];removeCropMesh(k);
     updateHUD();
   }else if(!c.w){ // みずやり
     c.w=1;state.wateredN++;
     burst(p[0],p[1],p[2],0x4fa8e8);
-    toast('💧 みずを あげた！ぐんぐん そだつよ');
+    toast('💧 水をあげた！ぐんぐん育つよ');
     sfx(500,.08,'sine',.05);
   }else{
-    toast('🌱 そだてちゅう… もうすこし まってね');
+    toast('🌱 育て中… もう少し待ってね');
   }
 }
 let pendingPlot=null;
 function actPlot(pl){
   if(pl.kind==='paddy'){
     if((state.res.rice_seed||0)>0){
-      if(plantCrop(pl.x,pl.y,pl.z,'rice')){state.res.rice_seed--;toast('🌱 いねを うえた！（たなだ）');sfx(520,.06);updateHUD();}
-    }else toast('🌱 いねのなえが ないよ（🛒おみせで かえるよ）');
+      if(plantCrop(pl.x,pl.y,pl.z,'rice')){state.res.rice_seed--;toast('🌱 稲を植えた！（棚田）');sfx(520,.06);updateHUD();}
+    }else toast('🌱 稲の苗がないよ（🛒お店で買えるよ）');
     return;
   }
   // 畑：もっている種から選ぶ
@@ -1173,7 +1226,7 @@ function actPlot(pl){
   if((state.res.veg_seed||0)>0)opts.push('veg');
   if((state.res.bean_seed||0)>0)opts.push('bean');
   const canComp=(state.res.compost||0)>0&&getB(pl.x,pl.y-1,pl.z)===B.TILLED;
-  if(!opts.length&&!canComp){toast('🥕 たねが ないよ（🛒おみせで かおう）');return;}
+  if(!opts.length&&!canComp){toast('🥕 種がないよ（🛒お店で買おう）');return;}
   if(opts.length===1&&!canComp){plantSeed(pl,opts[0]);return;}
   openSeedPick(pl,opts,canComp);
 }
@@ -1182,19 +1235,19 @@ function plantSeed(pl,type){
   if((state.res[seedKey]||0)<=0)return;
   if(plantCrop(pl.x,pl.y,pl.z,type)){
     state.res[seedKey]--;
-    toast(CROPMETA[type].em+' '+CROPMETA[type].n+'の たねを まいた！');
+    toast(CROPMETA[type].em+' '+CROPMETA[type].n+'の種をまいた！');
     sfx(520,.06);updateHUD();
   }
 }
 function openSeedPick(pl,opts,canComp){
   pendingPlot=pl;
   const box=document.getElementById('seedPickBox');
-  let h='<h3>なにを する？</h3>';
+  let h='<h3>何をする？</h3>';
   for(const t of opts){
     const sk=t==='veg'?'veg_seed':'bean_seed';
-    h+='<button class="seedbtn" onclick="pickSeed(\''+t+'\')"><span style="font-size:24px">'+CROPMETA[t].em+'</span> '+RES[sk].n+'を まく（のこり'+state.res[sk]+'）</button>';
+    h+='<button class="seedbtn" onclick="pickSeed(\''+t+'\')"><span style="font-size:24px">'+CROPMETA[t].em+'</span> '+RES[sk].n+'をまく（残り'+state.res[sk]+'）</button>';
   }
-  if(canComp)h+='<button class="seedbtn" onclick="pickCompost()"><span style="font-size:24px">💩</span> たいひを まく（そだち2ばい）</button>';
+  if(canComp)h+='<button class="seedbtn" onclick="pickCompost()"><span style="font-size:24px">🟫</span> 堆肥をまく（育ち2倍）</button>';
   h+='<button class="seedbtn" onclick="closeSeedPick()">やめる</button>';
   box.innerHTML=h;
   document.getElementById('seedPick').style.display='flex';
@@ -1206,25 +1259,25 @@ function pickCompost(){
   if(!pl||(state.res.compost||0)<=0)return;
   setBlockLive(pl.x,pl.y-1,pl.z,B.TILLFERT);flushDirty();
   state.res.compost--;
-  toast('💩 たいひを まいた！さくもつが 2ばいで そだつよ');sfx(300,.07);updateHUD();
+  toast('🟫 堆肥をまいた！作物が2倍で育つよ');sfx(300,.07);updateHUD();
 }
 function closeSeedPick(){document.getElementById('seedPick').style.display='none';}
 function actTree(i){
   const t=chestnutTrees[i];
-  if(!state.treeFruit[i]){toast('🌰 みは あしたまで おやすみ');return;}
+  if(!state.treeFruit[i]){toast('🌰 実は明日までお休み');return;}
   state.treeFruit[i]=false;
   if(treeFruitMeshes[i])treeFruitMeshes[i].visible=false;
   addRes('chestnut',2);
   burst(t.x,t.base+2,t.z,0x8a4a1a);
-  toast('🌰 くりを 2こ ひろった！');sfxSeq([[520,.06],[700,.08]]);
+  toast('🌰 栗を2個拾った！');sfxSeq([[520,.06],[700,.08]]);
 }
 function actTuft(i){
-  if(state.tuftDay[i]===state.day){toast('🌿 ここの くさは あした はえるよ');return;}
+  if(state.tuftDay[i]===state.day){toast('🌿 ここの草は明日生えるよ');return;}
   state.tuftDay[i]=state.day;updateTufts();
   addRes('grass',1);
   const p=TUFT_SPOTS[i];
   burst(Math.floor(p[0]),topY(Math.floor(p[0]),Math.floor(p[1])),Math.floor(p[1]),0x3f9e2e);
-  toast('🌿 ぼくそうを とった！うしの えさに なるよ');sfx(420,.06);
+  toast('🌿 牧草を取った！牛のえさになるよ');sfx(420,.06);
 }
 function heartBurst(x,y,z){
   for(let i=0;i<5;i++){
@@ -1240,14 +1293,14 @@ function actCow(m){
   if(!c.fed&&feed){ // えさやり
     state.res[feed]--;c.fed=true;state.fedN++;
     mooSfx();
-    toast('🍴 '+RES[feed].em+' えさを あげた！おいしそうに たべてるよ');
+    toast('🍴 '+RES[feed].em+' えさをあげた！おいしそうに食べてるよ');
     heartBurst(m.position.x,m.position.y,m.position.z);
     updateHUD();return;
   }
   if(c.wagyu&&c.fed&&!c.milked){ // ぎゅうにゅう
     c.milked=true;state.milkN++;
     addRes('milk',1);
-    toast('🥛 ぎゅうにゅうが とれた！（📦しゅっかで うれるよ）');
+    toast('🥛 牛乳がとれた！（📦出荷で売れるよ）');
     sfxSeq([[660,.08,'sine'],[880,.1,'sine']]);
     return;
   }
@@ -1258,14 +1311,14 @@ function actCow(m){
   heartBurst(m.position.x,m.position.y,m.position.z);
   sfx(760,.07,'sine',.05);
   const hearts='❤'.repeat(c.heart||0)+'♡'.repeat(5-(c.heart||0));
-  if(!c.fed&&!feed)toast('💕 なでなで '+hearts+'（えさの 🌿ぼくそうも あげてね）');
-  else toast('💕 なでなで… なかよしど '+hearts);
+  if(!c.fed&&!feed)toast('💕 なでなで '+hearts+'（えさの🌿牧草もあげてね）');
+  else toast('💕 なでなで… 仲良し度 '+hearts);
 }
 function actNPC(n){
   n.lastTalk=performance.now()/1000;
   const line=(n.talkFlip=!n.talkFlip)?n.cfg.line:(n.cfg.line2||n.cfg.line);
   toast('💬 '+n.cfg.name+'「'+line+'」');
-  n.mesh.rotation.y=Math.atan2(player.x-n.mesh.position.x,player.z-n.mesh.position.z);
+  // v13: 向き直りはメインループでなめらかに行う（スナップ回転を廃止）
   sfx(600,.05,'sine',.04);
 }
 
@@ -1281,22 +1334,22 @@ function nearestAction(wx,wz){
   for(const m of cowMeshes){
     const c=m.userData.cow;
     let lb='💕 なでる';
-    if(!c.fed&&((state.res.grass||0)>0||(state.res.hay||0)>0))lb='🍴 えさを あげる';
-    else if(c.wagyu&&c.fed&&!c.milked)lb='🥛 ぎゅうにゅうを しぼる';
+    if(!c.fed&&((state.res.grass||0)>0||(state.res.hay||0)>0))lb='🍴 えさをあげる';
+    else if(c.wagyu&&c.fed&&!c.milked)lb='🥛 牛乳をしぼる';
     cand(m.position.x,m.position.z,1.6,lb,()=>actCow(m));
   }
   // NPC
-  for(const n of npcs)cand(n.mesh.position.x,n.mesh.position.z,1.6,'💬 はなす',()=>actNPC(n));
+  for(const n of npcs)cand(n.mesh.position.x,n.mesh.position.z,1.6,'💬 話す',()=>actNPC(n));
   // おみせ・しゅっかばこ
-  cand(SHOP_POS.x,SHOP_POS.z,1.9,'🛒 おみせを みる',()=>{menuTab='shop';openMenu();});
-  cand(SHIP_POS.x,SHIP_POS.z,1.9,'📦 しゅっかする',()=>{menuTab='sell';openMenu();});
+  cand(SHOP_POS.x,SHOP_POS.z,1.9,'🛒 お店を見る',()=>{menuTab='shop';openMenu();});
+  cand(SHIP_POS.x,SHIP_POS.z,1.9,'📦 出荷する',()=>{menuTab='sell';openMenu();});
   // 栗の木
   chestnutTrees.forEach((t,i)=>{
-    if(state.treeFruit[i])cand(t.x+0.5,t.z+0.5,2.0,'🌰 くりを とる',()=>actTree(i));
+    if(state.treeFruit[i])cand(t.x+0.5,t.z+0.5,2.0,'🌰 栗を取る',()=>actTree(i));
   });
   // 草むら
   TUFT_SPOTS.forEach((p,i)=>{
-    if(state.tuftDay[i]!==state.day)cand(p[0],p[1],1.3,'🌿 くさを とる',()=>actTuft(i));
+    if(state.tuftDay[i]!==state.day)cand(p[0],p[1],1.3,'🌿 草を取る',()=>actTuft(i));
   });
   // 作物・畑（クリック地点のセルと周囲1セル）
   const bx0=Math.floor(wx),bz0=Math.floor(wz);
@@ -1305,12 +1358,12 @@ function nearestAction(wx,wz){
     const ck=cropAt(bx,bz);
     if(ck){
       const c=state.crops[ck];
-      const lb=c.stage>=2?'🎉 しゅうかくする':(!c.w?'💧 みずを あげる':'🌱 そだてちゅう');
+      const lb=c.stage>=2?'🎉 収穫する':(!c.w?'💧 水をあげる':'🌱 育て中');
       cand(bx+0.5,bz+0.5,1.1,lb,()=>actCrop(ck));
       continue;
     }
     const pl=plotAt(bx,bz);
-    if(pl)cand(bx+0.5,bz+0.5,1.1,'🌱 たねを まく',()=>actPlot(pl));
+    if(pl)cand(bx+0.5,bz+0.5,1.1,'🌱 種をまく',()=>actPlot(pl));
   }
   return best;
 }
@@ -1321,7 +1374,7 @@ function doAction(){
   ac(); // iOSサウンド解禁
   const a=nearestAction(player.x,player.z);
   if(a&&a.d<REACH+0.6){a.fn();return;}
-  toast('ちかくに さわれるものが ないよ（はたけや うしに ちかづいてね）');
+  toast('近くに触れるものがないよ（畑や牛に近づいてね）');
 }
 // タップ位置のワールド座標で対象を探す。近ければ即実行/遠ければ歩いて実行
 function tapAt(wx,wz){
@@ -1367,18 +1420,18 @@ function buyBarn(){
   buildBarnBlocks(true);
   updateBarnSign();
   fanfare();
-  toast('🏠 ぎゅうしゃが たった！（かんせいひん）');
-  setTimeout(()=>toast('🐄 つぎは おみせで こうしを むかえよう'),1800);
+  toast('🏠 牛舎が建った！');
+  setTimeout(()=>toast('🐂 次はお店で子牛を迎えよう'),1800);
   updateHUD();renderMenu();
 }
 
 // ---------- 経済 / 生産（機械は買うと自動で加工） ----------
 function productionTick(){
   let msg=null;
-  if(state.has.polisher&&state.res.rice>0){const n=Math.min(state.res.rice,2);state.res.rice-=n;state.res.polishedrice+=n;msg='🍚 せいまいきが はくまいを '+n+'こ つくった';}
+  if(state.has.polisher&&state.res.rice>0){const n=Math.min(state.res.rice,2);state.res.rice-=n;state.res.polishedrice+=n;msg='🍚 精米機が白米を'+n+'個作った';}
   if(state.has.processor){
-    if(state.res.chestnut>0){const n=Math.min(state.res.chestnut,2);state.res.chestnut-=n;state.res.chestnutproc+=n;msg='🍡 くりスイーツが '+n+'こ できた';}
-    else if(state.res.veg>0){const n=Math.min(state.res.veg,2);state.res.veg-=n;state.res.foodproc+=n;msg='🍱 かこうしょくひんが '+n+'こ できた';}
+    if(state.res.chestnut>0){const n=Math.min(state.res.chestnut,2);state.res.chestnut-=n;state.res.chestnutproc+=n;msg='🍡 栗スイーツが'+n+'個できた';}
+    else if(state.res.veg>0){const n=Math.min(state.res.veg,2);state.res.veg-=n;state.res.foodproc+=n;msg='🍱 加工食品が'+n+'個できた';}
   }
   if(state.has.compostbarn&&state.res.manure>0&&(state.res.hay>0||state.res.grass>0)){
     const n=Math.min(state.res.manure,2,(state.res.hay||0)+(state.res.grass||0));
@@ -1386,7 +1439,7 @@ function productionTick(){
     const useGrass=Math.min(left,state.res.grass);state.res.grass-=useGrass;left-=useGrass;
     const useHay2=Math.min(left,state.res.hay);state.res.hay-=useHay2;left-=useHay2;
     const made=n-left;
-    if(made>0){state.res.manure-=made;state.res.compost+=made;msg='💩 たいひごやが たいひを '+made+'こ つくった';}
+    if(made>0){state.res.manure-=made;state.res.compost+=made;msg='🟫 堆肥小屋が堆肥を'+made+'個作った';}
   }
   if(msg)toast(msg);
   updateHUD();
@@ -1401,13 +1454,13 @@ function dayChange(){
     }else hungry++;
     c.fed=false;c.milked=false;
   }
-  if(grew>0)toast('🐄 うしが すくすく そだったよ（'+grew+'とう）');
-  if(hungry>0)toast('⚠ きのう えさを たべてない うしが '+hungry+'とう いるよ');
-  if(becameWagyu>0){fanfare();toast('🎉 りっぱな おとなの うしに なった！🥛ぎゅうにゅうも とれるし しゅっかも できるよ');refreshCowMeshes();}
+  if(grew>0)toast('🐂 牛がすくすく育ったよ（'+grew+'頭）');
+  if(hungry>0)toast('⚠ 昨日えさを食べていない牛が'+hungry+'頭いるよ');
+  if(becameWagyu>0){fanfare();toast('🎉 立派な大人の牛になった！🥛牛乳もとれるし出荷もできるよ');refreshCowMeshes();}
   regrowChestnuts();
   updateTufts();
   saveGame(false);
-  toast('☀ '+state.day+'にちめの あさ！');
+  toast('☀ '+state.day+'日目の朝！');
   updateHUD();
 }
 
@@ -1418,14 +1471,14 @@ function closeMenu(){document.getElementById('menu').style.display='none';saveGa
 function renderMenu(){
   const box=document.getElementById('menuBox');
   const tab=(id,label)=>'<div class="tab '+(menuTab===id?'on':'')+'" onclick="menuTab=\''+id+'\';renderMenu()">'+label+'</div>';
-  let html='<h2>🌾 たんばのうしょう <span style="font-size:13px;color:#8a6a45">￥'+state.money.toLocaleString()+'</span></h2>'+
-    '<div class="tabs">'+tab('shop','🛒 かう')+tab('sell','💰 うる')+tab('biz','📖 おしごと')+tab('inv','🎒 もちもの')+tab('set','⚙')+'</div>';
+  let html='<h2>🌾 丹波農商 <span style="font-size:13px;color:#8a6a45">￥'+state.money.toLocaleString()+'</span></h2>'+
+    '<div class="tabs">'+tab('shop','🛒 買う')+tab('sell','💰 売る')+tab('biz','📖 仕事')+tab('inv','🎒 持ち物')+tab('set','⚙')+'</div>';
   if(menuTab==='shop')html+=shopHTML();
   else if(menuTab==='sell')html+=sellHTML();
   else if(menuTab==='biz')html+=bizHTML();
   else if(menuTab==='inv')html+=invHTML();
   else html+=setHTML();
-  html+='<button class="close" onclick="closeMenu()">とじる</button>';
+  html+='<button class="close" onclick="closeMenu()">閉じる</button>';
   box.innerHTML=html;
 }
 function shopRow(em,name,desc,cost,ok,onbuy,owned){
@@ -1433,73 +1486,73 @@ function shopRow(em,name,desc,cost,ok,onbuy,owned){
     (owned?'<button class="buy" disabled>導入済</button>':'<button class="buy" '+(ok?'':'disabled')+' onclick="'+onbuy+'">￥'+cost.toLocaleString()+'</button>')+'</div>';
 }
 function shopHTML(){
-  let h='<p>ぜんぶ「かんせいひん」！かったら すぐ つかえるよ。</p>';
-  h+=shopRow('🥕','やさいのたね ×3','はたけに まいて やさいを そだてよう',100,state.money>=100,"buyRes('veg_seed',3,100)",false);
-  h+=shopRow('🫛','くろまめのたね ×3','たんばの めいぶつ くろまめ！',150,state.money>=150,"buyRes('bean_seed',3,150)",false);
-  h+=shopRow('🌱','いねのなえ ×3','たなだ(みずた)に うえてね',100,state.money>=100,"buyRes('rice_seed',3,100)",false);
-  h+=shopRow('🌿','ほしくさ ×3','うしの えさ。ぼくそうちでも とれるよ',150,state.money>=150,"buyRes('hay',3,150)",false);
-  h+=shopRow('🏠','ぎゅうしゃ','かったら すぐ たつよ！うしを かうのに ひつよう',1500,state.money>=1500,"buyBarn()",state.barnBuilt);
-  h+=shopRow('🐄','こうし（くろげわぎゅう）','まいにち えさで 3にちで おとなに',2000,state.money>=2000&&state.barnBuilt,"buyCattle()",false);
-  h+=shopRow('🌾','せいまいき','おこめが じどうで はくまいに（たかく うれる）',2000,state.money>=2000,"buyMachine('polisher',2000)",state.has.polisher);
-  h+=shopRow('🍱','かこうき','やさい・くりが じどうで しょくひんに',2500,state.money>=2500,"buyMachine('processor',2500)",state.has.processor);
-  h+=shopRow('💩','たいひごや','うしのふん＋くさ→たいひが じどうで できる',2000,state.money>=2000,"buyMachine('compostbarn',2000)",state.has.compostbarn);
-  h+=shopRow('🟩','はたけを ひろげる','はたけが 1くかく ふえるよ',800,state.money>=800,"buyLand()",false);
-  if(!state.barnBuilt)h+='<p style="color:#b5651d">🐄 こうしを かうには まず 🏠ぎゅうしゃを かってね（かったら すぐ たつよ）。</p>';
+  let h='<p>全部「完成品」！買ったらすぐ使えるよ。</p>';
+  h+=shopRow('🥕','野菜の種 ×3','畑にまいて野菜を育てよう',100,state.money>=100,"buyRes('veg_seed',3,100)",false);
+  h+=shopRow('🫛','黒豆の種 ×3','丹波の名物、黒豆！',150,state.money>=150,"buyRes('bean_seed',3,150)",false);
+  h+=shopRow('🌱','稲の苗 ×3','棚田(水田)に植えてね',100,state.money>=100,"buyRes('rice_seed',3,100)",false);
+  h+=shopRow('🌿','干し草 ×3','牛のえさ。牧草地でも取れるよ',150,state.money>=150,"buyRes('hay',3,150)",false);
+  h+=shopRow('🏠','牛舎','買ったらすぐ建つよ！牛を飼うのに必要',1500,state.money>=1500,"buyBarn()",state.barnBuilt);
+  h+=shopRow('🐂','子牛（黒毛和牛）','毎日えさをあげると3日で大人に',2000,state.money>=2000&&state.barnBuilt,"buyCattle()",false);
+  h+=shopRow('🌾','精米機','お米が自動で白米に（高く売れる）',2000,state.money>=2000,"buyMachine('polisher',2000)",state.has.polisher);
+  h+=shopRow('🍱','加工機','野菜・栗が自動で食品に',2500,state.money>=2500,"buyMachine('processor',2500)",state.has.processor);
+  h+=shopRow('🟫','堆肥小屋','牛のふん＋草→堆肥が自動でできる',2000,state.money>=2000,"buyMachine('compostbarn',2000)",state.has.compostbarn);
+  h+=shopRow('🟩','畑を広げる','畑が1区画増えるよ',800,state.money>=800,"buyLand()",false);
+  if(!state.barnBuilt)h+='<p style="color:#b5651d">🐂 子牛を買うにはまず🏠牛舎を買ってね（買ったらすぐ建つよ）。</p>';
   return h;
 }
 function sellHTML(){
-  let h='<p>そだてた ものを うって おかねに しよう！</p>';
+  let h='<p>育てたものを売ってお金にしよう！</p>';
   const wagyus=state.cows.filter(c=>c.wagyu);
   if(wagyus.length>0){
     const c=wagyus[0];
     const price=WAGYU_PRICE+(c.heart||0)*HEART_BONUS;
-    h+='<div class="row"><div class="em">🐂</div><div class="info"><b>おとなの うしを しゅっか</b><small>'+wagyus.length+'とう / なかよしど'+('❤'.repeat(c.heart||0)||'なし')+' ボーナスつき ￥'+price.toLocaleString()+'</small></div>'+
-      '<button class="buy orange" onclick="sellWagyu()">しゅっか</button></div>';
+    h+='<div class="row"><div class="em">🐂</div><div class="info"><b>大人の牛を出荷</b><small>'+wagyus.length+'頭 / 仲良し度'+('❤'.repeat(c.heart||0)||'なし')+' ボーナス付き ￥'+price.toLocaleString()+'</small></div>'+
+      '<button class="buy orange" onclick="sellWagyu()">出荷</button></div>';
   }
   let any=false;
   for(const k in PRICE){
     const have=state.res[k]||0;
     if(have<=0)continue;any=true;
     const m=RES[k]||{n:k,em:'📦'};
-    h+='<div class="row"><div class="em">'+m.em+'</div><div class="info"><b>'+m.n+'</b><small>￥'+PRICE[k]+' × '+have+'こ ＝ ￥'+(PRICE[k]*have).toLocaleString()+'</small></div>'+
-      '<button class="buy" onclick="sellAll(\''+k+'\')">ぜんぶ うる</button></div>';
+    h+='<div class="row"><div class="em">'+m.em+'</div><div class="info"><b>'+m.n+'</b><small>￥'+PRICE[k]+' × '+have+'個 ＝ ￥'+(PRICE[k]*have).toLocaleString()+'</small></div>'+
+      '<button class="buy" onclick="sellAll(\''+k+'\')">全部売る</button></div>';
   }
-  if(!any&&!wagyus.length)h+='<p style="color:#8a6a45">うれるものが まだ ないよ。はたけで そだてよう！</p>';
+  if(!any&&!wagyus.length)h+='<p style="color:#8a6a45">売れるものがまだないよ。畑で育てよう！</p>';
   return h;
 }
 function bizHTML(){
   const chk=b=>b?'✅':'⬜';
   const wagyus=state.cows.filter(c=>c.wagyu).length;
-  return '<p>たんばのうしょうの 7つの おしごと。ぜんぶ たいけんできるよ！</p>'+
-  '<div class="row"><div class="em">🌾</div><div class="info"><b>① おこめづくり・せいまい</b><small>たなだに いねを うえて しゅうかく→'+chk(state.has.polisher)+'せいまいきで はくまいに</small></div></div>'+
-  '<div class="row"><div class="em">🍱</div><div class="info"><b>② しょくひんかこう</b><small>'+chk(state.has.processor)+'かこうきで やさい・くりが おいしい しょくひんに</small></div></div>'+
-  '<div class="row"><div class="em">🐄</div><div class="info"><b>③ くろげわぎゅう</b><small>'+chk(state.barnBuilt)+'ぎゅうしゃで こうしを そだてる（いま'+state.cows.length+'とう・おとな'+wagyus+'とう）</small></div></div>'+
-  '<div class="row"><div class="em">💩</div><div class="info"><b>④ たいひづくり</b><small>'+chk(state.has.compostbarn)+'うしのふん＋くさ→たいひ。はたけに まくと 2ばい そだつ！</small></div></div>'+
-  '<div class="row"><div class="em">🌿</div><div class="info"><b>⑤ ぼくそう</b><small>ぼくそうちの くさを とって うしの えさに</small></div></div>'+
-  '<div class="row"><div class="em">🌰</div><div class="info"><b>⑥ くり</b><small>くりえんの 木を タップして くりを ひろおう</small></div></div>'+
-  '<div class="row"><div class="em">🥬</div><div class="info"><b>⑦ やさい</b><small>たねを まいて そだてて しゅっか！</small></div></div>'+
-  '<p style="color:#3a5a2a">🔁 ぐるぐる: くさ→うしの えさ→うしのふん→たいひ→はたけ→さくもつ→みんなの ごはん！</p>';
+  return '<p>丹波農商の7つの仕事。全部体験できるよ！</p>'+
+  '<div class="row"><div class="em">🌾</div><div class="info"><b>① お米作り・精米</b><small>棚田に稲を植えて収穫→'+chk(state.has.polisher)+'精米機で白米に</small></div></div>'+
+  '<div class="row"><div class="em">🍱</div><div class="info"><b>② 食品加工</b><small>'+chk(state.has.processor)+'加工機で野菜・栗がおいしい食品に</small></div></div>'+
+  '<div class="row"><div class="em">🐂</div><div class="info"><b>③ 黒毛和牛</b><small>'+chk(state.barnBuilt)+'牛舎で子牛を育てる（今'+state.cows.length+'頭・大人'+wagyus+'頭）</small></div></div>'+
+  '<div class="row"><div class="em">🟫</div><div class="info"><b>④ 堆肥作り</b><small>'+chk(state.has.compostbarn)+'牛のふん＋草→堆肥。畑にまくと2倍育つ！</small></div></div>'+
+  '<div class="row"><div class="em">🌿</div><div class="info"><b>⑤ 牧草</b><small>牧草地の草を取って牛のえさに</small></div></div>'+
+  '<div class="row"><div class="em">🌰</div><div class="info"><b>⑥ 栗</b><small>栗園の木をタップして栗を拾おう</small></div></div>'+
+  '<div class="row"><div class="em">🥬</div><div class="info"><b>⑦ 野菜</b><small>種をまいて育てて出荷！</small></div></div>'+
+  '<p style="color:#3a5a2a">🔁 循環: 草→牛のえさ→牛のふん→堆肥→畑→作物→みんなのごはん！</p>';
 }
 function invHTML(){
-  let h='<p>いま もっている もの。</p>';let any=false;
+  let h='<p>今持っているもの。</p>';let any=false;
   for(const k in state.res){
     if((state.res[k]||0)<=0)continue;any=true;
     const m=RES[k]||{n:k,em:'📦'};
     h+='<div class="row"><div class="em">'+m.em+'</div><div class="info"><b>'+m.n+'</b></div><b style="color:#5a3714">'+state.res[k]+'</b></div>';
   }
-  if(!any)h+='<p style="color:#8a6a45">まだ なにも ないよ。はたけや ぼくそうちに いってみよう！</p>';
+  if(!any)h+='<p style="color:#8a6a45">まだ何もないよ。畑や牧草地に行ってみよう！</p>';
   return h;
 }
 function setHTML(){
-  return '<p>せってい・セーブ</p>'+
-  '<div class="row"><div class="em">💾</div><div class="info"><b>セーブ</b><small>じどうでも 30びょうごとに ほぞんされるよ</small></div><button class="buy" onclick="saveGame(true)">ほぞん</button></div>'+
-  '<div class="row"><div class="em">🔊</div><div class="info"><b>こうかおん</b><small>おとの オン/オフ</small></div><button class="buy" onclick="toggleSound()">'+(state.sound?'ON':'OFF')+'</button></div>'+
-  '<div class="row"><div class="em">🗑</div><div class="info"><b>さいしょから</b><small>データを けして やりなおす（2かい おしてね）</small></div><button class="buy orange" onclick="resetGame()">リセット</button></div>'+
-  '<p style="font-size:11.5px">📖 あそびかた：がめんの すきなところに ゆびを おくと ジョイスティックが でて うごけるよ（おおきく たおすと はしる！）。ちょんと タップすると そこへ あるく。カメラは 2ほんめの ゆびで ドラッグ。はたけ・うし・木の ちかくで タップ か みぎしたの「つかう/とる」ボタン。PCは クリックいどう・WASD（Shiftで はしる）・E/スペース=つかう・M=メニュー。</p>';
+  return '<p>設定・セーブ</p>'+
+  '<div class="row"><div class="em">💾</div><div class="info"><b>セーブ</b><small>自動でも30秒ごとに保存されるよ</small></div><button class="buy" onclick="saveGame(true)">保存</button></div>'+
+  '<div class="row"><div class="em">🔊</div><div class="info"><b>効果音</b><small>音のオン/オフ</small></div><button class="buy" onclick="toggleSound()">'+(state.sound?'ON':'OFF')+'</button></div>'+
+  '<div class="row"><div class="em">🗑</div><div class="info"><b>最初から</b><small>データを消してやり直す（2回押してね）</small></div><button class="buy orange" onclick="resetGame()">リセット</button></div>'+
+  '<p style="font-size:11.5px">📖 遊び方：画面の好きな所に指を置くとジョイスティックが出て動けるよ（大きく倒すと走る！）。ちょんとタップするとそこへ歩く。カメラは2本目の指でドラッグ。畑・牛・木の近くでタップか右下の「使う/取る」ボタン。PCはクリック移動・WASD（Shiftで走る）・E/スペース=使う・M=メニュー。</p>';
 }
 let resetConfirm=0;
 function resetGame(){
-  if(resetConfirm===0){resetConfirm=1;toast('もう一回おすとリセットするよ！');setTimeout(()=>resetConfirm=0,3000);return;}
+  if(resetConfirm===0){resetConfirm=1;toast('もう一回押すとリセットするよ！');setTimeout(()=>resetConfirm=0,3000);return;}
   localStorage.removeItem(SAVE_KEY);location.reload();
 }
 function toggleSound(){state.sound=!state.sound;renderMenu();}
@@ -1509,13 +1562,13 @@ function buyMachine(k,c){
   if(k==='polisher')buildPolisher();
   if(k==='processor')buildProcessor();
   if(k==='compostbarn')buildCompostShed();
-  fanfare();toast('🎉 かんせいひんが とどいた！じどうで うごくよ');
+  fanfare();toast('🎉 完成品が届いた！自動で動くよ');
   updateHUD();renderMenu();
 }
 function buyLand(){
   if(state.money<800)return;state.money-=800;state.land++;
   expandFarm(state.land);flushDirty();
-  toast('🟩 はたけが ひろくなった！（+1くかく）');updateHUD();renderMenu();
+  toast('🟩 畑が広くなった！（+1区画）');updateHUD();renderMenu();
 }
 function expandFarm(n){
   const z0=36+((n-1)%3)*2;
@@ -1531,12 +1584,12 @@ function buyCattle(){
   state.money-=2000;
   const cow={growth:0,fed:false,wagyu:false,heart:0,milked:false,pettedDay:-1};
   state.cows.push(cow);spawnCowMesh(cow);
-  mooSfx();toast('🐄 こうしが やってきた！えさと なでなでで そだてよう');
+  mooSfx();toast('🐂 子牛がやってきた！えさとなでなでで育てよう');
   updateHUD();renderMenu();
 }
 function buyRes(k,n,c){
   if(state.money<c)return;state.money-=c;addRes(k,n);
-  toast(RES[k].em+' '+RES[k].n+'×'+n+'こ かったよ');sfx(500,.06);renderMenu();
+  toast(RES[k].em+' '+RES[k].n+'×'+n+'個買ったよ');sfx(500,.06);renderMenu();
 }
 function sellAll(k){
   const n=state.res[k]||0;if(n<=0)return;
@@ -1553,7 +1606,7 @@ function sellWagyu(){
   state.cows.splice(i,1);state.soldWagyu++;state.soldN++;
   state.money+=price;
   refreshCowMeshes();fanfare();
-  toast('🐂 うしを しゅっか！＋￥'+price.toLocaleString()+((c.heart||0)>0?'（なかよしボーナス✨）':''));
+  toast('🐂 牛を出荷！＋￥'+price.toLocaleString()+((c.heart||0)>0?'（仲良しボーナス✨）':''));
   updateHUD();renderMenu();
 }
 
@@ -1734,15 +1787,15 @@ function maybeRescue(){
 
 // ---------- エリア名 ----------
 function areaName(x,z){
-  if(x>=35&&x<=49&&z>=8&&z<=21)return'🌿 ぼくそうち';
-  if(x>=22&&x<=31&&z>=10&&z<=18)return state.barnBuilt?'🐄 ぎゅうしゃ':'🐄 ぎゅうしゃ よていち';
-  if(x>=24&&x<=31&&z>=23&&z<=29)return'🏭 かこうじょう';
-  if(x>=10&&x<=23&&z>=36)return'🌾 たなだ';
-  if(x>=38&&x<=46&&z>=30&&z<=37)return'💩 たいひば';
-  if(x>=26&&x<=33&&z>=36&&z<=42)return'🥬 やさいばたけ';
-  if(z<=13&&x>=8&&x<=26)return'🌰 くりえん';
-  if(Math.abs(x-riverX(z))<=2)return'🏞 かわ';
-  return'たんばのさと';
+  if(x>=35&&x<=49&&z>=8&&z<=21)return'🌿 牧草地';
+  if(x>=22&&x<=31&&z>=10&&z<=18)return state.barnBuilt?'🐂 牛舎':'🐂 牛舎予定地';
+  if(x>=24&&x<=31&&z>=23&&z<=29)return'🏭 加工場';
+  if(x>=10&&x<=23&&z>=36)return'🌾 棚田';
+  if(x>=38&&x<=46&&z>=30&&z<=37)return'🟫 堆肥場';
+  if(x>=26&&x<=33&&z>=36&&z<=42)return'🥬 野菜畑';
+  if(z<=13&&x>=8&&x<=26)return'🌰 栗園';
+  if(Math.abs(x-riverX(z))<=2)return'🏞 川';
+  return'丹波の里';
 }
 
 // ---------- メインループ ----------
@@ -1878,15 +1931,24 @@ function animate(ts){
     if(n.rig){n.mesh.position.y=ngy;n.rig.mixer.update(Math.min(0.1,dt));}
     else n.mesh.position.y=ngy+Math.sin(n.t*2)*0.02;
     const d=Math.hypot(n.mesh.position.x-player.x,n.mesh.position.z-player.z);
+    // v13: 近く(8ブロック)にいる間は常にプレイヤーの方へなめらかに向き直る。
+    //      旧版は会話時にスナップ回転→25秒間向き固定のため、回り込むと
+    //      背面(上着の縫い目・帽子ロゴで正面に見える)を向いたままになり
+    //      「顔だけ後ろ向き」に見えていた。顔と体は常にプレイヤーへ。
+    if(d<8){
+      const ty=Math.atan2(player.x-n.mesh.position.x,player.z-n.mesh.position.z);
+      let dd=ty-n.mesh.rotation.y;
+      while(dd>Math.PI)dd-=Math.PI*2;while(dd<-Math.PI)dd+=Math.PI*2;
+      n.mesh.rotation.y+=dd*Math.min(1,dt*6);
+    }
     if(d<3&&ts/1000-n.lastTalk>25){
       n.lastTalk=ts/1000;
       toast('💬 '+n.cfg.name+'「'+n.cfg.line+'」');
-      // プレイヤーの方を向く
-      n.mesh.rotation.y=Math.atan2(player.x-n.mesh.position.x,player.z-n.mesh.position.z);
     }
   }
   // --- カメラ（地形にめり込まないよう手前で止める） ---
-  const cdist=8.4,chh=3.6; // v11: 少し引きに(6.2→8.4)して周囲が見えるように
+  const cov=window.__v4dbg.camOver; // v13: 検証用オーバーライド({d,h})
+  const cdist=cov?cov.d:8.4,chh=cov?cov.h:3.6; // v11: 少し引きに(6.2→8.4)して周囲が見えるように
   const camX=player.x-Math.sin(camYaw)*cdist*Math.cos(camPitch*0.6);
   const camZ=player.z-Math.cos(camYaw)*cdist*Math.cos(camPitch*0.6);
   const camY=player.y+chh+camPitch*3.4;
@@ -1923,11 +1985,12 @@ function animate(ts){
   tickAcc+=dt;
   if(tickAcc>0.5){tickAcc=0;
     updateActHint(); // v10: 近くの対象をボタン上に表示
+    updateNearLabels(); // v13: 文字ラベルは近づいた時だけ表示
     const pl=areaName(Math.floor(player.x),Math.floor(player.z));
     const pe=document.getElementById('place');
     if(pe.textContent!==pl)pe.textContent=pl;
     const de=document.getElementById('day');
-    de.textContent=state.day+'にちめ・'+timeLabel();
+    de.textContent=state.day+'日目・'+timeLabel();
   }
   renderer.render(scene,camera);
 }
@@ -1974,12 +2037,12 @@ function startGame(saveData){
     bindControls();
     updateHUD();
     document.getElementById('loading').style.display='none';
-    toast('🌾 たんばのさとへ ようこそ！');
+    toast('🌾 丹波の里へようこそ！');
     if(IS_DESKTOP){
-      setTimeout(()=>toast('🖱 クリックした ばしょへ あるくよ / はたけや うしも クリックしてみてね'),2200);
+      setTimeout(()=>toast('🖱 クリックした場所へ歩くよ / 畑や牛もクリックしてみてね'),2200);
       showPCGuide();
     }else{
-      setTimeout(()=>toast('がめんの どこでも ゆびを おくと うごけるよ / カメラは 2ほんゆび'),2200);
+      setTimeout(()=>toast('画面のどこでも指を置くと動けるよ / カメラは2本指'),2200);
     }
     requestAnimationFrame(animate);
   },50);
@@ -1990,7 +2053,7 @@ function initTitle(){
   if(sv){
     const b=document.getElementById('contBtn');
     b.style.display='block';
-    b.textContent='💾 つづきから（'+sv.state.day+'にちめ）';
+    b.textContent='💾 続きから（'+sv.state.day+'日目）';
     b.addEventListener('click',()=>{ac();startGame(sv);});
   }
 }
