@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商クラフト v9 — 里山リアル牧場物語</title>
+<title>たんばのうしょう ぼくじょうものがたり v10</title>
 <link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -15,24 +15,12 @@
   .stat{padding:4px 10px;font-size:13px;font-weight:bold;color:#5a3714;}
   #money{color:#b5651d;}
   #quest{position:fixed;top:calc(44px + env(safe-area-inset-top));left:8px;z-index:10;padding:5px 10px;font-size:11.5px;color:#3a5a2a;max-width:70vw;pointer-events:none;background:rgba(255,253,245,.85);border:2px solid #7aa35a;border-radius:10px;font-weight:bold;}
-  #reticle{position:fixed;left:50%;top:44%;width:24px;height:24px;transform:translate(-50%,-50%);z-index:9;pointer-events:none;}
-  #reticle::before,#reticle::after{content:'';position:absolute;background:rgba(255,255,255,.85);box-shadow:0 0 2px #000;}
-  #reticle::before{left:10px;top:0;width:4px;height:24px;} #reticle::after{top:10px;left:0;height:4px;width:24px;}
   #joy{position:fixed;width:118px;height:118px;border-radius:50%;background:rgba(255,253,245,.18);border:3px solid rgba(255,253,245,.5);z-index:11;display:none;pointer-events:none;transform:translate(-50%,-50%);}
   #joyKnob{position:absolute;left:50%;top:50%;width:50px;height:50px;border-radius:50%;background:rgba(255,253,245,.85);border:3px solid #8a5a2b;transform:translate(-50%,-50%);}
   .abtn{position:fixed;z-index:12;border-radius:50%;font-weight:bold;color:#fff;user-select:none;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.15;}
-  #digBtn{right:16px;bottom:calc(150px + env(safe-area-inset-bottom));width:76px;height:76px;font-size:14px;background:#c0662e;border:4px solid #863f16;box-shadow:0 5px 0 #863f16;}
-  #useBtn{right:100px;bottom:calc(92px + env(safe-area-inset-bottom));width:70px;height:70px;font-size:13px;background:#3a8a3a;border:4px solid #1f5a1f;box-shadow:0 5px 0 #1f5a1f;}
-  #jumpBtn{right:20px;bottom:calc(64px + env(safe-area-inset-bottom));width:70px;height:70px;font-size:14px;background:#3a7ad8;border:4px solid #1f4f9a;box-shadow:0 5px 0 #1f4f9a;}
+  #useBtn{right:18px;bottom:calc(74px + env(safe-area-inset-bottom));width:96px;height:96px;font-size:19px;background:#3a8a3a;border:5px solid #1f5a1f;box-shadow:0 6px 0 #1f5a1f;}
   .abtn:active{transform:translateY(3px);box-shadow:0 2px 0 rgba(0,0,0,.4);}
-  #hotwrap{position:fixed;bottom:calc(6px + env(safe-area-inset-bottom));left:6px;right:6px;z-index:11;display:flex;justify-content:center;pointer-events:none;}
-  #hotbar{display:flex;gap:4px;overflow-x:auto;max-width:100%;padding:4px;pointer-events:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
-  #hotbar::-webkit-scrollbar{display:none;}
-  .slot{flex:0 0 auto;width:50px;height:54px;background:rgba(255,253,245,.9);border:3px solid #8a5a2b;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;color:#5a3714;font-weight:bold;position:relative;}
-  .slot.sel{border-color:#e8743f;box-shadow:0 0 0 2px #e8743f;background:#fff2df;}
-  .slot.gray{opacity:.42;}
-  .slot .ic{font-size:20px;line-height:1;} .slot .ct{position:absolute;right:2px;bottom:0px;font-size:10px;color:#a3672a;}
-  .slot .nm{font-size:8.5px;}
+  #actHint{position:fixed;right:16px;bottom:calc(180px + env(safe-area-inset-bottom));z-index:12;padding:5px 12px;font-size:13px;font-weight:bold;color:#3a5a2a;background:rgba(255,253,245,.92);border:2px solid #7aa35a;border-radius:12px;pointer-events:none;display:none;max-width:60vw;}
   #menuBtn{position:fixed;top:calc(6px + env(safe-area-inset-top));right:8px;z-index:13;}
   .mbtn{padding:7px 13px;font-size:14px;font-weight:bold;color:#fff;background:#e8743f;border:3px solid #a04515;border-radius:13px;box-shadow:0 4px 0 #a04515;cursor:pointer;}
   .mbtn:active{transform:translateY(2px);box-shadow:0 1px 0 #a04515;}
@@ -54,18 +42,19 @@
   .tst{background:rgba(50,30,10,.87);color:#fff;padding:7px 15px;border-radius:18px;font-size:13px;font-weight:bold;animation:pop .3s;text-align:center;max-width:100%;}
   @keyframes pop{from{transform:scale(.7);opacity:0;}}
   #loading{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:50;background:#8ecbe6;color:#5a3714;font-size:20px;font-weight:bold;text-align:center;padding:20px;}
-  #charSel{position:fixed;inset:0;background:linear-gradient(#8ecbe6,#cde7c0);z-index:60;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:16px;overflow:auto;}
-  #charSel h1{color:#3a5a2a;font-size:23px;text-align:center;line-height:1.3;}
-  #charSel .sub{color:#5a3714;font-size:12.5px;text-align:center;max-width:360px;line-height:1.55;}
-  .cards{display:flex;gap:9px;flex-wrap:wrap;justify-content:center;}
-  .card{width:146px;padding:10px;text-align:center;cursor:pointer;}
-  .card img{width:112px;height:120px;object-fit:contain;background:#fff;border:2px solid #e6d5b8;border-radius:12px;display:block;margin:0 auto;}
-  .card .pfall{width:112px;height:120px;background:#fff;border:2px solid #e6d5b8;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:50px;margin:0 auto;}
-  .card b{display:block;color:#5a3714;font-size:15px;margin-top:4px;} .card small{display:block;color:#8a6a45;font-size:10.5px;line-height:1.35;}
-  .card:active{transform:translateY(2px);}
+  #title{position:fixed;inset:0;background:linear-gradient(#8ecbe6,#cde7c0);z-index:60;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:16px;overflow:auto;text-align:center;}
+  #title h1{color:#3a5a2a;font-size:26px;line-height:1.35;text-shadow:0 2px 0 #fff;}
+  #title .sub{color:#5a3714;font-size:13px;max-width:380px;line-height:1.6;}
+  .bigbtn{width:min(300px,80vw);padding:16px;font-size:20px;font-weight:bold;color:#fff;background:#3a8a3a;border:4px solid #1f5a1f;border-radius:16px;box-shadow:0 5px 0 #1f5a1f;cursor:pointer;}
+  .bigbtn.orange{background:#e8743f;border-color:#a04515;box-shadow:0 5px 0 #a04515;}
+  .bigbtn:active{transform:translateY(3px);box-shadow:0 2px 0 rgba(0,0,0,.3);}
   #contBtn{display:none;}
-  .craftrow{display:flex;align-items:center;gap:8px;padding:8px 4px;border-bottom:1px solid #e6d5b8;}
-  .craftrow .em{font-size:24px;width:30px;text-align:center;}
+  #seedPick{position:fixed;inset:0;background:rgba(60,40,15,.5);z-index:35;display:none;align-items:center;justify-content:center;}
+  #seedPick .panel{width:min(340px,90vw);padding:16px;text-align:center;}
+  #seedPick h3{color:#5a3714;font-size:17px;margin-bottom:10px;}
+  .seedbtn{display:flex;align-items:center;gap:10px;width:100%;margin:6px 0;padding:12px;font-size:16px;font-weight:bold;color:#5a3714;background:#fff6e6;border:3px solid #c9a86f;border-radius:13px;cursor:pointer;}
+  .seedbtn:active{background:#ffe9c5;}
+  .seedbtn:disabled{opacity:.4;}
   #glbNote{position:fixed;left:8px;bottom:calc(150px + env(safe-area-inset-bottom));z-index:10;padding:4px 9px;font-size:11px;color:#5a3714;display:none;background:rgba(255,253,245,.8);border-radius:9px;border:2px solid #c9a86f;pointer-events:none;}
   #pcGuide{position:fixed;left:50%;top:calc(84px + env(safe-area-inset-top));transform:translateX(-50%);z-index:26;display:none;width:min(470px,92vw);padding:14px 16px 12px;opacity:1;transition:opacity .9s;}
   #pcGuide h3{color:#5a3714;font-size:16px;margin-bottom:8px;text-align:center;}
@@ -76,37 +65,34 @@
 </head>
 <body>
 <div id="game"></div>
-<div id="reticle"></div>
 <div id="top">
-  <div class="panel stat" id="money">￥5,000</div>
-  <div class="panel stat" id="day">1日目・朝</div>
-  <div class="panel stat" id="place">丹波の里</div>
+  <div class="panel stat" id="money">￥1,000</div>
+  <div class="panel stat" id="day">1にちめ・あさ</div>
+  <div class="panel stat" id="place">たんばのさと</div>
 </div>
 <div id="quest">🎯 …</div>
 <div id="menuBtn"><div class="mbtn" id="menuOpenBtn">☰ メニュー</div></div>
 <div id="joy"><div id="joyKnob"></div></div>
-<button class="abtn" id="digBtn">掘る<br>こわす</button>
-<button class="abtn" id="useBtn">使う<br>おく</button>
-<button class="abtn" id="jumpBtn">ジャンプ</button>
-<div id="hotwrap"><div id="hotbar"></div></div>
+<div id="actHint">🌱 たねをまく</div>
+<button class="abtn" id="useBtn">つかう<br>とる</button>
 <div id="glbNote">3Dキャラよみこみ中…</div>
 <div class="panel" id="pcGuide">
   <h3>🖥 PCそうさガイド</h3>
-  <div class="gl"><span class="gk">🖱 クリック</span>クリックした場所へ歩く</div>
-  <div class="gl"><span class="gk">WASD / 矢印キー</span>移動（Shiftおしながらで走る）</div>
-  <div class="gl"><span class="gk">🖱 ドラッグ</span>視点をまわす</div>
-  <div class="gl"><span class="gk">E / 右下ボタン</span>掘る・こわす</div>
-  <div class="gl"><span class="gk">Q / 右クリック</span>使う・おく</div>
-  <div class="gl"><span class="gk">スペース</span>ジャンプ　<span class="gk" style="min-width:auto;">M</span>メニュー</div>
-  <button id="pcGuideClose">とじる（しばらくすると自動で消えるよ）</button>
+  <div class="gl"><span class="gk">🖱 クリック</span>クリックした ばしょへ あるく</div>
+  <div class="gl"><span class="gk">WASD / 矢印キー</span>いどう（Shiftで はしる）</div>
+  <div class="gl"><span class="gk">🖱 ドラッグ</span>カメラを まわす</div>
+  <div class="gl"><span class="gk">E / スペース</span>つかう・とる（ちかくのもの）</div>
+  <div class="gl"><span class="gk">M</span>メニュー</div>
+  <button id="pcGuideClose">とじる（しばらくすると じどうで きえるよ）</button>
 </div>
 <div id="toast"></div>
 <div class="ov" id="menu"><div class="panel ovbox" id="menuBox"></div></div>
-<div id="charSel">
-  <h1>🌾 丹波農商クラフト<br><span style="font-size:14px;">〜里山リアル牧場物語〜</span></h1>
-  <div class="sub">丹波農商のリアル7事業（米・食品加工・黒毛和牛・堆肥・牧草・栗・野菜）を、マイクラみたいに掘って・建てて・育てて体験しよう！まずは相棒をえらんでね。</div>
-  <div class="cards" id="charCards"></div>
-  <button class="mbtn" id="contBtn">▶ つづきから</button>
+<div id="seedPick"><div class="panel" id="seedPickBox"></div></div>
+<div id="title">
+  <h1>🌾 たんばのうしょう<br>ぼくじょうものがたり</h1>
+  <div class="sub">たんばの さとやまで、たねを まいて・うしを そだてて・しゅっかしよう！<br>むずかしい そうさは なし。タップだけで あそべるよ 🐄🌰🍚</div>
+  <button class="bigbtn" id="newBtn">▶ はじめる</button>
+  <button class="bigbtn orange" id="contBtn">💾 つづきから</button>
 </div>
 <div id="loading">よみこみちゅう…</div>
 
@@ -115,7 +101,17 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
 <script>
 /* =====================================================================
-   丹波農商クラフト v9 — マイクラ×牧場物語で体験する丹波農商のリアル7事業
+   たんばのうしょう ぼくじょうものがたり v10 — やさしい牧場物語ふう
+   v10: 大改修（子ども向け・かんたん操作）
+   - 主人公＝Tripo製3Dの農家キッズ(char_min/hero_walk.glb / hero_idle.glb)。
+     キャラ選択タイトル廃止→「はじめる/つづきから」だけ。
+   - マイクラ要素を全廃: 掘る/クラフト/ブロック建築/ホットバー/道具なし。
+     建物(牛舎/機械)はショップで買うと完成状態でポンと出現。
+   - 遊び: 畑タップで たねまき→みずやり→しゅうかく。牛に えさ/なでる(ハート)/
+     ぎゅうにゅう。しゅっかでお金→ショップで拡張。7事業をやさしく体験。
+   - 操作: タップした場所へ歩く+近くの物はワンタップで文脈行動。
+     大きな「つかう/とる」ボタン。ジョイスティック/WASD/クリック移動はv9のまま。
+   - 世界/衝突判定/物理/昼夜/GLB読込はv9を継承(以下v9の説明)。
    v9: 当たり判定と移動物理の全面改善（すり抜け・気持ち悪い動きの修正）
    - プレイヤーに体の半径 PLAYER_R=0.32 を導入。円コライダーが跨ぐ全セルを
      チェックし、X軸→Z軸を別々に解決＝壁に半分めり込まず、壁沿いをスライド。
@@ -150,10 +146,19 @@
 'use strict';
 
 // ---------- キャラ定義 ----------
+// 主人公＝麦わら帽子の農家キッズ（Tripo製3D）。大人3人はお手伝いNPC。
+const HERO={walk:'char_min/hero_walk.glb',idle:'char_min/hero_idle.glb',
+  vox:{skin:'#f0c49a',cheek:'#ff8a6a',hair:'#4a3018',cap:'#e0b84f',shirt:'#4a7ad8',pants:'#3a5aa8',shoe:'#8a5a2b'}};
 const CHARS={
-  atsushi:{name:'あつし',role:'牧場担当',glb:'characters/atsushi.glb',skin:'#e8b98c',cheek:'#ff7a5a',hair:'#1c1712',cap:'#111',shirt:'#20386a',pants:'#2a2a2a',shoe:'#5a3a1a',desc:'黒毛和牛の世話がとくい',spot:'barn',line:'牛はあいじょうで育つんやで！干し草をたっぷりあげてな。'},
-  yusuke:{name:'ゆうすけ',role:'牧草・栗・米担当',glb:'characters/yusuke.glb',skin:'#e5b184',cheek:'#e88a6a',hair:'#6a4526',beard:true,shirt:'#3a3a3f',pants:'#33302a',shoe:'#2a2a2a',desc:'体力と情熱はだれにも負けない',spot:'pasture',line:'草をかって干し草にしよう！牛のエサにも堆肥のもとにもなるで。'},
-  naoto:{name:'なおと',role:'食品加工・堆肥担当',glb:'characters/naoto.glb',skin:'#eac199',cheek:'#e89a7a',hair:'#241a12',glasses:true,ponytail:true,shirt:'#2f5fa8',pants:'#22262a',shoe:'#333',desc:'土壌医。口ぐせは「科学」',spot:'compost',line:'牛のふん＋草で堆肥ができる。これが循環農業の科学や！'},
+  atsushi:{name:'あつしさん',role:'ぼくじょうの おにいさん',skin:'#e8b98c',cheek:'#ff7a5a',hair:'#1c1712',cap:'#111',shirt:'#20386a',pants:'#2a2a2a',shoe:'#5a3a1a',spot:'barn',
+    line:'うしは あいじょうで そだつんだよ！えさを あげて、いっぱい なでてあげてね🐄',
+    line2:'たんばのうしょうは くろげわぎゅうを たいせつに そだてているんだ。'},
+  yusuke:{name:'ゆうすけさん',role:'くさ・くり・おこめの おにいさん',skin:'#e5b184',cheek:'#e88a6a',hair:'#6a4526',beard:true,shirt:'#3a3a3f',pants:'#33302a',shoe:'#2a2a2a',spot:'pasture',
+    line:'ぼくそうちの くさを タップして あつめよう！うしの えさに なるよ🌿',
+    line2:'たなだの おこめと、きたの おかの くりも よろしくね🌰'},
+  naoto:{name:'なおとさん',role:'かこう・たいひの おにいさん',skin:'#eac199',cheek:'#e89a7a',hair:'#241a12',glasses:true,ponytail:true,shirt:'#2f5fa8',pants:'#22262a',shoe:'#333',spot:'compost',
+    line:'うしのふんと くさで「たいひ」が できるんだ。はたけに まくと 2ばい そだつよ！',
+    line2:'きかいを かうと おこめや くりが おいしい しょくひんに へんしんするよ🍱'},
 };
 
 // ---------- ブロック定義 ----------
@@ -177,30 +182,27 @@ const BI={
 
 // ---------- 資源メタ ----------
 const RES={
- wood:{n:'木材',em:'🪵'},stone:{n:'石',em:'🪨'},soil:{n:'土',em:'🟫'},grass:{n:'草',em:'🌿'},
- hay:{n:'干し草',em:'🟨'},rice:{n:'もみ米',em:'🌾'},polishedrice:{n:'白米',em:'🍚'},bean:{n:'黒豆',em:'🫘'},
- veg:{n:'野菜',em:'🥬'},chestnut:{n:'栗',em:'🌰'},chestnutproc:{n:'栗スイーツ',em:'🍡'},
- foodproc:{n:'加工食品',em:'🍱'},compost:{n:'堆肥',em:'💩'},manure:{n:'牛ふん',em:'🟤'},
- plank:{n:'板',em:'🟧'},fence:{n:'柵',em:'🚧'},
- rice_seed:{n:'稲の苗',em:'🌱'},bean_seed:{n:'黒豆の種',em:'🫛'},veg_seed:{n:'野菜の種',em:'🌰'},
- hoe:{n:'くわ',em:'⛏'},axe:{n:'斧',em:'🪓'},pick:{n:'つるはし',em:'⚒'},hammer:{n:'ハンマー',em:'🔨'},
+ grass:{n:'ぼくそう',em:'🌿'},hay:{n:'ほしくさ',em:'🟨'},
+ rice:{n:'おこめ(もみ)',em:'🌾'},polishedrice:{n:'はくまい',em:'🍚'},bean:{n:'くろまめ',em:'🫘'},
+ veg:{n:'やさい',em:'🥬'},chestnut:{n:'くり',em:'🌰'},chestnutproc:{n:'くりスイーツ',em:'🍡'},
+ foodproc:{n:'かこうしょくひん',em:'🍱'},compost:{n:'たいひ',em:'💩'},manure:{n:'うしのふん',em:'🟤'},
+ milk:{n:'ぎゅうにゅう',em:'🥛'},
+ rice_seed:{n:'いねのなえ',em:'🌱'},bean_seed:{n:'くろまめのたね',em:'🫛'},veg_seed:{n:'やさいのたね',em:'🥕'},
 };
-RES.veg_seed.em='🥕';
-const PRICE={wood:8,stone:6,soil:2,grass:3,hay:20,rice:60,polishedrice:150,bean:90,veg:45,chestnut:70,chestnutproc:200,foodproc:280,compost:120,plank:10,fence:8};
-const WAGYU_PRICE=45000;
+const PRICE={grass:5,hay:15,rice:80,polishedrice:200,bean:120,veg:80,chestnut:100,chestnutproc:250,foodproc:300,compost:100,milk:150};
+const WAGYU_PRICE=8000,HEART_BONUS=400;
 
 // ---------- ゲーム状態 ----------
-const SAVE_KEY='tamba_v3_save';
+const SAVE_KEY='tamba_v10_save'; // v10: 旧セーブと非互換（キー変更）
 let state=null;
 function freshState(){return{
-  money:5000,day:1,time:0.28,
-  res:{wood:0,stone:0,soil:0,grass:0,hay:3,rice:0,polishedrice:0,bean:0,veg:0,chestnut:0,chestnutproc:0,foodproc:0,compost:0,manure:0,plank:0,fence:0,veg_seed:2},
-  tools:{hoe:true,axe:true,pick:false,hammer:false},
-  has:{tractor:false,polisher:false,processor:false,compostbarn:false},
-  land:0,barnBuilt:false,placedPlanks:[],soldWagyu:0,
-  cows:[],// {growth,fed,wagyu}
-  selSlot:0,char:'atsushi',
-  edits:{},crops:{},fert:{},
+  v:10,money:1000,day:1,time:0.28,
+  res:{grass:2,hay:2,rice:0,polishedrice:0,bean:0,veg:0,chestnut:0,chestnutproc:0,foodproc:0,compost:0,manure:0,milk:0,rice_seed:2,bean_seed:0,veg_seed:3},
+  has:{polisher:false,processor:false,compostbarn:false},
+  land:0,barnBuilt:false,soldWagyu:0,
+  cows:[],// {growth,fed,wagyu,heart,milked,pettedDay}
+  edits:{},crops:{},treeFruit:{},tuftDay:{},
+  planted:0,wateredN:0,harvestN:0,soldN:0,milkN:0,fedN:0,pettedN:0,
   sound:true,questDone:0,
 };}
 
@@ -516,24 +518,35 @@ function chestnutTree(x,z){
   gset(x,b+4,z,B.CLEAF);
   chestnutTrees.push({x,z,base:b});
 }
+// v10: 栗はタップ収穫。木ごとに実(スプライト)を出し、収穫したら翌日復活
+const treeFruitMeshes=[];
+function initTreeFruits(){
+  chestnutTrees.forEach((t,i)=>{
+    const g=new THREE.Group();
+    const mat=new THREE.MeshLambertMaterial({color:0x8a4a1a});
+    [[-.7,.2,-.5],[.6,.5,.4],[0,.8,-.6],[.7,-.1,-.4],[-.5,.6,.6]].forEach(p=>{
+      const s=new THREE.Mesh(new THREE.SphereGeometry(0.17,7,6),mat);
+      s.position.set(p[0],p[1],p[2]);g.add(s);
+    });
+    g.position.set(t.x+0.5,t.base+3,t.z+0.5);
+    scene.add(g);treeFruitMeshes[i]=g;
+    if(state.treeFruit[i]===undefined)state.treeFruit[i]=true;
+    g.visible=!!state.treeFruit[i];
+  });
+}
 function regrowChestnuts(){
   let n=0;
-  for(const t of chestnutTrees){
-    for(let dx=-1;dx<=1;dx++)for(let dz=-1;dz<=1;dz++)for(let dy=0;dy<=1;dy++){
-      if(!(dx||dz||dy))continue;
-      const x=t.x+dx,y=t.base+2+dy,z=t.z+dz;
-      const k=key(x,y,z);
-      if(!grid[k]&&state.edits[k]===0){delete state.edits[k];gset(x,y,z,B.CLEAF);markDirty(x,z);n++;}
-    }
-  }
-  if(n>0){flushDirty();toast('🌰 栗の木に実がもどった！');}
+  chestnutTrees.forEach((t,i)=>{
+    if(!state.treeFruit[i]){state.treeFruit[i]=true;if(treeFruitMeshes[i])treeFruitMeshes[i].visible=true;n++;}
+  });
+  if(n>0)toast('🌰 くりの木に みが なったよ！');
 }
 
 // ---------- 作物 ----------
 const CROPMETA={
-  rice:{n:'稲',stages:[0x8fce6a,0xa9d465,0xe0c94e],time:26,yield:'rice',num:2,em:'🌾'},
-  bean:{n:'黒豆',stages:[0x7ec46a,0x4f8f3a,0x2f6b24],time:30,yield:'bean',num:2,em:'🫘'},
-  veg:{n:'野菜',stages:[0x9ed46a,0x6fbf4a,0x4faf3f],time:24,yield:'veg',num:2,em:'🥬'},
+  rice:{n:'いね',stages:[0x8fce6a,0xa9d465,0xe0c94e],time:26,yield:'rice',num:2,em:'🌾'},
+  bean:{n:'くろまめ',stages:[0x7ec46a,0x4f8f3a,0x2f6b24],time:30,yield:'bean',num:2,em:'🫘'},
+  veg:{n:'やさい',stages:[0x9ed46a,0x6fbf4a,0x4faf3f],time:22,yield:'veg',num:2,em:'🥬'},
 };
 const cropMeshes={};
 const cropGeo=(()=>{const g=new THREE.BufferGeometry();
@@ -558,8 +571,9 @@ function removeCropMesh(k){const m=cropMeshes[k];if(m){worldGroup.remove(m);dele
 function refreshCropMesh(k){removeCropMesh(k);if(state.crops[k])addCropMesh(k,state.crops[k]);}
 function plantCrop(x,y,z,type){
   const k=key(x,y,z);
-  if(state.crops[k]){toast('ここにはもう植えてあるよ');return false;}
-  state.crops[k]={type,stage:0,t:0};
+  if(state.crops[k]){toast('ここには もう うえてあるよ');return false;}
+  state.crops[k]={type,stage:0,t:0,w:0};
+  state.planted++;
   addCropMesh(k,state.crops[k]); return true;
 }
 function tickCrops(dt){
@@ -567,11 +581,10 @@ function tickCrops(dt){
     const c=state.crops[k];
     if(c.stage>=2)continue;
     const below=k.split(',').map(Number);
-    const fertK=key(below[0],below[1]-1,below[2]);
     const fert=getB(below[0],below[1]-1,below[2])===B.TILLFERT||(getB(below[0],below[1]-1,below[2])===B.WATER&&getB(below[0],below[1]-2,below[2])===B.TILLFERT);
-    c.t+=dt*(fert?2:1);
+    c.t+=dt*(fert?2:1)*(c.w?2:1); // v10: みずやりで2倍
     const meta=CROPMETA[c.type];
-    if(c.t>=meta.time){c.t=0;c.stage++;refreshCropMesh(k);}
+    if(c.t>=meta.time){c.t=0;c.stage++;c.w=0;refreshCropMesh(k);}
   }
 }
 function initialCrops(){
@@ -621,6 +634,12 @@ function addSign(x,z,text){
   const y=topY(Math.floor(x),Math.floor(z))+1;
   const s=labelSprite(text,3.4); s.position.set(x,y+1.6,z); decoGroup.add(s);
   addDecoCollider(x,z,0.28,y); // v9: 衝突
+  return s;
+}
+let barnSign=null;
+function updateBarnSign(){
+  if(barnSign){decoGroup.remove(barnSign);}
+  barnSign=addSign(25.5,17.5,state.barnBuilt?'🐄 ぎゅうしゃ':'🐄 ぎゅうしゃ よていち');
 }
 let tractorMesh=null,polisherMesh=null,processorMesh=null,compostShedMesh=null;
 function buildTractor(){
@@ -648,8 +667,8 @@ function machineBox(x,z,color,text){
   const s=labelSprite(text,3);s.position.set(x+0.5,y+1.9,z+0.5);decoGroup.add(s);
   return g;
 }
-function buildPolisher(){if(!polisherMesh)polisherMesh=machineBox(21,36,0xdedede,'🌾 精米機');}
-function buildProcessor(){if(!processorMesh)processorMesh=machineBox(32,22,0x4a7fb5,'🍱 食品加工機');}
+function buildPolisher(){if(!polisherMesh)polisherMesh=machineBox(21,36,0xdedede,'🌾 せいまいき');}
+function buildProcessor(){if(!processorMesh)processorMesh=machineBox(32,22,0x4a7fb5,'🍱 かこうき');}
 function buildCompostShed(){
   if(compostShedMesh)return;
   const g=new THREE.Group();
@@ -659,18 +678,59 @@ function buildCompostShed(){
   const y=topY(43,31)+1;
   g.position.set(42,y-1+0.02,30.5);decoGroup.add(g);compostShedMesh=g;
   [[42,30.5],[45,30.5],[42,33.5],[45,33.5]].forEach(p=>addDecoCollider(p[0],p[1],0.3,y)); // v9: 柱の衝突
-  const s=labelSprite('💩 堆肥舎',3);s.position.set(43.5,y+2.6,32);decoGroup.add(s);
+  const s=labelSprite('💩 たいひごや',3);s.position.set(43.5,y+2.6,32);decoGroup.add(s);
+}
+// v10: ショップ屋台と出荷箱（近づいてタップでメニュー）
+const SHOP_POS={x:24.5,z:32.5},SHIP_POS={x:30.5,z:32.5};
+function buildShopStand(){
+  const g=new THREE.Group();
+  const y=topY(Math.floor(SHOP_POS.x),Math.floor(SHOP_POS.z))+1;
+  const base=new THREE.Mesh(new THREE.BoxGeometry(1.6,1,1),new THREE.MeshLambertMaterial({color:0xb5843f}));base.position.y=0.5;base.castShadow=true;g.add(base);
+  const roof=new THREE.Mesh(new THREE.BoxGeometry(1.9,0.16,1.3),new THREE.MeshLambertMaterial({color:0xe8743f}));roof.position.y=1.8;roof.castShadow=true;g.add(roof);
+  [[-0.8,-0.5],[0.8,-0.5],[-0.8,0.5],[0.8,0.5]].forEach(p=>{const post=new THREE.Mesh(new THREE.BoxGeometry(0.1,1.8,0.1),new THREE.MeshLambertMaterial({color:0x8a5a2b}));post.position.set(p[0],0.9,p[1]);g.add(post);});
+  g.position.set(SHOP_POS.x,y-1+0.02,SHOP_POS.z);decoGroup.add(g);
+  addDecoCollider(SHOP_POS.x,SHOP_POS.z,0.9,y);
+  const s=labelSprite('🛒 おみせ',3);s.position.set(SHOP_POS.x,y+2.2,SHOP_POS.z);decoGroup.add(s);
+}
+function buildShipBox(){
+  const g=new THREE.Group();
+  const y=topY(Math.floor(SHIP_POS.x),Math.floor(SHIP_POS.z))+1;
+  const box=new THREE.Mesh(new THREE.BoxGeometry(1.3,0.9,1),new THREE.MeshLambertMaterial({color:0x7a5230}));box.position.y=0.45;box.castShadow=true;g.add(box);
+  const lid=new THREE.Mesh(new THREE.BoxGeometry(1.4,0.12,1.1),new THREE.MeshLambertMaterial({color:0x9a6b3a}));lid.position.y=0.95;g.add(lid);
+  g.position.set(SHIP_POS.x,y-1+0.02,SHIP_POS.z);decoGroup.add(g);
+  addDecoCollider(SHIP_POS.x,SHIP_POS.z,0.8,y);
+  const s=labelSprite('📦 しゅっかばこ',3);s.position.set(SHIP_POS.x,y+1.7,SHIP_POS.z);decoGroup.add(s);
+}
+// v10: 牧草地の草むら（タップで ぼくそう ゲット、翌日はえる）
+const TUFT_SPOTS=[[37.5,10.5],[40.5,12.5],[43.5,10.5],[46.5,13.5],[38.5,16.5],[42.5,18.5],[46.5,17.5],[44.5,15.5],[39.5,19.5],[47.5,11.5]];
+const tuftMeshes=[];
+function buildTufts(){
+  const mat=new THREE.MeshLambertMaterial({color:0x3f9e2e,side:THREE.DoubleSide});
+  TUFT_SPOTS.forEach((p,i)=>{
+    const g=new THREE.Group();
+    for(let j=0;j<3;j++){
+      const pl=new THREE.Mesh(new THREE.PlaneGeometry(0.55,0.6),mat);
+      pl.rotation.y=j*Math.PI/3;pl.position.y=0.3;g.add(pl);
+    }
+    const y=topY(Math.floor(p[0]),Math.floor(p[1]))+1;
+    g.position.set(p[0],y-1+1.0,p[1]);
+    scene.add(g);tuftMeshes[i]=g;
+  });
+}
+function updateTufts(){
+  TUFT_SPOTS.forEach((p,i)=>{if(tuftMeshes[i])tuftMeshes[i].visible=state.tuftDay[i]!==state.day;});
 }
 function buildDecor(){
   scene.add(decoGroup);
   hayRoll(38.5,11.5);hayRoll(41,17.2);hayRoll(45.5,10.3);hayRoll(44,19.5);
-  addSign(27.5,30.8,'丹波農商 加工場');
-  addSign(26.5,13.5,'🐄 牛舎よてい地');
-  addSign(13.5,36.2,'🌾 棚田');
-  addSign(42,30.2,'堆肥場');
-  addSign(17,11.8,'🌰 栗園');
-  addSign(37,14.5,'🌿 牧草地');
-  if(state.has.tractor)buildTractor();
+  addSign(27.5,30.8,'かこうじょう');
+  updateBarnSign();
+  addSign(13.5,36.2,'🌾 たなだ');
+  addSign(42,30.2,'たいひば');
+  addSign(17,11.8,'🌰 くりえん');
+  addSign(37,14.5,'🌿 ぼくそうち');
+  buildShopStand();buildShipBox();buildTufts();
+  buildTractor(); // かざり（のうかの トラクター）
   if(state.has.polisher)buildPolisher();
   if(state.has.processor)buildProcessor();
   if(state.has.compostbarn)buildCompostShed();
@@ -785,31 +845,33 @@ function rigPlay(rig,name,mag){
   rig.cur=name;
 }
 
-// ---------- プレイヤー ----------
-const player={x:27.5,y:4,z:32.5,vy:0,dir:0,onGround:true,char:'atsushi'};
+// ---------- プレイヤー（麦わら帽子の農家キッズ） ----------
+const HERO_H=1.25; // 子どもの身長
+const player={x:27.5,y:4,z:32.5,vy:0,dir:0,onGround:true};
 window.__v4dbg.player=player; // 検証用参照
 let avatar=null;// 全体グループ
 let avatarVox=null,avatarGlb=null,playerRig=null;
-function initAvatar(charKey){
+function initAvatar(){
   avatar=new THREE.Group();
-  avatarVox=buildVoxAvatar(CHARS[charKey]);
+  avatarVox=buildVoxAvatar(HERO.vox);
+  avatarVox.scale.setScalar(0.72); // 子どもサイズ
   avatar.add(avatarVox);
   scene.add(avatar);
-  loadPlayerGLB(charKey);
+  loadPlayerGLB();
 }
-// プレイヤー：walk.glb＋idle.glbを順に読み、完了したらボクセルと差し替え
-function loadPlayerGLB(charKey){
+// 主人公：hero_walk.glb＋hero_idle.glbを読み、完了したらボクセルと差し替え
+function loadPlayerGLB(){
   const note=document.getElementById('glbNote');
   if(!getLoader()){loadNPCGLBs();return;}
   note.style.display='block';
   (async()=>{
     try{
-      const wg=await loadGLB('char_min/'+charKey+'_walk.glb',x=>{
+      const wg=await loadGLB(HERO.walk,x=>{
         if(x.total)note.textContent='3Dキャラよみこみ中… '+Math.round(x.loaded/x.total*50)+'%';});
-      const ig=await loadGLB('char_min/'+charKey+'_idle.glb',x=>{
+      const ig=await loadGLB(HERO.idle,x=>{
         if(x.total)note.textContent='3Dキャラよみこみ中… '+(50+Math.round(x.loaded/x.total*50))+'%';});
       const model=wg.scene;
-      const wrap=rigWrap(model,CHAR_H);
+      const wrap=rigWrap(model,HERO_H);
       playerRig=makeAnimRig(model,wg.animations&&wg.animations[0],ig.animations&&ig.animations[0]);
       avatarGlb=wrap;
       if(avatarVox){avatar.remove(avatarVox);}
@@ -820,7 +882,7 @@ function loadPlayerGLB(charKey){
     }catch(e){
       note.style.display='none';
       window.__v4dbg.errors.push('player:'+(e&&e.message||e));
-      toast('3Dモデルが読めないのでボクセルキャラで遊ぶよ');
+      toast('3Dモデルが読めないので かわりのキャラで あそぶよ');
     }
     loadNPCGLBs(); // プレイヤーの後に順次（同時ロードを絞る）
   })();
@@ -843,12 +905,11 @@ function loadNPCGLBs(){
   })();
 }
 
-// ---------- NPC ----------
+// ---------- NPC（大人3人＝お手伝い） ----------
 const npcs=[];
-function initNPCs(playerChar){
-  const spots={barn:[25.5,15.5],pasture:[39.5,13.5],compost:[41.5,35.5]};
+function initNPCs(){
+  const spots={barn:[25.5,17.2],pasture:[39.5,13.5],compost:[41.5,35.5]};
   for(const k in CHARS){
-    if(k===playerChar)continue;
     const cfg=CHARS[k];
     const pos=spots[cfg.spot];
     const g=new THREE.Group();               // ホルダー（ラベル＋キャラ）
@@ -877,16 +938,12 @@ function cowMesh(wagyu){
   if(wagyu){g.scale.setScalar(1.25);}else{g.scale.setScalar(0.8);}
   return g;
 }
-function barnCenter(){
-  if(!state.placedPlanks.length)return[26.5,14.5];
-  let sx=0,sz=0,n=0;
-  for(const k of state.placedPlanks){const p=k.split(',').map(Number);sx+=p[0];sz+=p[2];n++;}
-  return[sx/n+0.5,sz/n+0.5];
-}
+function barnCenter(){return[26,13.5];} // v10: 牛舎は固定位置に完成品が建つ
 function spawnCowMesh(cow){
   const g=cowMesh(cow.wagyu);
   const[bx,bz]=barnCenter();
-  const x=bx+(Math.random()*6-3),z=bz+(Math.random()*6-3);
+  // v10: 牛舎のかべの上に乗らないよう、内側にスポーン
+  const x=bx+(Math.random()*3-1.5),z=bz+(Math.random()*3-1.5);
   const y=topY(Math.floor(x),Math.floor(z))+1;
   g.position.set(x,y,z);
   g.userData={cow,t:Math.random()*100,tx:x,tz:z,moo:Math.random()*30};
@@ -948,276 +1005,328 @@ function toast(msg){
 }
 function timeLabel(){
   const t=state.time;
-  if(t<0.17)return'朝';if(t<0.34)return'昼';if(t<0.5)return'夕方';return'夜';
+  if(t<0.17)return'あさ';if(t<0.34)return'ひる';if(t<0.5)return'ゆうがた';return'よる';
 }
 function updateHUD(){
   document.getElementById('money').textContent='￥'+state.money.toLocaleString();
-  document.getElementById('day').textContent=state.day+'日目・'+timeLabel();
-  renderHotbar();updateQuest();
+  document.getElementById('day').textContent=state.day+'にちめ・'+timeLabel();
+  updateQuest();
 }
-// クエスト
+// クエスト（やさしいチュートリアル：1つずつ）
 const QUESTS=[
- {t:'🎯 斧(おの)で木をこわして 木材を3こ集めよう',c:()=>state.res.wood>=3},
- {t:'🎯 メニュー→クラフトで 板を20まい作ろう（木材5こ）',c:()=>state.res.plank+state.placedPlanks.length>=20},
- {t:'🎯 牛舎よてい地に板を積んで牛舎を建てよう（板20＋屋根）',c:()=>state.barnBuilt},
- {t:'🎯 メニュー→購入で 子牛(黒毛和種)をむかえよう',c:()=>state.cows.length>0},
- {t:'🎯 草をかって干し草を作り、牛を育てよう（毎日エサ）',c:()=>state.cows.some(c=>c.wagyu)},
- {t:'🎯 育った和牛をメニュー→出荷でしゅっか！',c:()=>state.soldWagyu>0},
- {t:'🌟 7事業ぜんぶ体験しよう！（メニュー→7事業）',c:()=>false},
+ {t:'🎯 みなみの はたけを タップして たねを まこう',c:()=>state.planted>0},
+ {t:'🎯 めが でたら タップして みずを あげよう💧',c:()=>state.wateredN>0},
+ {t:'🎯 そだったら タップで しゅうかく！',c:()=>state.harvestN>0},
+ {t:'🎯 📦しゅっかばこ か メニューの💰うるで うろう',c:()=>state.soldN>0},
+ {t:'🎯 🛒おみせで「ぎゅうしゃ」を かおう（たてて くれるよ）',c:()=>state.barnBuilt},
+ {t:'🎯 🛒おみせで こうしを むかえよう🐄',c:()=>state.cows.length>0},
+ {t:'🎯 うしを タップ→えさやり＆なでなで しよう💕',c:()=>state.fedN>0&&state.pettedN>0},
+ {t:'🎯 おとなの うしから ぎゅうにゅうを とろう🥛',c:()=>state.milkN>0},
+ {t:'🌟 くり・たなだ・きかいも ためして 7つのおしごとを ぜんぶ たいけんしよう！',c:()=>false},
 ];
 function updateQuest(){
   while(state.questDone<QUESTS.length-1&&QUESTS[state.questDone].c()){
-    state.questDone++;fanfare();toast('✅ もくひょう達成！');
+    state.questDone++;fanfare();toast('✅ もくひょう たっせい！');
   }
   document.getElementById('quest').textContent=QUESTS[state.questDone].t;
 }
 
-// ---------- ホットバー ----------
-const HOTITEMS=['hoe','axe','pick','hammer','plank','fence','soil','stone','hay','rice_seed','bean_seed','veg_seed','compost'];
-function renderHotbar(){
-  const hb=document.getElementById('hotbar');hb.innerHTML='';
-  HOTITEMS.forEach((item,i)=>{
-    const s=document.createElement('div');
-    const isTool=!!RES[item]&&['hoe','axe','pick','hammer'].includes(item);
-    const owned=isTool?state.tools[item]:true;
-    s.className='slot'+(i===state.selSlot?' sel':'')+(owned?'':' gray');
-    const meta=RES[item]||{n:item,em:'❓'};
-    let ct='';
-    if(!isTool){
-      if(item==='rice_seed'||item==='bean_seed')ct='∞';
-      else ct=state.res[item]||0;
-    }
-    s.innerHTML='<div class="ic">'+meta.em+'</div><div class="nm">'+meta.n+'</div><div class="ct">'+ct+'</div>';
-    s.addEventListener('pointerdown',ev=>{ev.stopPropagation();state.selSlot=i;renderHotbar();sfx(700,.04,'sine',.03);});
-    hb.appendChild(s);
-  });
-}
-
-// ---------- レイキャスト ----------
-function raycastBlock(){
-  const dir=new THREE.Vector3();camera.getWorldDirection(dir);
-  const origin=camera.position.clone();
-  let prev=null;
-  for(let t=0.4;t<9;t+=0.06){
-    const p=origin.clone().add(dir.clone().multiplyScalar(t));
-    const bx=Math.floor(p.x),by=Math.floor(p.y),bz=Math.floor(p.z);
-    if(by<0||by>WH)continue;
-    const k=key(bx,by,bz);
-    if(prev&&prev[0]===bx&&prev[1]===by&&prev[2]===bz)continue;
-    if(grid[k])return{hit:[bx,by,bz],place:prev,type:grid[k]};
-    prev=[bx,by,bz];
+// ---------- v10: かんたん文脈アクション ----------
+// 「近くの対象」を1つ選び、状況に合った行動（まく/みずやり/しゅうかく/
+//  えさ/なでる/とる/はなす/かう/うる）をワンタップで実行する。
+function distP(x,z){return Math.hypot(x-player.x,z-player.z);}
+// その列(セル)の畑情報を返す: {kind:'paddy'|'dirt', x,y,z(作物を置く座標)} or null
+function plotAt(bx,bz){
+  if(!inWorld(bx,bz))return null;
+  for(let y=WH;y>=0;y--){
+    const t=getB(bx,y,bz);
+    if(!t)continue;
+    if(t===B.WATER&&(getB(bx,y-1,bz)===B.TILLED||getB(bx,y-1,bz)===B.TILLFERT))return{kind:'paddy',x:bx,y,z:bz};
+    if((t===B.TILLED||t===B.TILLFERT)&&!getB(bx,y+1,bz))return{kind:'dirt',x:bx,y:y+1,z:bz};
+    if(!BI[t].water)return null; // 別の固体が最上段
   }
   return null;
 }
-let hiBox=null;
-function initHighlight(){
-  hiBox=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1.02,1.02,1.02)),new THREE.LineBasicMaterial({color:0xffee55}));
-  hiBox.visible=false;scene.add(hiBox);
-}
-function updateHighlight(){
-  const r=raycastBlock();
-  if(r&&r.hit){hiBox.visible=true;hiBox.position.set(r.hit[0]+.5,r.hit[1]+.5,r.hit[2]+.5);}
-  else hiBox.visible=false;
+// 列にある作物キーを返す
+function cropAt(bx,bz){
+  for(const k in state.crops){
+    const p=k.split(',').map(Number);
+    if(p[0]===bx&&p[2]===bz)return k;
+  }
+  return null;
 }
 
-// ---------- 掘る ----------
+// ---------- v10: アクション実行（畑・作物・栗・草・牛・NPC） ----------
 function addRes(k,n){state.res[k]=(state.res[k]||0)+n;updateHUD();}
-function doDig(){
-  const r=raycastBlock();
-  if(!r||!r.hit){toast('とどかないよ（ブロックに近づいてね）');return;}
-  const[x,y,z]=r.hit;const t=r.type;const bi=BI[t];
-  // 作物：足元にある作物を優先収穫
-  const cropAboveK=key(x,y+1,z);
-  const cropHereK=key(x,y,z);
-  let cropK=null;
-  if(state.crops[cropHereK])cropK=cropHereK;else if(state.crops[cropAboveK])cropK=cropAboveK;
-  if(cropK){
-    const c=state.crops[cropK];const meta=CROPMETA[c.type];
-    if(c.stage>=2){
-      let n=meta.num;if(state.has.tractor)n*=2;
-      addRes(meta.yield,n);
-      toast(meta.em+' '+RES[meta.yield].n+'を'+n+'こ収穫！');
-      sfx(620,.08,'triangle');
-    }else{toast('まだ育ってないよ…');}
-    delete state.crops[cropK];removeCropMesh(cropK);
-    updateHUD();return;
-  }
-  if(bi.water){toast('水は掘れないよ');return;}
-  if(y===0){toast('これ以上は掘れない（岩ばん）');return;}
-  if(bi.need&&!state.tools[bi.need]){toast(RES[bi.need].n+'が必要だよ（クラフトで作ろう）');sfx(120,.1);return;}
-  // ドロップ
-  if(t===B.CLEAF){addRes('chestnut',1);toast('🌰 栗をゲット！');}
-  else if(t===B.GRASS){addRes('grass',1);addRes('soil',0);}
-  else if(t===B.LEAF){if(Math.random()<0.25){addRes('wood',1);toast('🪵 えだをひろった');}}
-  else if(bi.drop){
-    if(bi.tool&&!state.tools[bi.tool]){toast('🔨 ハンマーがないので素材はもどらない…');}
-    else addRes(bi.drop,1);
-  }
-  // プレイヤー設置板の記録から削除
-  if(t===B.PLANK){const i=state.placedPlanks.indexOf(key(x,y,z));if(i>=0)state.placedPlanks.splice(i,1);}
-  burst(x,y,z,bi.top);
-  if(t===B.GRASS)setBlockLive(x,y,z,B.SOIL);
-  else setBlockLive(x,y,z,0);
-  flushDirty();
-  sfx(t===B.STONE?160:200,.06);
-  updateHUD();
-}
-
-// ---------- 使う/置く ----------
-function playerIn(x,y,z){
-  // v9: プレイヤー円(体半径)が重なるセルには置けない（置いた瞬間に体がめり込むのを防ぐ）
-  const py=Math.floor(player.y);
-  if(y!==py&&y!==py+1)return false;
-  const cx=Math.max(x,Math.min(player.x,x+1)),cz=Math.max(z,Math.min(player.z,z+1));
-  const r=PLAYER_R+0.05;
-  return (cx-player.x)*(cx-player.x)+(cz-player.z)*(cz-player.z)<r*r;
-}
-function doUse(){
-  ac(); // iOSサウンド解禁
-  const item=HOTITEMS[state.selSlot];
-  const r=raycastBlock();
-  if(!r){toast('ブロックにレティクル(＋印)を合わせてね');return;}
-  // --- くわ：耕す ---
-  if(item==='hoe'){
-    if(!r.hit)return;
-    const[x,y,z]=r.hit;const t=grid[key(x,y,z)];
-    if((t===B.GRASS||t===B.SOIL)&&!getB(x,y+1,z)){
-      setBlockLive(x,y,z,B.TILLED);flushDirty();sfx(260,.07);toast('🟫 耕した！種をまけるよ');
-    }else if(t===B.TILLED||t===B.TILLFERT){toast('もう耕してあるよ');}
-    else toast('草か土をねらってね');
-    return;
-  }
-  if(item==='axe'||item==='pick'||item==='hammer'){doDig();return;}
-  // --- 種まき ---
-  if(item==='rice_seed'||item==='bean_seed'||item==='veg_seed'){
-    if(!r.hit)return;
-    const[x,y,z]=r.hit;const t=grid[key(x,y,z)];
-    if(item==='veg_seed'&&(state.res.veg_seed||0)<=0){toast('野菜の種がない（購入タブで買えるよ）');return;}
-    if(item==='rice_seed'){
-      if(t===B.WATER&&(getB(x,y-1,z)===B.TILLED||getB(x,y-1,z)===B.TILLFERT)){
-        if(plantCrop(x,y,z,'rice')){toast('🌱 稲を植えた！（水田）');sfx(520,.05);}
-      }else if((t===B.TILLED||t===B.TILLFERT)&&!getB(x,y+1,z)){
-        if(plantCrop(x,y+1,z,'rice')){toast('🌱 稲を植えた！');sfx(520,.05);}
-      }else toast('稲は水田(棚田)か耕地に植えてね');
-      return;
-    }
-    if((t===B.TILLED||t===B.TILLFERT)&&!getB(x,y+1,z)){
-      const type=item==='bean_seed'?'bean':'veg';
-      if(plantCrop(x,y+1,z,type)){
-        if(item==='veg_seed'){state.res.veg_seed--;}
-        toast(CROPMETA[type].em+' '+CROPMETA[type].n+'を植えた！');sfx(520,.05);
-      }
-    }else toast('くわで耕した耕地に植えてね');
-    updateHUD();return;
-  }
-  // --- 堆肥をまく ---
-  if(item==='compost'){
-    if((state.res.compost||0)<=0){toast('堆肥がないよ（堆肥舎で作ろう）');return;}
-    if(!r.hit)return;
-    const[x,y,z]=r.hit;const t=grid[key(x,y,z)];
-    if(t===B.TILLED){setBlockLive(x,y,z,B.TILLFERT);flushDirty();state.res.compost--;toast('💩 堆肥をまいた！作物が2倍速で育つ');sfx(300,.07);updateHUD();}
-    else if(t===B.TILLFERT)toast('もう堆肥がまいてあるよ');
-    else toast('耕地にまいてね');
-    return;
-  }
-  // --- ブロック設置 ---
-  const placeMap={plank:B.PLANK,fence:B.FENCE,soil:B.SOIL,stone:B.STONE,hay:B.HAY};
-  const bt=placeMap[item];
-  if(bt){
-    if((state.res[item]||0)<=0){toast(RES[item].n+'が足りない（クラフト/購入）');return;}
-    if(!r.place){toast('置く場所が見つからない');return;}
-    const[x,y,z]=r.place;
-    if(y<0||y>WH||!inWorld(x,z)){toast('そこには置けないよ');return;}
-    if(playerIn(x,y,z)){toast('自分の場所には置けない！一歩さがって');return;}
-    setBlockLive(x,y,z,bt);flushDirty();
-    state.res[item]--;
-    if(bt===B.PLANK){state.placedPlanks.push(key(x,y,z));checkBarn();}
-    sfx(330,.05);updateHUD();
-    return;
-  }
-  toast('この道具はまだ持っていないよ');
-}
-
-// ---------- 牛舎判定 ----------
-function checkBarn(){
-  if(state.barnBuilt)return;
-  const planks=state.placedPlanks;
-  if(planks.length<20)return;
-  // 屋根：下が2マス以上空いている板
-  let roof=0;
-  for(const k of planks){
-    const[x,y,z]=k.split(',').map(Number);
-    if(!getB(x,y+1,z)&&!getB(x,y-1,z)&&!getB(x,y-2,z))roof++;
-  }
-  if(roof>=5){
-    state.barnBuilt=true;
-    fanfare();
-    toast('🏠 牛舎かんせい！！メニュー→購入で子牛が買えるよ');
-    setTimeout(()=>toast('🐄 黒毛和種の子牛をむかえよう'),2000);
+function actCrop(k){
+  const c=state.crops[k];if(!c)return;
+  const meta=CROPMETA[c.type];
+  const p=k.split(',').map(Number);
+  if(c.stage>=2){ // しゅうかく
+    addRes(meta.yield,meta.num);
+    state.harvestN++;
+    burst(p[0],p[1],p[2],meta.stages[2]);
+    toast('🎉 '+meta.em+' '+RES[meta.yield].n+'を '+meta.num+'こ しゅうかく！');
+    sfxSeq([[620,.08,'triangle'],[880,.1,'triangle']]);
+    delete state.crops[k];removeCropMesh(k);
     updateHUD();
+  }else if(!c.w){ // みずやり
+    c.w=1;state.wateredN++;
+    burst(p[0],p[1],p[2],0x4fa8e8);
+    toast('💧 みずを あげた！ぐんぐん そだつよ');
+    sfx(500,.08,'sine',.05);
   }else{
-    if(planks.length===20)toast('板20まい！あとは屋根（下が空いた板5まい以上）を作ろう');
+    toast('🌱 そだてちゅう… もうすこし まってね');
   }
 }
+let pendingPlot=null;
+function actPlot(pl){
+  if(pl.kind==='paddy'){
+    if((state.res.rice_seed||0)>0){
+      if(plantCrop(pl.x,pl.y,pl.z,'rice')){state.res.rice_seed--;toast('🌱 いねを うえた！（たなだ）');sfx(520,.06);updateHUD();}
+    }else toast('🌱 いねのなえが ないよ（🛒おみせで かえるよ）');
+    return;
+  }
+  // 畑：もっている種から選ぶ
+  const opts=[];
+  if((state.res.veg_seed||0)>0)opts.push('veg');
+  if((state.res.bean_seed||0)>0)opts.push('bean');
+  const canComp=(state.res.compost||0)>0&&getB(pl.x,pl.y-1,pl.z)===B.TILLED;
+  if(!opts.length&&!canComp){toast('🥕 たねが ないよ（🛒おみせで かおう）');return;}
+  if(opts.length===1&&!canComp){plantSeed(pl,opts[0]);return;}
+  openSeedPick(pl,opts,canComp);
+}
+function plantSeed(pl,type){
+  const seedKey=type==='veg'?'veg_seed':'bean_seed';
+  if((state.res[seedKey]||0)<=0)return;
+  if(plantCrop(pl.x,pl.y,pl.z,type)){
+    state.res[seedKey]--;
+    toast(CROPMETA[type].em+' '+CROPMETA[type].n+'の たねを まいた！');
+    sfx(520,.06);updateHUD();
+  }
+}
+function openSeedPick(pl,opts,canComp){
+  pendingPlot=pl;
+  const box=document.getElementById('seedPickBox');
+  let h='<h3>なにを する？</h3>';
+  for(const t of opts){
+    const sk=t==='veg'?'veg_seed':'bean_seed';
+    h+='<button class="seedbtn" onclick="pickSeed(\''+t+'\')"><span style="font-size:24px">'+CROPMETA[t].em+'</span> '+RES[sk].n+'を まく（のこり'+state.res[sk]+'）</button>';
+  }
+  if(canComp)h+='<button class="seedbtn" onclick="pickCompost()"><span style="font-size:24px">💩</span> たいひを まく（そだち2ばい）</button>';
+  h+='<button class="seedbtn" onclick="closeSeedPick()">やめる</button>';
+  box.innerHTML=h;
+  document.getElementById('seedPick').style.display='flex';
+}
+function pickSeed(t){closeSeedPick();if(pendingPlot)plantSeed(pendingPlot,t);pendingPlot=null;}
+function pickCompost(){
+  closeSeedPick();
+  const pl=pendingPlot;pendingPlot=null;
+  if(!pl||(state.res.compost||0)<=0)return;
+  setBlockLive(pl.x,pl.y-1,pl.z,B.TILLFERT);flushDirty();
+  state.res.compost--;
+  toast('💩 たいひを まいた！さくもつが 2ばいで そだつよ');sfx(300,.07);updateHUD();
+}
+function closeSeedPick(){document.getElementById('seedPick').style.display='none';}
+function actTree(i){
+  const t=chestnutTrees[i];
+  if(!state.treeFruit[i]){toast('🌰 みは あしたまで おやすみ');return;}
+  state.treeFruit[i]=false;
+  if(treeFruitMeshes[i])treeFruitMeshes[i].visible=false;
+  addRes('chestnut',2);
+  burst(t.x,t.base+2,t.z,0x8a4a1a);
+  toast('🌰 くりを 2こ ひろった！');sfxSeq([[520,.06],[700,.08]]);
+}
+function actTuft(i){
+  if(state.tuftDay[i]===state.day){toast('🌿 ここの くさは あした はえるよ');return;}
+  state.tuftDay[i]=state.day;updateTufts();
+  addRes('grass',1);
+  const p=TUFT_SPOTS[i];
+  burst(Math.floor(p[0]),topY(Math.floor(p[0]),Math.floor(p[1])),Math.floor(p[1]),0x3f9e2e);
+  toast('🌿 ぼくそうを とった！うしの えさに なるよ');sfx(420,.06);
+}
+function heartBurst(x,y,z){
+  for(let i=0;i<5;i++){
+    const m=new THREE.Mesh(new THREE.SphereGeometry(0.09,6,5),new THREE.MeshBasicMaterial({color:0xff6a9a}));
+    m.position.set(x+(Math.random()-.5)*.6,y+1+Math.random()*.4,z+(Math.random()-.5)*.6);
+    m.userData={vx:(Math.random()-.5)*.03,vy:0.05,vz:(Math.random()-.5)*.03,life:32};
+    scene.add(m);particles.push(m);
+  }
+}
+function actCow(m){
+  const c=m.userData.cow;
+  const feed=(state.res.grass||0)>0?'grass':((state.res.hay||0)>0?'hay':null);
+  if(!c.fed&&feed){ // えさやり
+    state.res[feed]--;c.fed=true;state.fedN++;
+    mooSfx();
+    toast('🍴 '+RES[feed].em+' えさを あげた！おいしそうに たべてるよ');
+    heartBurst(m.position.x,m.position.y,m.position.z);
+    updateHUD();return;
+  }
+  if(c.wagyu&&c.fed&&!c.milked){ // ぎゅうにゅう
+    c.milked=true;state.milkN++;
+    addRes('milk',1);
+    toast('🥛 ぎゅうにゅうが とれた！（📦しゅっかで うれるよ）');
+    sfxSeq([[660,.08,'sine'],[880,.1,'sine']]);
+    return;
+  }
+  // なでる（なかよし度）
+  if(c.pettedDay!==state.day){
+    c.heart=Math.min(5,(c.heart||0)+1);c.pettedDay=state.day;state.pettedN++;
+  }
+  heartBurst(m.position.x,m.position.y,m.position.z);
+  sfx(760,.07,'sine',.05);
+  const hearts='❤'.repeat(c.heart||0)+'♡'.repeat(5-(c.heart||0));
+  if(!c.fed&&!feed)toast('💕 なでなで '+hearts+'（えさの 🌿ぼくそうも あげてね）');
+  else toast('💕 なでなで… なかよしど '+hearts);
+}
+function actNPC(n){
+  n.lastTalk=performance.now()/1000;
+  const line=(n.talkFlip=!n.talkFlip)?n.cfg.line:(n.cfg.line2||n.cfg.line);
+  toast('💬 '+n.cfg.name+'「'+line+'」');
+  n.mesh.rotation.y=Math.atan2(player.x-n.mesh.position.x,player.z-n.mesh.position.z);
+  sfx(600,.05,'sine',.04);
+}
 
-// ---------- クラフト ----------
-const RECIPES=[
- {id:'plank',out:['plank',4],em:'🟧',n:'板 ×4',need:{wood:1},d:'木材1 → 板4。建築の基本！'},
- {id:'fence',out:['fence',2],em:'🚧',n:'柵 ×2',need:{plank:1},d:'板1 → 柵2。牛の囲いに'},
- {id:'hay',out:['hay',1],em:'🟨',n:'干し草 ×1',need:{grass:3},d:'草3 → 干し草1。牛のエサ・堆肥の原料'},
- {id:'pick',out:['tool','pick'],em:'⚒',n:'つるはし',need:{wood:2,plank:2},d:'石が掘れるようになる'},
- {id:'hammer',out:['tool','hammer'],em:'🔨',n:'ハンマー',need:{stone:2,plank:2},d:'板・柵をこわしても素材がもどる'},
-];
-function canCraft(rc){
-  if(rc.out[0]==='tool'&&state.tools[rc.out[1]])return false;
-  for(const k in rc.need)if((state.res[k]||0)<rc.need[k])return false;
+// ---------- v10: 近くの対象さがし＆文脈アクション ----------
+// (wx,wz)に一番近い「さわれるもの」を返す {d,tx,tz,label,fn}
+function nearestAction(wx,wz){
+  let best=null;
+  const cand=(x,z,r,label,fn)=>{
+    const d=Math.hypot(x-wx,z-wz);
+    if(d<r&&(!best||d<best.d))best={d,tx:x,tz:z,label,fn};
+  };
+  // 牛
+  for(const m of cowMeshes){
+    const c=m.userData.cow;
+    let lb='💕 なでる';
+    if(!c.fed&&((state.res.grass||0)>0||(state.res.hay||0)>0))lb='🍴 えさを あげる';
+    else if(c.wagyu&&c.fed&&!c.milked)lb='🥛 ぎゅうにゅうを しぼる';
+    cand(m.position.x,m.position.z,1.6,lb,()=>actCow(m));
+  }
+  // NPC
+  for(const n of npcs)cand(n.mesh.position.x,n.mesh.position.z,1.6,'💬 はなす',()=>actNPC(n));
+  // おみせ・しゅっかばこ
+  cand(SHOP_POS.x,SHOP_POS.z,1.9,'🛒 おみせを みる',()=>{menuTab='shop';openMenu();});
+  cand(SHIP_POS.x,SHIP_POS.z,1.9,'📦 しゅっかする',()=>{menuTab='sell';openMenu();});
+  // 栗の木
+  chestnutTrees.forEach((t,i)=>{
+    if(state.treeFruit[i])cand(t.x+0.5,t.z+0.5,2.0,'🌰 くりを とる',()=>actTree(i));
+  });
+  // 草むら
+  TUFT_SPOTS.forEach((p,i)=>{
+    if(state.tuftDay[i]!==state.day)cand(p[0],p[1],1.3,'🌿 くさを とる',()=>actTuft(i));
+  });
+  // 作物・畑（クリック地点のセルと周囲1セル）
+  const bx0=Math.floor(wx),bz0=Math.floor(wz);
+  for(let dx=-1;dx<=1;dx++)for(let dz=-1;dz<=1;dz++){
+    const bx=bx0+dx,bz=bz0+dz;
+    const ck=cropAt(bx,bz);
+    if(ck){
+      const c=state.crops[ck];
+      const lb=c.stage>=2?'🎉 しゅうかくする':(!c.w?'💧 みずを あげる':'🌱 そだてちゅう');
+      cand(bx+0.5,bz+0.5,1.1,lb,()=>actCrop(ck));
+      continue;
+    }
+    const pl=plotAt(bx,bz);
+    if(pl)cand(bx+0.5,bz+0.5,1.1,'🌱 たねを まく',()=>actPlot(pl));
+  }
+  return best;
+}
+const REACH=2.5; // この距離なら その場で実行
+let pendingAct=null; // 遠い対象をタップ→歩いて着いたら実行
+// 大きな「つかう/とる」ボタン：自分の近くの対象に文脈行動
+function doAction(){
+  ac(); // iOSサウンド解禁
+  const a=nearestAction(player.x,player.z);
+  if(a&&a.d<REACH+0.6){a.fn();return;}
+  toast('ちかくに さわれるものが ないよ（はたけや うしに ちかづいてね）');
+}
+// タップ位置のワールド座標で対象を探す。近ければ即実行/遠ければ歩いて実行
+function tapAt(wx,wz){
+  const a=nearestAction(wx,wz);
+  if(!a)return false;
+  if(distP(a.tx,a.tz)<REACH){cancelMoveTarget();pendingAct=null;a.fn();return true;}
+  // 歩いてから実行
+  pendingAct=a;
+  pw.target={x:a.tx,z:a.tz};pw.stuck=0;pw.px=player.x;pw.pz=player.z;
+  showMoveMarker(Math.floor(a.tx),Math.floor(a.tz));
+  toast('▶ '+a.label);
+  sfx(560,.05,'sine',.03);
   return true;
 }
-function doCraft(id){
-  const rc=RECIPES.find(r=>r.id===id);
-  if(!rc||!canCraft(rc))return;
-  for(const k in rc.need)state.res[k]-=rc.need[k];
-  if(rc.out[0]==='tool'){state.tools[rc.out[1]]=true;toast('🛠 '+RES[rc.out[1]].n+'を作った！');}
-  else{addRes(rc.out[0],rc.out[1]);toast('🛠 '+rc.n+' をクラフト！');}
-  sfx(440,.07);sfx(660,.07);
+// 近くの対象名をボタン上に表示
+function updateActHint(){
+  const h=document.getElementById('actHint');
+  const a=nearestAction(player.x,player.z);
+  if(a&&a.d<REACH+0.6){h.textContent=a.label;h.style.display='block';}
+  else h.style.display='none';
+}
+
+// ---------- v10: 牛舎はショップで買うと完成状態で出現 ----------
+const BARN_X0=23,BARN_X1=28,BARN_Z0=10,BARN_Z1=15,BARN_FLOOR=2;
+function buildBarnBlocks(record){
+  for(let x=BARN_X0;x<=BARN_X1;x++)for(let z=BARN_Z0;z<=BARN_Z1;z++){
+    const wall=(x===BARN_X0||x===BARN_X1||z===BARN_Z0||z===BARN_Z1);
+    if(wall){
+      // 南がわに入口（2マス）
+      const door=(z===BARN_Z1&&(x===25||x===26));
+      if(!door){
+        setBlockLive(x,BARN_FLOOR+1,z,B.PLANK,record);
+        setBlockLive(x,BARN_FLOOR+2,z,B.PLANK,record);
+      }
+    }
+    setBlockLive(x,BARN_FLOOR+3,z,B.HAY,record); // 屋根
+  }
+  flushDirty();
+}
+function buyBarn(){
+  if(state.money<1500||state.barnBuilt)return;
+  state.money-=1500;state.barnBuilt=true;
+  buildBarnBlocks(true);
+  updateBarnSign();
+  fanfare();
+  toast('🏠 ぎゅうしゃが たった！（かんせいひん）');
+  setTimeout(()=>toast('🐄 つぎは おみせで こうしを むかえよう'),1800);
   updateHUD();renderMenu();
 }
 
-// ---------- 経済 / 生産 ----------
+// ---------- 経済 / 生産（機械は買うと自動で加工） ----------
 function productionTick(){
   let msg=null;
-  if(state.has.polisher&&state.res.rice>0){const n=Math.min(state.res.rice,2);state.res.rice-=n;state.res.polishedrice+=n;msg='🍚 精米機が白米を'+n+'こ作った';}
+  if(state.has.polisher&&state.res.rice>0){const n=Math.min(state.res.rice,2);state.res.rice-=n;state.res.polishedrice+=n;msg='🍚 せいまいきが はくまいを '+n+'こ つくった';}
   if(state.has.processor){
-    if(state.res.chestnut>0){const n=Math.min(state.res.chestnut,2);state.res.chestnut-=n;state.res.chestnutproc+=n;msg='🍡 栗スイーツが'+n+'こできた';}
-    else if(state.res.veg>0){const n=Math.min(state.res.veg,2);state.res.veg-=n;state.res.foodproc+=n;msg='🍱 加工食品が'+n+'こできた';}
+    if(state.res.chestnut>0){const n=Math.min(state.res.chestnut,2);state.res.chestnut-=n;state.res.chestnutproc+=n;msg='🍡 くりスイーツが '+n+'こ できた';}
+    else if(state.res.veg>0){const n=Math.min(state.res.veg,2);state.res.veg-=n;state.res.foodproc+=n;msg='🍱 かこうしょくひんが '+n+'こ できた';}
   }
   if(state.has.compostbarn&&state.res.manure>0&&(state.res.hay>0||state.res.grass>0)){
     const n=Math.min(state.res.manure,2,(state.res.hay||0)+(state.res.grass||0));
     let left=n;
-    // 草を優先で使う
     const useGrass=Math.min(left,state.res.grass);state.res.grass-=useGrass;left-=useGrass;
     const useHay2=Math.min(left,state.res.hay);state.res.hay-=useHay2;left-=useHay2;
     const made=n-left;
-    if(made>0){state.res.manure-=made;state.res.compost+=made;msg='💩 堆肥舎が堆肥を'+made+'こ作った';}
+    if(made>0){state.res.manure-=made;state.res.compost+=made;msg='💩 たいひごやが たいひを '+made+'こ つくった';}
   }
   if(msg)toast(msg);
   updateHUD();
 }
 function dayChange(){
   state.day++;
-  // 牛のエサやり＆成長
+  // 牛：えさを もらえた日だけ せいちょう
   let hungry=0,grew=0,becameWagyu=0;
   for(const c of state.cows){
-    if(state.res.hay>=2){state.res.hay-=2;c.fed=true;c.growth++;grew++;
-      if(!c.wagyu&&c.growth>=5){c.wagyu=true;becameWagyu++;}
-    }else{c.fed=false;hungry++;}
+    if(c.fed){c.growth++;grew++;
+      if(!c.wagyu&&c.growth>=3){c.wagyu=true;becameWagyu++;}
+    }else hungry++;
+    c.fed=false;c.milked=false;
   }
-  if(grew>0)toast('🐄 牛が干し草を食べて育った（'+grew+'頭）');
-  if(hungry>0)toast('⚠ 干し草不足！'+hungry+'頭がおなかペコペコ');
-  if(becameWagyu>0){fanfare();toast('🎉 立派な和牛に育った！出荷できるよ');refreshCowMeshes();}
+  if(grew>0)toast('🐄 うしが すくすく そだったよ（'+grew+'とう）');
+  if(hungry>0)toast('⚠ きのう えさを たべてない うしが '+hungry+'とう いるよ');
+  if(becameWagyu>0){fanfare();toast('🎉 りっぱな おとなの うしに なった！🥛ぎゅうにゅうも とれるし しゅっかも できるよ');refreshCowMeshes();}
   regrowChestnuts();
+  updateTufts();
   saveGame(false);
-  toast('☀ '+state.day+'日目の朝！');
+  toast('☀ '+state.day+'にちめの あさ！');
   updateHUD();
 }
 
@@ -1228,11 +1337,10 @@ function closeMenu(){document.getElementById('menu').style.display='none';saveGa
 function renderMenu(){
   const box=document.getElementById('menuBox');
   const tab=(id,label)=>'<div class="tab '+(menuTab===id?'on':'')+'" onclick="menuTab=\''+id+'\';renderMenu()">'+label+'</div>';
-  let html='<h2>🌾 丹波農商 <span style="font-size:13px;color:#8a6a45">￥'+state.money.toLocaleString()+'</span></h2>'+
-    '<div class="tabs">'+tab('shop','🛒 購入')+tab('sell','💴 出荷')+tab('craft','🛠 クラフト')+tab('biz','🏭 7事業')+tab('inv','🎒 倉庫')+tab('set','⚙')+'</div>';
+  let html='<h2>🌾 たんばのうしょう <span style="font-size:13px;color:#8a6a45">￥'+state.money.toLocaleString()+'</span></h2>'+
+    '<div class="tabs">'+tab('shop','🛒 かう')+tab('sell','💰 うる')+tab('biz','📖 おしごと')+tab('inv','🎒 もちもの')+tab('set','⚙')+'</div>';
   if(menuTab==='shop')html+=shopHTML();
   else if(menuTab==='sell')html+=sellHTML();
-  else if(menuTab==='craft')html+=craftHTML();
   else if(menuTab==='biz')html+=bizHTML();
   else if(menuTab==='inv')html+=invHTML();
   else html+=setHTML();
@@ -1244,76 +1352,69 @@ function shopRow(em,name,desc,cost,ok,onbuy,owned){
     (owned?'<button class="buy" disabled>導入済</button>':'<button class="buy" '+(ok?'':'disabled')+' onclick="'+onbuy+'">￥'+cost.toLocaleString()+'</button>')+'</div>';
 }
 function shopHTML(){
-  let h='<p>機械・農地・家畜・資材を買って事業を広げよう。</p>';
-  h+=shopRow('🌾','精米機','もみ米→白米に自動精米（価値2.5倍）',18000,state.money>=18000,"buyMachine('polisher',18000)",state.has.polisher);
-  h+=shopRow('🍱','食品加工機','野菜・栗を自動で加工食品に（高く売れる）',22000,state.money>=22000,"buyMachine('processor',22000)",state.has.processor);
-  h+=shopRow('💩','堆肥舎','牛ふん＋草/干し草→堆肥を自動製造',15000,state.money>=15000,"buyMachine('compostbarn',15000)",state.has.compostbarn);
-  h+=shopRow('🚜','トラクター','収穫量が2倍になる！',30000,state.money>=30000,"buyMachine('tractor',30000)",state.has.tractor);
-  h+=shopRow('🟩','農地の拡張','野菜畑のよこに耕地を1区画ふやす',8000,state.money>=8000,"buyLand()",false);
-  h+=shopRow('🐄','子牛（黒毛和種）','牛舎が必要。毎日干し草2で育てて和牛に',12000,state.money>=12000&&state.barnBuilt,"buyCattle()",false);
-  h+=shopRow('🟧','板 ×10','建築資材。クラフトでも作れる',1500,state.money>=1500,"buyRes('plank',10,1500)",false);
-  h+=shopRow('🚧','柵 ×10','囲い用。クラフトでも作れる',1000,state.money>=1000,"buyRes('fence',10,1000)",false);
-  h+=shopRow('🥕','野菜の種 ×5','耕地に植えて野菜を育てよう',300,state.money>=300,"buyRes('veg_seed',5,300)",false);
-  h+=shopRow('🥬','野菜を仕入れ ×1','市場から仕入れ→販売 or 加工（事業⑦）',30,state.money>=30,"buyRes('veg',1,30)",false);
-  if(!state.barnBuilt)h+='<p style="color:#b5651d">🔨 子牛を飼うには「牛舎よてい地」に板を20こ以上つみ、屋根を作って<b>牛舎</b>を完成させてね。</p>';
+  let h='<p>ぜんぶ「かんせいひん」！かったら すぐ つかえるよ。</p>';
+  h+=shopRow('🥕','やさいのたね ×3','はたけに まいて やさいを そだてよう',100,state.money>=100,"buyRes('veg_seed',3,100)",false);
+  h+=shopRow('🫛','くろまめのたね ×3','たんばの めいぶつ くろまめ！',150,state.money>=150,"buyRes('bean_seed',3,150)",false);
+  h+=shopRow('🌱','いねのなえ ×3','たなだ(みずた)に うえてね',100,state.money>=100,"buyRes('rice_seed',3,100)",false);
+  h+=shopRow('🌿','ほしくさ ×3','うしの えさ。ぼくそうちでも とれるよ',150,state.money>=150,"buyRes('hay',3,150)",false);
+  h+=shopRow('🏠','ぎゅうしゃ','かったら すぐ たつよ！うしを かうのに ひつよう',1500,state.money>=1500,"buyBarn()",state.barnBuilt);
+  h+=shopRow('🐄','こうし（くろげわぎゅう）','まいにち えさで 3にちで おとなに',2000,state.money>=2000&&state.barnBuilt,"buyCattle()",false);
+  h+=shopRow('🌾','せいまいき','おこめが じどうで はくまいに（たかく うれる）',2000,state.money>=2000,"buyMachine('polisher',2000)",state.has.polisher);
+  h+=shopRow('🍱','かこうき','やさい・くりが じどうで しょくひんに',2500,state.money>=2500,"buyMachine('processor',2500)",state.has.processor);
+  h+=shopRow('💩','たいひごや','うしのふん＋くさ→たいひが じどうで できる',2000,state.money>=2000,"buyMachine('compostbarn',2000)",state.has.compostbarn);
+  h+=shopRow('🟩','はたけを ひろげる','はたけが 1くかく ふえるよ',800,state.money>=800,"buyLand()",false);
+  if(!state.barnBuilt)h+='<p style="color:#b5651d">🐄 こうしを かうには まず 🏠ぎゅうしゃを かってね（かったら すぐ たつよ）。</p>';
   return h;
 }
 function sellHTML(){
-  let h='<p>集めた品を出荷して現金化！加工すると高く売れるよ。</p>';
-  const wagyus=state.cows.filter(c=>c.wagyu).length;
-  h+='<div class="row"><div class="em">🐂</div><div class="info"><b>和牛の出荷</b><small>育った和牛 '+wagyus+'頭 / ￥'+WAGYU_PRICE.toLocaleString()+'／頭</small></div>'+
-    '<button class="buy orange" '+(wagyus>0?'':'disabled')+' onclick="sellWagyu()">出荷する</button></div>';
+  let h='<p>そだてた ものを うって おかねに しよう！</p>';
+  const wagyus=state.cows.filter(c=>c.wagyu);
+  if(wagyus.length>0){
+    const c=wagyus[0];
+    const price=WAGYU_PRICE+(c.heart||0)*HEART_BONUS;
+    h+='<div class="row"><div class="em">🐂</div><div class="info"><b>おとなの うしを しゅっか</b><small>'+wagyus.length+'とう / なかよしど'+('❤'.repeat(c.heart||0)||'なし')+' ボーナスつき ￥'+price.toLocaleString()+'</small></div>'+
+      '<button class="buy orange" onclick="sellWagyu()">しゅっか</button></div>';
+  }
+  let any=false;
   for(const k in PRICE){
     const have=state.res[k]||0;
-    if(have<=0)continue;
+    if(have<=0)continue;any=true;
     const m=RES[k]||{n:k,em:'📦'};
-    h+='<div class="row"><div class="em">'+m.em+'</div><div class="info"><b>'+m.n+'</b><small>単価￥'+PRICE[k]+' × '+have+'こ ＝ ￥'+(PRICE[k]*have).toLocaleString()+'</small></div>'+
-      '<button class="buy" onclick="sellAll(\''+k+'\')">全部売る</button></div>';
+    h+='<div class="row"><div class="em">'+m.em+'</div><div class="info"><b>'+m.n+'</b><small>￥'+PRICE[k]+' × '+have+'こ ＝ ￥'+(PRICE[k]*have).toLocaleString()+'</small></div>'+
+      '<button class="buy" onclick="sellAll(\''+k+'\')">ぜんぶ うる</button></div>';
   }
-  if(!h.includes('全部売る'))h+='<p style="color:#8a6a45">売れる物がまだないよ。掘って・育てて・作ろう！</p>';
-  return h;
-}
-function craftHTML(){
-  let h='<p>集めた素材で道具や資材を作ろう。</p>';
-  for(const rc of RECIPES){
-    const needTxt=Object.entries(rc.need).map(([k,v])=>RES[k].em+RES[k].n+'×'+v+'（'+(state.res[k]||0)+'）').join(' ');
-    const owned=rc.out[0]==='tool'&&state.tools[rc.out[1]];
-    h+='<div class="craftrow"><div class="em">'+rc.em+'</div><div class="info" style="flex:1"><b style="color:#5a3714;font-size:14px">'+rc.n+'</b><small style="display:block;color:#8a6a45;font-size:11px">'+rc.d+'<br>材料: '+needTxt+'</small></div>'+
-      (owned?'<button class="buy" disabled>済</button>':'<button class="buy" '+(canCraft(rc)?'':'disabled')+' onclick="doCraft(\''+rc.id+'\')">作る</button>')+'</div>';
-  }
+  if(!any&&!wagyus.length)h+='<p style="color:#8a6a45">うれるものが まだ ないよ。はたけで そだてよう！</p>';
   return h;
 }
 function bizHTML(){
   const chk=b=>b?'✅':'⬜';
   const wagyus=state.cows.filter(c=>c.wagyu).length;
-  return '<p>丹波農商のリアル7事業。ぜんぶゲームで体験できるよ！</p>'+
-  '<div class="row"><div class="em">🌾</div><div class="info"><b>① 米の生産・精米</b><small>棚田に稲を植え収穫 → '+chk(state.has.polisher)+'精米機で白米に（白米￥150）</small></div></div>'+
-  '<div class="row"><div class="em">🍱</div><div class="info"><b>② 食品加工</b><small>'+chk(state.has.processor)+'加工機で野菜・栗を高付加価値の加工食品に</small></div></div>'+
-  '<div class="row"><div class="em">🐄</div><div class="info"><b>③ 黒毛和種の飼育</b><small>'+chk(state.barnBuilt)+'牛舎を建て子牛を育成（現在'+state.cows.length+'頭・和牛'+wagyus+'頭）</small></div></div>'+
-  '<div class="row"><div class="em">💩</div><div class="info"><b>④ 堆肥の製造</b><small>'+chk(state.has.compostbarn)+'牛ふん＋草→堆肥。畑にまくと成長2倍！販売もOK</small></div></div>'+
-  '<div class="row"><div class="em">🌿</div><div class="info"><b>⑤ 牧草の生産・加工</b><small>草をかる→クラフトで干し草に→牛のエサ・堆肥原料</small></div></div>'+
-  '<div class="row"><div class="em">🌰</div><div class="info"><b>⑥ 栗の生産・加工</b><small>栗園の葉をこわすと栗ゲット→加工機で栗スイーツに</small></div></div>'+
-  '<div class="row"><div class="em">🥬</div><div class="info"><b>⑦ 野菜の仕入れ・販売</b><small>種から栽培 or 購入タブで仕入れ→出荷で販売</small></div></div>'+
-  '<p style="color:#3a5a2a">🔁 循環: 草→牛のエサ→牛ふん→堆肥→畑の栄養→作物→ぜんぶ丹波の恵み！</p>';
+  return '<p>たんばのうしょうの 7つの おしごと。ぜんぶ たいけんできるよ！</p>'+
+  '<div class="row"><div class="em">🌾</div><div class="info"><b>① おこめづくり・せいまい</b><small>たなだに いねを うえて しゅうかく→'+chk(state.has.polisher)+'せいまいきで はくまいに</small></div></div>'+
+  '<div class="row"><div class="em">🍱</div><div class="info"><b>② しょくひんかこう</b><small>'+chk(state.has.processor)+'かこうきで やさい・くりが おいしい しょくひんに</small></div></div>'+
+  '<div class="row"><div class="em">🐄</div><div class="info"><b>③ くろげわぎゅう</b><small>'+chk(state.barnBuilt)+'ぎゅうしゃで こうしを そだてる（いま'+state.cows.length+'とう・おとな'+wagyus+'とう）</small></div></div>'+
+  '<div class="row"><div class="em">💩</div><div class="info"><b>④ たいひづくり</b><small>'+chk(state.has.compostbarn)+'うしのふん＋くさ→たいひ。はたけに まくと 2ばい そだつ！</small></div></div>'+
+  '<div class="row"><div class="em">🌿</div><div class="info"><b>⑤ ぼくそう</b><small>ぼくそうちの くさを とって うしの えさに</small></div></div>'+
+  '<div class="row"><div class="em">🌰</div><div class="info"><b>⑥ くり</b><small>くりえんの 木を タップして くりを ひろおう</small></div></div>'+
+  '<div class="row"><div class="em">🥬</div><div class="info"><b>⑦ やさい</b><small>たねを まいて そだてて しゅっか！</small></div></div>'+
+  '<p style="color:#3a5a2a">🔁 ぐるぐる: くさ→うしの えさ→うしのふん→たいひ→はたけ→さくもつ→みんなの ごはん！</p>';
 }
 function invHTML(){
-  let h='<p>倉庫の中身。</p>';let any=false;
+  let h='<p>いま もっている もの。</p>';let any=false;
   for(const k in state.res){
     if((state.res[k]||0)<=0)continue;any=true;
     const m=RES[k]||{n:k,em:'📦'};
     h+='<div class="row"><div class="em">'+m.em+'</div><div class="info"><b>'+m.n+'</b></div><b style="color:#5a3714">'+state.res[k]+'</b></div>';
   }
-  const tools=Object.entries(state.tools).filter(([k,v])=>v).map(([k])=>RES[k].em+RES[k].n).join('　');
-  h+='<p>🛠 道具: '+(tools||'なし')+'</p>';
-  if(!any)h+='<p style="color:#8a6a45">まだ何もないよ。掘って集めよう！</p>';
+  if(!any)h+='<p style="color:#8a6a45">まだ なにも ないよ。はたけや ぼくそうちに いってみよう！</p>';
   return h;
 }
 function setHTML(){
   return '<p>せってい・セーブ</p>'+
-  '<div class="row"><div class="em">💾</div><div class="info"><b>セーブ</b><small>自動でも30秒ごとに保存されるよ</small></div><button class="buy" onclick="saveGame(true)">保存する</button></div>'+
-  '<div class="row"><div class="em">🔊</div><div class="info"><b>効果音</b><small>音のオン/オフ</small></div><button class="buy" onclick="toggleSound()">'+(state.sound?'ON':'OFF')+'</button></div>'+
-  '<div class="row"><div class="em">🗑</div><div class="info"><b>データリセット</b><small>さいしょからやりなおす（2回おしてね）</small></div><button class="buy orange" onclick="resetGame()">リセット</button></div>'+
-  '<p style="font-size:11.5px">📖 あそびかた：左下スティックで移動 / 画面ドラッグで見回す / ＋印をブロックに合わせて「掘る」「使う」。ホットバーで道具や置く物をえらぼう。PCは🖱クリックした場所へ移動・WASD/矢印キー移動・Shiftで走る・E=掘る・Q/右クリック=使う・スペース=ジャンプ・M=メニュー。</p>';
+  '<div class="row"><div class="em">💾</div><div class="info"><b>セーブ</b><small>じどうでも 30びょうごとに ほぞんされるよ</small></div><button class="buy" onclick="saveGame(true)">ほぞん</button></div>'+
+  '<div class="row"><div class="em">🔊</div><div class="info"><b>こうかおん</b><small>おとの オン/オフ</small></div><button class="buy" onclick="toggleSound()">'+(state.sound?'ON':'OFF')+'</button></div>'+
+  '<div class="row"><div class="em">🗑</div><div class="info"><b>さいしょから</b><small>データを けして やりなおす（2かい おしてね）</small></div><button class="buy orange" onclick="resetGame()">リセット</button></div>'+
+  '<p style="font-size:11.5px">📖 あそびかた：がめんを タップすると そこへ あるくよ。はたけ・うし・木の ちかくで タップ か みぎしたの「つかう/とる」ボタンで なんでも できる。ひだりしたを タッチすると ジョイスティック。PCは クリックいどう・WASD・E/スペース=つかう・M=メニュー。</p>';
 }
 let resetConfirm=0;
 function resetGame(){
@@ -1324,15 +1425,16 @@ function toggleSound(){state.sound=!state.sound;renderMenu();}
 function buyMachine(k,c){
   if(state.money<c||state.has[k])return;
   state.money-=c;state.has[k]=true;
-  if(k==='tractor')buildTractor();if(k==='polisher')buildPolisher();
-  if(k==='processor')buildProcessor();if(k==='compostbarn')buildCompostShed();
-  fanfare();toast('🎉 導入しました！現地に設置されたよ');
+  if(k==='polisher')buildPolisher();
+  if(k==='processor')buildProcessor();
+  if(k==='compostbarn')buildCompostShed();
+  fanfare();toast('🎉 かんせいひんが とどいた！じどうで うごくよ');
   updateHUD();renderMenu();
 }
 function buyLand(){
-  if(state.money<8000)return;state.money-=8000;state.land++;
+  if(state.money<800)return;state.money-=800;state.land++;
   expandFarm(state.land);flushDirty();
-  toast('🟩 農地を広げた！（+1区画）');updateHUD();renderMenu();
+  toast('🟩 はたけが ひろくなった！（+1くかく）');updateHUD();renderMenu();
 }
 function expandFarm(n){
   const z0=36+((n-1)%3)*2;
@@ -1344,43 +1446,46 @@ function expandFarm(n){
   }
 }
 function buyCattle(){
-  if(state.money<12000||!state.barnBuilt)return;
-  state.money-=12000;
-  const cow={growth:0,fed:false,wagyu:false};
+  if(state.money<2000||!state.barnBuilt)return;
+  state.money-=2000;
+  const cow={growth:0,fed:false,wagyu:false,heart:0,milked:false,pettedDay:-1};
   state.cows.push(cow);spawnCowMesh(cow);
-  mooSfx();toast('🐄 子牛がやってきた！毎日 干し草2 を食べるよ');
+  mooSfx();toast('🐄 こうしが やってきた！えさと なでなでで そだてよう');
   updateHUD();renderMenu();
 }
 function buyRes(k,n,c){
   if(state.money<c)return;state.money-=c;addRes(k,n);
-  toast(RES[k].em+' '+RES[k].n+'×'+n+' を購入');sfx(500,.06);renderMenu();
+  toast(RES[k].em+' '+RES[k].n+'×'+n+'こ かったよ');sfx(500,.06);renderMenu();
 }
 function sellAll(k){
   const n=state.res[k]||0;if(n<=0)return;
   const g=n*PRICE[k];state.res[k]=0;state.money+=g;
+  state.soldN++;
   sfxSeq([[880,.06],[1100,.08]]);
-  toast('💴 ＋￥'+g.toLocaleString());updateHUD();renderMenu();
+  toast('💰 ＋￥'+g.toLocaleString()+'！');updateHUD();renderMenu();
 }
 function sellWagyu(){
   const i=state.cows.findIndex(c=>c.wagyu);
   if(i<0)return;
-  state.cows.splice(i,1);state.soldWagyu++;
-  state.money+=WAGYU_PRICE;
+  const c=state.cows[i];
+  const price=WAGYU_PRICE+(c.heart||0)*HEART_BONUS;
+  state.cows.splice(i,1);state.soldWagyu++;state.soldN++;
+  state.money+=price;
   refreshCowMeshes();fanfare();
-  toast('🐂 和牛を出荷！＋￥'+WAGYU_PRICE.toLocaleString());
+  toast('🐂 うしを しゅっか！＋￥'+price.toLocaleString()+((c.heart||0)>0?'（なかよしボーナス✨）':''));
   updateHUD();renderMenu();
 }
 
 // ---------- セーブ / ロード ----------
 function saveGame(showToast){
   try{
-    const data={v:3,state,player:{x:player.x,y:player.y,z:player.z,char:player.char}};
+    const data={v:10,state,player:{x:player.x,y:player.y,z:player.z}};
     localStorage.setItem(SAVE_KEY,JSON.stringify(data));
     if(showToast)toast('💾 セーブしたよ！');
   }catch(e){if(showToast)toast('セーブできなかった…');}
 }
 function loadSaveData(){
-  try{const s=localStorage.getItem(SAVE_KEY);if(!s)return null;const d=JSON.parse(s);if(d&&d.v===3)return d;}catch(e){}
+  try{const s=localStorage.getItem(SAVE_KEY);if(!s)return null;const d=JSON.parse(s);if(d&&d.v===10)return d;}catch(e){}
   return null;
 }
 function applyEdits(){
@@ -1436,6 +1541,9 @@ function clickToMove(sx,sy){
     if(prev&&prev[0]===bx&&prev[1]===by&&prev[2]===bz)continue;
     prev=[bx,by,bz];
     if(getB(bx,by,bz)&&inWorld(bx,bz)){
+      // v10: まず「さわれるもの」（畑/作物/牛/木/NPC/おみせ）を探して文脈行動
+      if(tapAt(p.x,p.z))return true;
+      pendingAct=null;
       // v7: 壁など「立てない柱」をクリックした時は、手前の空きセルを目的地にする
       let tx=bx,tz=bz;
       if(walkY(bx,bz,by+1.2)>WH&&lastAir&&inWorld(lastAir[0],lastAir[2])){tx=lastAir[0];tz=lastAir[2];} // v9: walkYで柵も壁扱い
@@ -1451,13 +1559,19 @@ function clickToMove(sx,sy){
 }
 function bindControls(){
   const joy=document.getElementById('joy'),knob=document.getElementById('joyKnob'),el=renderer.domElement;
+  const taps={}; // v10: タップ判定 {id:{x,y,moved}}
   const start=e=>{for(const t of(e.changedTouches||[e])){const id=t.identifier!==undefined?t.identifier:'m',x=t.clientX,y=t.clientY;
+    taps[id]={x,y,moved:false};
     if(!IS_DESKTOP&&x<innerWidth*0.45&&joyId===null){joyId=id;joy.style.display='block';joy.style.left=x+'px';joy.style.top=y+'px';knob.style.left='50%';knob.style.top='50%';joyVec={x:0,y:0};}
     else if(camId===null){camId=id;camLast={x,y};}}};
   const move=e=>{for(const t of(e.changedTouches||[e])){const id=t.identifier!==undefined?t.identifier:'m';
+    if(taps[id]&&Math.hypot(t.clientX-taps[id].x,t.clientY-taps[id].y)>9)taps[id].moved=true;
     if(id===joyId){const cx=parseFloat(joy.style.left),cy=parseFloat(joy.style.top);let dx=t.clientX-cx,dy=t.clientY-cy;const l=Math.hypot(dx,dy),m=46;if(l>m){dx=dx/l*m;dy=dy/l*m;}knob.style.left=(50+dx/m*42)+'%';knob.style.top=(50+dy/m*42)+'%';joyVec={x:dx/m,y:dy/m};}
     else if(id===camId){camYaw-=(t.clientX-camLast.x)*0.008;camPitch=Math.max(0.08,Math.min(1.2,camPitch+(t.clientY-camLast.y)*0.006));camLast={x:t.clientX,y:t.clientY};}}};
   const end=e=>{for(const t of(e.changedTouches||[e])){const id=t.identifier!==undefined?t.identifier:'m';
+    // v10: 動かさずに離した＝タップ→その場所へ歩く/さわる（左半分でも有効）
+    if(taps[id]&&!taps[id].moved)clickToMove(t.clientX,t.clientY);
+    delete taps[id];
     if(id===joyId){joyId=null;joy.style.display='none';joyVec={x:0,y:0};}
     if(id===camId)camId=null;}};
   el.addEventListener('touchstart',e=>{if(e.cancelable)e.preventDefault();ac();start(e);},{passive:false});
@@ -1465,16 +1579,14 @@ function bindControls(){
   el.addEventListener('touchend',e=>{if(e.cancelable)e.preventDefault();end(e);},{passive:false});
   el.addEventListener('touchcancel',e=>{end(e);},{passive:false});
   let mDown=null; // v6: ドラッグ(視点)とクリック(移動)の判別用
-  el.addEventListener('mousedown',e=>{mDown={x:e.clientX,y:e.clientY};start(e);});
-  addEventListener('mousemove',e=>{if(joyId!==null||camId!==null)move(e);});
-  addEventListener('mouseup',e=>{end(e);});
-  el.addEventListener('contextmenu',e=>{e.preventDefault();doUse();});
+  el.addEventListener('mousedown',e=>{mDown={x:e.clientX,y:e.clientY};if(camId===null){camId='m';camLast={x:e.clientX,y:e.clientY};}});
+  addEventListener('mousemove',e=>{if(camId==='m')move(e);});
+  addEventListener('mouseup',e=>{if(camId==='m')camId=null;});
+  el.addEventListener('contextmenu',e=>{e.preventDefault();doAction();});
   el.addEventListener('click',e=>{
-    if(IS_DESKTOP){
-      // PC: ドラッグでなければ「クリックした場所へ移動」
-      const drag=mDown?Math.hypot(e.clientX-mDown.x,e.clientY-mDown.y):0;
-      if(drag<5)clickToMove(e.clientX,e.clientY);
-    }else if(Math.abs(e.movementX||0)<3)doDig(); // モバイル従来: タップ=掘る
+    // PC: ドラッグでなければ「クリックした場所へ歩く/さわる」
+    const drag=mDown?Math.hypot(e.clientX-mDown.x,e.clientY-mDown.y):0;
+    if(drag<5){ac();clickToMove(e.clientX,e.clientY);}
   });
   document.addEventListener('gesturestart',e=>e.preventDefault());
   addEventListener('keydown',e=>{
@@ -1482,31 +1594,20 @@ function bindControls(){
     const ck=CODEKEY[e.code],k=ck||e.key.toLowerCase();
     keys[e.key.toLowerCase()]=true;
     if(ck)keys[ck]=true;
-    if(k==='e')doDig();
-    if(k==='q')doUse();
-    if(k===' '){e.preventDefault();jump();}
+    if(k==='e'||k==='q')doAction();
+    if(k===' '){e.preventDefault();doAction();}
     if(k==='m')openMenu();
-    const n=parseInt(e.key);if(n>=1&&n<=9){state.selSlot=n-1;renderHotbar();}
   });
   addEventListener('keyup',e=>{
     keys[e.key.toLowerCase()]=false;
     const ck=CODEKEY[e.code];if(ck)keys[ck]=false;
   });
-  const bind=(id,fn,repeat)=>{
-    const b=document.getElementById(id);
-    let iv=null;
-    const down=e=>{if(e.cancelable)e.preventDefault();ac();fn();if(repeat)iv=setInterval(fn,300);};
-    const up=e=>{if(iv){clearInterval(iv);iv=null;}};
-    b.addEventListener('touchstart',down,{passive:false});
-    b.addEventListener('touchend',up);b.addEventListener('touchcancel',up);
-    b.addEventListener('mousedown',down);b.addEventListener('mouseup',up);b.addEventListener('mouseleave',up);
-  };
-  bind('digBtn',doDig,true);
-  bind('useBtn',doUse,true);
-  bind('jumpBtn',jump,false);
+  const ub=document.getElementById('useBtn');
+  const ubDown=e=>{if(e.cancelable)e.preventDefault();ac();doAction();};
+  ub.addEventListener('touchstart',ubDown,{passive:false});
+  ub.addEventListener('mousedown',ubDown);
   document.getElementById('menuOpenBtn').addEventListener('click',openMenu);
 }
-function jump(){if(player.onGround){player.vy=6;player.onGround=false;sfx(400,.05,'sine',.03);}}
 
 // ---------- v7: 詰み防止レスキュー ----------
 // 入力しているのに3秒間まったく進めず、四方どこへも登れない「穴」に居る時だけ
@@ -1537,15 +1638,15 @@ function maybeRescue(){
 
 // ---------- エリア名 ----------
 function areaName(x,z){
-  if(x>=35&&x<=49&&z>=8&&z<=21)return'🌿 牧草地';
-  if(x>=22&&x<=31&&z>=10&&z<=18)return state.barnBuilt?'🐄 牛舎':'🔨 牛舎よてい地';
-  if(x>=24&&x<=31&&z>=23&&z<=29)return'🏭 加工場';
-  if(x>=10&&x<=23&&z>=36)return'🌾 棚田';
-  if(x>=38&&x<=46&&z>=30&&z<=37)return'💩 堆肥場';
-  if(x>=26&&x<=33&&z>=36&&z<=42)return'🥬 野菜畑';
-  if(z<=13&&x>=8&&x<=26)return'🌰 栗園';
-  if(Math.abs(x-riverX(z))<=2)return'🏞 川';
-  return'丹波の里';
+  if(x>=35&&x<=49&&z>=8&&z<=21)return'🌿 ぼくそうち';
+  if(x>=22&&x<=31&&z>=10&&z<=18)return state.barnBuilt?'🐄 ぎゅうしゃ':'🐄 ぎゅうしゃ よていち';
+  if(x>=24&&x<=31&&z>=23&&z<=29)return'🏭 かこうじょう';
+  if(x>=10&&x<=23&&z>=36)return'🌾 たなだ';
+  if(x>=38&&x<=46&&z>=30&&z<=37)return'💩 たいひば';
+  if(x>=26&&x<=33&&z>=36&&z<=42)return'🥬 やさいばたけ';
+  if(z<=13&&x>=8&&x<=26)return'🌰 くりえん';
+  if(Math.abs(x-riverX(z))<=2)return'🏞 かわ';
+  return'たんばのさと';
 }
 
 // ---------- メインループ ----------
@@ -1562,10 +1663,14 @@ function animate(ts){
   const manual=Math.hypot(ix,iz)>0.12; // 手動入力(キー/スティック)があるか
   // v6: クリック移動(point-to-walk)。手動入力があれば即キャンセル
   if(pw.target){
-    if(manual)cancelMoveTarget();
+    if(manual){cancelMoveTarget();pendingAct=null;}
     else{
       const tdx=pw.target.x-player.x,tdz=pw.target.z-player.z,tdl=Math.hypot(tdx,tdz);
-      if(tdl<0.6)cancelMoveTarget(); // 到着
+      // v10: 目的の「さわれるもの」に近づいたら自動で実行（タップ1回で歩く→やる）
+      if(pendingAct&&tdl<REACH-0.4){
+        const f=pendingAct.fn;pendingAct=null;cancelMoveTarget();f();
+      }
+      else if(tdl<0.6){cancelMoveTarget();if(pendingAct){const f=pendingAct.fn;pendingAct=null;f();}} // 到着
       else{
         const a=Math.atan2(tdx,tdz)-camYaw;
         ix=Math.sin(a);iz=Math.cos(a);
@@ -1573,7 +1678,7 @@ function animate(ts){
         const moved=Math.hypot(player.x-pw.px,player.z-pw.pz);
         if(moved<0.012)pw.stuck+=dt;else pw.stuck=0;
         pw.px=player.x;pw.pz=player.z;
-        if(pw.stuck>0.9)cancelMoveTarget();
+        if(pw.stuck>0.9){cancelMoveTarget();pendingAct=null;}
       }
     }
   }
@@ -1716,12 +1821,12 @@ function animate(ts){
   saveAcc+=dt;if(saveAcc>30){saveAcc=0;saveGame(false);}
   tickAcc+=dt;
   if(tickAcc>0.5){tickAcc=0;
-    updateHighlight();
+    updateActHint(); // v10: 近くの対象をボタン上に表示
     const pl=areaName(Math.floor(player.x),Math.floor(player.z));
     const pe=document.getElementById('place');
     if(pe.textContent!==pl)pe.textContent=pl;
     const de=document.getElementById('day');
-    de.textContent=state.day+'日目・'+timeLabel();
+    de.textContent=state.day+'にちめ・'+timeLabel();
   }
   renderer.render(scene,camera);
 }
@@ -1743,14 +1848,12 @@ function showPCGuide(){
   pcGuideTimer=setTimeout(hidePCGuide,14000); // 14秒で自動フェード
 }
 
-// ---------- 起動 ----------
-function startGame(charKey,saveData){
-  document.getElementById('charSel').style.display='none';
+// ---------- 起動（v10: キャラ選択なし。はじめる/つづきから だけ） ----------
+function startGame(saveData){
+  document.getElementById('title').style.display='none';
   document.getElementById('loading').style.display='flex';
   setTimeout(()=>{
     state=saveData?saveData.state:freshState();
-    if(!saveData){state.char=charKey;}
-    player.char=state.char;
     initThree();
     genWorld();
     applyEdits();
@@ -1759,49 +1862,35 @@ function startGame(charKey,saveData){
     if(!saveData)initialCrops();
     for(const k in state.crops)addCropMesh(k,state.crops[k]);
     buildDecor();
-    initHighlight();
+    initTreeFruits();
+    updateTufts();
     if(saveData&&saveData.player){player.x=saveData.player.x;player.y=saveData.player.y;player.z=saveData.player.z;}
     else{player.x=27.5;player.z=34.5;}
     player.y=topY(Math.floor(player.x),Math.floor(player.z))+1;
-    initAvatar(state.char);
-    initNPCs(state.char);
+    initAvatar();
+    initNPCs();
     refreshCowMeshes();
     bindControls();
     updateHUD();
     document.getElementById('loading').style.display='none';
-    toast(CHARS[state.char].name+'として丹波の里へようこそ！');
+    toast('🌾 たんばのさとへ ようこそ！');
     if(IS_DESKTOP){
-      setTimeout(()=>toast('🖱 クリックした場所へ歩くよ / WASD移動・Shiftで走る'),2200);
+      setTimeout(()=>toast('🖱 クリックした ばしょへ あるくよ / はたけや うしも クリックしてみてね'),2200);
       showPCGuide();
     }else{
-      setTimeout(()=>toast('左下タッチで移動 / 右ドラッグで見回そう'),2200);
+      setTimeout(()=>toast('タップした ばしょへ あるくよ / はたけや うしを タップしてみてね'),2200);
     }
     requestAnimationFrame(animate);
   },50);
 }
-function initCharSelect(){
-  const cc=document.getElementById('charCards');
-  Object.entries(CHARS).forEach(([k,c])=>{
-    const card=document.createElement('div');card.className='panel card';
-    // v7: 本物の登場人物の立ち絵PNGを表示（旧ボクセル人形のWebGLプレビューは廃止。
-    //     カード毎の余分なWebGLコンテキスト3つが無くなりiOSにも優しい）
-    const img=document.createElement('img');
-    img.src='char_min/portrait/'+k+'.png';
-    img.alt=c.name;img.draggable=false;
-    img.onerror=()=>{const f=document.createElement('div');f.className='pfall';f.textContent='👨‍🌾';img.replaceWith(f);};
-    card.appendChild(img);
-    const label=document.createElement('div');
-    label.innerHTML='<b>'+c.name+'</b><small>'+c.role+'</small><small>'+c.desc+'</small>';
-    card.appendChild(label);
-    card.addEventListener('click',()=>{ac();startGame(k,null);});
-    cc.appendChild(card);
-  });
+function initTitle(){
+  document.getElementById('newBtn').addEventListener('click',()=>{ac();startGame(null);});
   const sv=loadSaveData();
   if(sv){
     const b=document.getElementById('contBtn');
     b.style.display='block';
-    b.textContent='▶ つづきから（'+sv.state.day+'日目・'+CHARS[sv.state.char].name+'）';
-    b.addEventListener('click',()=>{ac();startGame(sv.state.char,sv);});
+    b.textContent='💾 つづきから（'+sv.state.day+'にちめ）';
+    b.addEventListener('click',()=>{ac();startGame(sv);});
   }
 }
 addEventListener('resize',()=>{
@@ -1810,7 +1899,7 @@ addEventListener('resize',()=>{
   renderer.setSize(innerWidth,innerHeight);
 });
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&state)saveGame(false);});
-window.addEventListener('load',initCharSelect);
+window.addEventListener('load',initTitle);
 </script>
 </body>
 </html>
