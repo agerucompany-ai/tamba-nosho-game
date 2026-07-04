@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商クラフト v7 — 里山リアル牧場物語</title>
+<title>丹波農商クラフト v9 — 里山リアル牧場物語</title>
 <link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -115,7 +115,19 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
 <script>
 /* =====================================================================
-   丹波農商クラフト v7 — マイクラ×牧場物語で体験する丹波農商のリアル7事業
+   丹波農商クラフト v9 — マイクラ×牧場物語で体験する丹波農商のリアル7事業
+   v9: 当たり判定と移動物理の全面改善（すり抜け・気持ち悪い動きの修正）
+   - プレイヤーに体の半径 PLAYER_R=0.32 を導入。円コライダーが跨ぐ全セルを
+     チェックし、X軸→Z軸を別々に解決＝壁に半分めり込まず、壁沿いをスライド。
+   - walkY(): 移動判定を統一。柵(B.FENCE)は乗り越え禁止(前で止まる)、
+     1ブロック(1.25)超の段差は壁として阻止。自然な1段の段差・斜面は
+     今までどおり歩いて登れる。屋根や木の下も歩ける。
+   - 飾りオブジェクトに円形コライダー: トラクター/精米機/加工機/堆肥舎の柱/
+     干し草ロール/看板/牛(現在位置)/NPC。すり抜け解消(スライドで回り込める)。
+   - 重力・接地を安定化: 着地でピタッと停止、1段の段差はなめらかに登る
+     (瞬間ワープしない)、柱の中に埋まったら地表へ自動復帰。
+   - 牛の徘徊も walkY 判定に変更(柵・壁を越えない)。
+   v8: 移動の向き修正（ジョイスティック/WASDの符号反転）
    v7: バグ修正
    - キャラ選択カードを本物の立ち絵PNG(char_min/portrait/)に差し替え。
      カード毎のWebGLプレビュー(3つの余分なWebGLコンテキスト)を廃止。
@@ -240,6 +252,70 @@ function surfY(x,z,py){
 }
 function topAny(x,z){for(let y=WH;y>=0;y--){if(getB(x,y,z))return y;}return -1;}
 function h2(x,z){const n=Math.sin(x*127.1+z*311.7)*43758.5453;return n-Math.floor(n);}
+
+// ---------- v9: 当たり判定（プレイヤー半径・柵・飾り物コライダー） ----------
+const PLAYER_R=0.32;  // プレイヤーの体の半径
+const STEP_UP=1.25;   // 歩いて登れる段差の高さ
+// 移動先セル(bx,bz)の「立てる床の高さ」を返す。壁・柵・登れない段差は 1e9=進入不可。
+// surfY と同じ「屋根・木の下でも下の床を探す」走査に、
+//  - 柵(B.FENCE)の上には立てない（フワッと乗り越えない）
+//  - 現在の足元(py)から STEP_UP を超える段差は壁扱い
+// を加えた移動判定専用版。
+function walkY(bx,bz,py){
+  if(!inWorld(bx,bz))return 1e9;
+  let sawSolid=false;
+  for(let y=Math.min(WH,Math.floor(py+1.35));y>=0;y--){
+    const t=getB(bx,y,bz);
+    if(t&&!BI[t].water){
+      sawSolid=true;
+      const a1=getB(bx,y+1,bz),a2=getB(bx,y+2,bz);
+      if((!a1||BI[a1].water)&&(!a2||BI[a2].water)){
+        if(t===B.FENCE)return 1e9;      // 柵は乗り越え禁止
+        const gy=y+1;
+        return gy-py>STEP_UP?1e9:gy;    // 高すぎる段差＝壁
+      }
+      // 頭上が詰まっている→さらに下の床を探す（屋根・木の下を歩ける）
+    }
+  }
+  return sawSolid?1e9:0;
+}
+// プレイヤー円(半径PLAYER_R)が跨ぐ全セルをチェック：どれかが壁なら進めない
+function circleBlockedGrid(nx,nz,py){
+  const r=PLAYER_R;
+  for(let bx=Math.floor(nx-r);bx<=Math.floor(nx+r);bx++)
+  for(let bz=Math.floor(nz-r);bz<=Math.floor(nz+r);bz++){
+    const cx=Math.max(bx,Math.min(nx,bx+1)),cz=Math.max(bz,Math.min(nz,bz+1));
+    if((cx-nx)*(cx-nx)+(cz-nz)*(cz-nz)>r*r)continue; // 円がこのセルに触れていない
+    if(walkY(bx,bz,py)>WH+1)return true;
+  }
+  return false;
+}
+// 飾りオブジェクト（機械・干し草ロール・看板・堆肥舎の柱）の円形コライダー
+const decoColliders=[]; // {x,z,r,y}
+function addDecoCollider(x,z,r,y){decoColliders.push({x,z,r,y:y||0});}
+// 円コライダー衝突。すでに重なっている場合(動く牛/NPCが乗ってきた等)は
+// 「離れる向きの移動」だけ許可して詰みを防ぐ
+function hitsCircle(nx,nz,ox,oz,cx,cz,r){
+  const rr=r+PLAYER_R,d2=(cx-nx)*(cx-nx)+(cz-nz)*(cz-nz);
+  if(d2>=rr*rr)return false;
+  const od2=(cx-ox)*(cx-ox)+(cz-oz)*(cz-oz);
+  return d2<=od2;
+}
+function circleBlockedDeco(nx,nz,ox,oz,py){
+  for(const c of decoColliders){
+    if(Math.abs(c.y-py)>2.4)continue;   // 別の高さに居るなら無視
+    if(hitsCircle(nx,nz,ox,oz,c.x,c.z,c.r))return true;
+  }
+  for(const m of cowMeshes){            // 牛（現在位置で判定）
+    if(Math.abs(m.position.y-py)>2)continue;
+    if(hitsCircle(nx,nz,ox,oz,m.position.x,m.position.z,(m.userData.cow&&m.userData.cow.wagyu)?0.8:0.55))return true;
+  }
+  for(const n of npcs){                 // NPC
+    if(Math.abs(n.mesh.position.y-py)>2)continue;
+    if(hitsCircle(nx,nz,ox,oz,n.mesh.position.x,n.mesh.position.z,0.35))return true;
+  }
+  return false;
+}
 
 // ---------- チャンク合成メッシュ ----------
 const chunks={};
@@ -539,10 +615,12 @@ function hayRoll(x,z){
   const band=new THREE.Mesh(new THREE.CylinderGeometry(0.62,0.62,0.14,10),new THREE.MeshLambertMaterial({color:0xb99432}));
   band.rotation.z=Math.PI/2;band.position.y=0.6;g.add(band);
   g.position.set(x,y-1+0.02,z);decoGroup.add(g);
+  addDecoCollider(x,z,0.75,y); // v9: 衝突
 }
 function addSign(x,z,text){
   const y=topY(Math.floor(x),Math.floor(z))+1;
   const s=labelSprite(text,3.4); s.position.set(x,y+1.6,z); decoGroup.add(s);
+  addDecoCollider(x,z,0.28,y); // v9: 衝突
 }
 let tractorMesh=null,polisherMesh=null,processorMesh=null,compostShedMesh=null;
 function buildTractor(){
@@ -557,6 +635,7 @@ function buildTractor(){
   const w4=w3.clone();w4.position.z=-0.5;g.add(w4);
   const y=topY(33,25)+1;g.position.set(33.5,y-1+0.02,25.5);g.rotation.y=-0.5;
   decoGroup.add(g);tractorMesh=g;
+  addDecoCollider(33.5,25.5,1.05,y); // v9: 衝突
   const s=labelSprite('🚜 トラクター',2.6);s.position.set(33.5,y+1.7,25.5);g.userData={sign:s};decoGroup.add(s);
 }
 function machineBox(x,z,color,text){
@@ -565,6 +644,7 @@ function machineBox(x,z,color,text){
   const base=new THREE.Mesh(new THREE.BoxGeometry(1.4,1.2,1.2),new THREE.MeshLambertMaterial({color}));base.position.y=0.6;base.castShadow=true;g.add(base);
   const hop=new THREE.Mesh(new THREE.BoxGeometry(1,0.6,0.9),new THREE.MeshLambertMaterial({color:0x888888}));hop.position.y=1.4;g.add(hop);
   g.position.set(x+0.5,y-1+0.02,z+0.5);decoGroup.add(g);
+  addDecoCollider(x+0.5,z+0.5,0.9,y); // v9: 衝突
   const s=labelSprite(text,3);s.position.set(x+0.5,y+1.9,z+0.5);decoGroup.add(s);
   return g;
 }
@@ -578,6 +658,7 @@ function buildCompostShed(){
   const roof=new THREE.Mesh(new THREE.BoxGeometry(4,0.2,4),new THREE.MeshLambertMaterial({color:0x9a5f2f}));roof.position.set(1.5,2.5,1.5);roof.castShadow=true;g.add(roof);
   const y=topY(43,31)+1;
   g.position.set(42,y-1+0.02,30.5);decoGroup.add(g);compostShedMesh=g;
+  [[42,30.5],[45,30.5],[42,33.5],[45,33.5]].forEach(p=>addDecoCollider(p[0],p[1],0.3,y)); // v9: 柱の衝突
   const s=labelSprite('💩 堆肥舎',3);s.position.set(43.5,y+2.6,32);decoGroup.add(s);
 }
 function buildDecor(){
@@ -633,7 +714,7 @@ function buildVoxAvatar(cfg){
 // ---------- リグ付き全身GLB（characters2/） ----------
 const CHAR_H=1.7;              // プレイヤー/NPCの身長（ワールド単位）
 const GLB_ROT=-Math.PI/2;      // Tripoモデルの正面(-X)→ゲームの正面(+Z)へ回頭補正
-window.__v4dbg={playerGlb:false,npcGlb:0,errors:[]};
+window.__v4dbg={playerGlb:false,npcGlb:0,errors:[],colliders:decoColliders};
 let gltfLoaderInst=null;
 function getLoader(){
   if(!gltfLoaderInst&&window.THREE&&THREE.GLTFLoader){try{
@@ -984,9 +1065,12 @@ function doDig(){
 
 // ---------- 使う/置く ----------
 function playerIn(x,y,z){
-  const px=Math.floor(player.x),pz=Math.floor(player.z);
+  // v9: プレイヤー円(体半径)が重なるセルには置けない（置いた瞬間に体がめり込むのを防ぐ）
   const py=Math.floor(player.y);
-  return x===px&&z===pz&&(y===py||y===py+1);
+  if(y!==py&&y!==py+1)return false;
+  const cx=Math.max(x,Math.min(player.x,x+1)),cz=Math.max(z,Math.min(player.z,z+1));
+  const r=PLAYER_R+0.05;
+  return (cx-player.x)*(cx-player.x)+(cz-player.z)*(cz-player.z)<r*r;
 }
 function doUse(){
   ac(); // iOSサウンド解禁
@@ -1354,7 +1438,7 @@ function clickToMove(sx,sy){
     if(getB(bx,by,bz)&&inWorld(bx,bz)){
       // v7: 壁など「立てない柱」をクリックした時は、手前の空きセルを目的地にする
       let tx=bx,tz=bz;
-      if(surfY(bx,bz,by+1.2)>WH&&lastAir&&inWorld(lastAir[0],lastAir[2])){tx=lastAir[0];tz=lastAir[2];}
+      if(walkY(bx,bz,by+1.2)>WH&&lastAir&&inWorld(lastAir[0],lastAir[2])){tx=lastAir[0];tz=lastAir[2];} // v9: walkYで柵も壁扱い
       pw.target={x:tx+0.5,z:tz+0.5};
       pw.stuck=0;pw.px=player.x;pw.pz=player.z;
       showMoveMarker(tx,tz);
@@ -1431,8 +1515,7 @@ const resq={t:0,px:0,pz:0};
 function maybeRescue(){
   const px=Math.floor(player.x),pz=Math.floor(player.z);
   for(const d of[[1,0],[-1,0],[0,1],[0,-1]]){
-    const sy=surfY(px+d[0],pz+d[1],player.y);
-    if(sy-player.y<=1.25)return; // どこかへ動ける＝穴ではない
+    if(walkY(px+d[0],pz+d[1],player.y)<=WH)return; // どこかへ動ける＝穴ではない
   }
   for(let r=1;r<=8;r++){
     for(let dx=-r;dx<=r;dx++)for(let dz=-r;dz<=r;dz++){
@@ -1443,6 +1526,7 @@ function maybeRescue(){
       if(sy<1||sy>WH)continue;
       const at=getB(x,sy,z);
       if(at&&BI[at].water)continue; // 水の中へは飛ばさない
+      if(circleBlockedDeco(x+0.5,z+0.5,x+0.5,z+0.5,sy))continue; // v9: 飾り物・牛の中へは飛ばさない
       player.x=x+0.5;player.z=z+0.5;player.y=sy;player.vy=0;player.onGround=true;
       cancelMoveTarget();
       toast('⛑ 穴から救出したよ！');sfx(700,.1,'sine',.05);
@@ -1497,17 +1581,14 @@ function animate(ts){
   // v6: Shiftで走る（キーボード移動・クリック移動どちらでも有効）
   const sprint=!!keys['shift']&&moving;
   if(moving){
-    const ang=Math.atan2(ix,iz)+camYaw,sp=(sprint?7.8:4.6)*dt;
-    const nx=player.x+Math.sin(ang)*sp*Math.min(mag,1),nz=player.z+Math.cos(ang)*sp*Math.min(mag,1);
-    const cx=Math.max(0.5,Math.min(WS-0.5,nx)),cz=Math.max(0.5,Math.min(WS-0.5,nz));
-    const gy=surfY(Math.floor(cx),Math.floor(cz),player.y);
-    if(gy-player.y<=1.25){player.x=cx;player.z=cz;}
-    else{ // 片軸ずつ試す（角スライド）
-      const gy1=surfY(Math.floor(cx),Math.floor(player.z),player.y);
-      const gy2=surfY(Math.floor(player.x),Math.floor(cz),player.y);
-      if(gy1-player.y<=1.25)player.x=cx;
-      else if(gy2-player.y<=1.25)player.z=cz;
-    }
+    const ang=Math.atan2(ix,iz)+camYaw,sp=(sprint?7.8:4.6)*dt*Math.min(mag,1);
+    // v9: プレイヤー円(半径PLAYER_R)でX軸→Z軸を別々に解決＝壁沿いをなめらかにスライド。
+    //     万一グリッドにめり込んでいる時は判定を免除して脱出だけ許す
+    const escG=circleBlockedGrid(player.x,player.z,player.y);
+    const nx=Math.max(0.5,Math.min(WS-0.5,player.x+Math.sin(ang)*sp));
+    if((escG||!circleBlockedGrid(nx,player.z,player.y))&&!circleBlockedDeco(nx,player.z,player.x,player.z,player.y))player.x=nx;
+    const nz=Math.max(0.5,Math.min(WS-0.5,player.z+Math.cos(ang)*sp));
+    if((escG||!circleBlockedGrid(player.x,nz,player.y))&&!circleBlockedDeco(player.x,nz,player.x,player.z,player.y))player.z=nz;
     player.dir=ang;walk+=dt*(sprint?14:9);
   }
   // v7: 詰み防止（入力があるのに全く進めない状態が3秒続き、四方が登れない穴なら救出）
@@ -1516,9 +1597,20 @@ function animate(ts){
     if(resq.t>3){resq.t=0;maybeRescue();}
   }else resq.t=0;
   resq.px=player.x;resq.pz=player.z;
-  const gy=surfY(Math.floor(player.x),Math.floor(player.z),player.y);
+  // v9: 重力・接地の安定化。落下は自然な放物線→着地でピタッと停止。
+  //     歩きの1段段差は瞬間ワープせずスッと持ち上げる。柱の中に埋まったら地表へ復帰。
+  let gy=surfY(Math.floor(player.x),Math.floor(player.z),player.y);
+  if(gy>WH)gy=topAny(Math.floor(player.x),Math.floor(player.z))+1; // 万一柱内→地表
   player.vy-=16*dt;player.y+=player.vy*dt;
-  if(player.y<=gy){player.y=gy;player.vy=0;player.onGround=true;}
+  if(player.y<=gy){
+    const climb=gy-player.y;
+    if(player.onGround&&player.vy<=0.01&&climb>0.26){
+      player.y=Math.min(gy,player.y+Math.max(climb*14,4.5)*dt+16*dt*dt); // 段差をなめらかに登る
+    }else{
+      player.y=gy; // 着地でピタッ
+    }
+    player.vy=0;player.onGround=true;
+  }else player.onGround=false;
   if(avatar){
     avatar.position.set(player.x,player.y,player.z);
     // なめらか回頭
@@ -1546,10 +1638,10 @@ function animate(ts){
     }
     const dx=u.tx-m.position.x,dz=u.tz-m.position.z,dl=Math.hypot(dx,dz);
     if(dl>0.4){
-      // v7: 牛も壁の中(立てない柱)には入らない。入れないなら目的地を選び直す
+      // v9: 牛は柵・壁を乗り越えない(walkY判定)。入れないなら目的地を選び直す
       const nx=m.position.x+dx/dl*dt*0.8,nz=m.position.z+dz/dl*dt*0.8;
-      const sy=surfY(Math.floor(nx),Math.floor(nz),m.position.y);
-      if(sy-m.position.y<=1.3){
+      const sy=walkY(Math.floor(nx),Math.floor(nz),m.position.y);
+      if(sy<=WH){
         m.position.x=nx;m.position.z=nz;m.position.y=sy;
         m.rotation.y=Math.atan2(dx,dz)-Math.PI/2;
       }else u.t=4;
