@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v15 経営シミュレーション</title>
+<title>丹波農商 牧場物語 v16 放置経営とワールド拡張</title>
 <link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -70,10 +70,13 @@
   #pcGuide .gl{display:flex;align-items:center;gap:8px;padding:3px 2px;font-size:13.5px;color:#5a3714;font-weight:bold;}
   #pcGuide .gk{flex:0 0 auto;min-width:118px;text-align:center;background:#f0e2cc;border:2px solid #c9a86f;border-radius:8px;padding:2px 8px;font-size:12.5px;color:#6a4a25;}
   #pcGuideClose{margin-top:10px;width:100%;padding:8px;font-size:14px;font-weight:bold;color:#fff;background:#e8743f;border:3px solid #a04515;border-radius:11px;box-shadow:0 3px 0 #a04515;cursor:pointer;}
-  /* v14: 経営シミュレーションUI */
-  #monthBtnWrap{position:fixed;top:calc(48px + env(safe-area-inset-top));right:8px;z-index:13;}
-  #monthBtn{background:#3a6fd8;border-color:#1f3f8a;box-shadow:0 4px 0 #1f3f8a;}
-  #monthBtn:active{transform:translateY(2px);box-shadow:0 1px 0 #1f3f8a;}
+  /* v14: 経営シミュレーションUI / v16: 日送り＋月送り */
+  #monthBtnWrap{position:fixed;top:calc(48px + env(safe-area-inset-top));right:8px;z-index:13;display:flex;flex-direction:column;gap:5px;align-items:flex-end;}
+  #dayBtn{background:#3a6fd8;border-color:#1f3f8a;box-shadow:0 4px 0 #1f3f8a;}
+  #dayBtn:active{transform:translateY(2px);box-shadow:0 1px 0 #1f3f8a;}
+  #monthBtn{background:#7a5fd8;border-color:#4a3a8a;box-shadow:0 4px 0 #4a3a8a;font-size:12px;padding:6px 11px;}
+  #monthBtn:active{transform:translateY(2px);box-shadow:0 1px 0 #4a3a8a;}
+  #careChip{position:fixed;top:calc(128px + env(safe-area-inset-top));right:8px;z-index:12;padding:5px 10px;font-size:12px;font-weight:bold;color:#5a3714;display:none;background:rgba(255,253,245,.92);border:2px solid #c9a86f;border-radius:10px;pointer-events:none;}
   .fs{width:100%;border-collapse:collapse;margin:6px 0;}
   .fs td{padding:4px 7px;font-size:13px;color:#5a3714;border-bottom:1px solid #e6d5b8;text-align:left;}
   .fs td.amt{text-align:right;font-weight:bold;white-space:nowrap;}
@@ -92,12 +95,13 @@
 <div id="game"></div>
 <div id="top">
   <div class="panel stat" id="money">￥10,000,000</div>
-  <div class="panel stat" id="day">1年目 4月</div>
+  <div class="panel stat" id="day">1年目 4月 1日</div>
   <div class="panel stat" id="place">丹波の里</div>
 </div>
 <div id="quest">🎯 …</div>
 <div id="menuBtn"><div class="mbtn" id="menuOpenBtn">☰ メニュー</div></div>
-<div id="monthBtnWrap"><div class="mbtn" id="monthBtn">⏭ 次の月へ</div></div>
+<div id="monthBtnWrap"><div class="mbtn" id="dayBtn">⏭ 次の日へ</div><div class="mbtn" id="monthBtn">⏭⏭ 次の月へ(30日)</div></div>
+<div id="careChip">🐂 餌⬜ 掃除⬜</div>
 <div id="joy"><div id="joyKnob"></div></div>
 <div id="actHint">🌱 種をまく</div>
 <button class="abtn" id="useBtn">使う<br>取る</button>
@@ -116,8 +120,8 @@
 <div class="ov" id="fiscal" style="z-index:45"><div class="panel ovbox" id="fiscalBox"></div></div>
 <div id="seedPick"><div class="panel" id="seedPickBox"></div></div>
 <div id="title">
-  <h1>🌾 丹波農商<br>牧場物語 <span style="font-size:16px">経営編</span></h1>
-  <div class="sub">現金1,000万円と棚田だけから始めるリアル農業経営！<br>米を作り、銀行と付き合い、人を雇い、牛の繁殖で稼ごう。<br>「⏭ 次の月へ」で時間が進み、毎年3月は決算。牛以外の利益には税金30%！<br>現金が尽きたら倒産だよ。黒字を目指せ！🐂📒💰</div>
+  <h1>🌾 丹波農商<br>牧場物語 <span style="font-size:16px">放置経営編</span></h1>
+  <div class="sub">現金1,000万円と棚田だけから始めるリアル農業経営！<br>「⏭ 次の日へ」で1日ずつ時間が進むよ。牛は毎日 餌やりと牛舎掃除！<br>従業員を雇って仕事を指示すれば、自分が動かなくても自動で回る「放置経営」。<br>土地を買って田んぼや牧草地を広げ、堆肥舎で牛糞をお金に変えよう。<br>毎年3月末は決算。牛以外の利益には税金30%！現金が尽きたら倒産だよ🐂📒💰</div>
   <button class="bigbtn" id="newBtn">▶ はじめる</button>
   <button class="bigbtn orange" id="contBtn">💾 続きから</button>
 </div>
@@ -129,6 +133,29 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
 <script>
 /* =====================================================================
+   丹波農商 牧場物語 v16 — 従業員に指示を出す放置経営＋ワールド拡張
+   v16: v15の経営ロジック(1000万スタート/米年商900万/牧草/銀行/セリ/繁殖/
+        決算/税金30%/倒産)を土台に、以下を追加。
+   ① 時間の粒度: 「⏭ 次の日へ」=1日(30日で1ヶ月)。「⏭⏭ 次の月へ」=30日一括。
+      日次=牛の世話・従業員の自動作業・作物成長。月末=月次経費差引・
+      牧草生産・牛の妊娠進行・牛糞処分費/肥料生産。3月末=決算＋税金(v15式)。
+   ② 雇用=放置自動化: 従業員(あつし/ゆうすけ/なおと・月給30万)に「担当の
+      仕事」(米/牧草/牛の世話/堆肥)を指示できる。指示された仕事だけを毎日/
+      月初に自動でこなし収益を上げる。指示しない仕事は自分の手作業。
+   ③ ワールド拡張: WSを52→68に拡張し、外周は未開拓の荒れ地。土地(区画)を
+      買うと荒れ地が田んぼ/牧草地/第二牛舎にボクセル地形ごと変わる。
+      東の牧草地150万(牧草生産2倍)・東の棚田250万(米の規模1.5倍=年商1350万)・
+      南の牧場300万(第二牛舎=母牛の上限8→16頭)。
+   ④ 米は年数回だけ作業: 4月田植え・5〜9月は月1回の水管理(サボると収量減)・
+      10月収穫・10〜3月の精米出荷。閑散期は担当を別の仕事へ再配置。
+   ⑤ 牛の日次世話: 毎日「餌やり＋牛舎掃除」が必要。放置すると健康低下・
+      牛舎の汚れ蓄積→子牛の売値ダウン(最大4割減)・健康40未満は妊娠が進まない。
+      牛の世話を従業員に指示すれば毎日自動(雇用の主なメリット)。
+   ⑥ 牛糞: 堆肥舎(建設200万)ができるまで処分費 月1万円/頭が月次経費で出る。
+      堆肥舎後は処分費ゼロ＋肥料(頭数×2袋/月・1袋5000円)が売れ、
+      苗代−50万・牧草作付け−5万の肥料代割引も付く。
+   セーブ: 新キー tamba_v16_save(v15以前とは非互換)。
+   以下v15の説明:
    丹波農商 牧場物語 v15 — 起動ローディング・倒産・税金
    v15: v14の全経営ロジックを維持したまま3点追加。
    ① 起動ローディング: 主人公のMeshy GLB(char_min/mhero_walk.glb)の読込が
@@ -268,14 +295,14 @@ const HERO={walk:'char_min/mhero_walk.glb',run:'char_min/mhero_run.glb',
   vox:{skin:'#f0c49a',cheek:'#ff8a6a',hair:'#4a3018',cap:'#e0b84f',shirt:'#4a7ad8',pants:'#3a5aa8',shoe:'#8a5a2b'}};
 const CHARS={
   atsushi:{name:'あつしさん',role:'牧場のお兄さん',skin:'#e8b98c',cheek:'#ff7a5a',hair:'#1c1712',cap:'#111',shirt:'#20386a',pants:'#2a2a2a',shoe:'#5a3a1a',spot:'barn',
-    line:'繁殖牛は種付け→10ヶ月で出産、子牛は8ヶ月で出荷だよ🐂',
-    line2:'僕を雇えば種付けとセリ出荷は毎月おまかせ！(事務所で雇用・月給30万円)'},
+    line:'牛は毎日 餌やりと牛舎掃除！サボると健康が下がって子牛が安くなるよ🐂',
+    line2:'僕を雇って「牛の世話」を指示すれば毎日の世話も種付けもセリも全部自動！(事務所で雇用・月給30万円)'},
   yusuke:{name:'ゆうすけさん',role:'牧草・栗・お米のお兄さん',skin:'#e5b184',cheek:'#e88a6a',hair:'#6a4526',beard:true,shirt:'#3a3a3f',pants:'#33302a',shoe:'#2a2a2a',spot:'pasture',
-    line:'牧草を育てると牛の餌代が月3.5万→1万円に下がるよ🌿',
-    line2:'僕を雇えば米(作付け/収穫/精米出荷)と牧草はおまかせ！(事務所で雇用・月給30万円)'},
+    line:'米の作業は田植え(4月)・水管理(5〜9月)・収穫(10月)だけ。閑散期は別の仕事をしよう🌾',
+    line2:'僕を雇って「米」か「牧草」を指示すれば全部自動！季節で指示を変えるのがコツだよ(事務所で雇用・月給30万円)'},
   naoto:{name:'なおとさん',role:'加工・堆肥のお兄さん',skin:'#eac199',cheek:'#e89a7a',hair:'#241a12',glasses:true,ponytail:true,shirt:'#2f5fa8',pants:'#22262a',shoe:'#333',spot:'compost',
-    line:'牛のふんは「堆肥」にできるんだ。畑にまくと2倍育つよ！',
-    line2:'僕を雇えば堆肥づくりと農産物の売却はおまかせ！(事務所で雇用・月給30万円)'},
+    line:'牛糞は処分費が月1万円/頭もかかる…🏭堆肥舎を建てれば肥料にして売れるよ！',
+    line2:'僕を雇って「堆肥」を指示すれば、ふん回収も肥料の出荷も自動だよ(事務所で雇用・月給30万円)'},
 };
 
 // ---------- ブロック定義 ----------
@@ -334,32 +361,66 @@ const ECON={
   GRASS_EAT:1,           // 牛1頭の月間牧草消費(束)
   GRASS_PRICE:10000,     // 余剰牧草の売値(1束)
   TAX_RATE:0.3,          // v15: 税率30%(牛の利益は非課税)
+  // ---- v16: 日次・土地・堆肥舎の前提値 ----
+  DAYS_PER_MONTH:30,     // 1ヶ月=30日
+  MANURE_FEE:10000,      // 牛糞の処分費(1頭・月) 堆肥舎ができるまで
+  SHED_COST:2000000,     // 堆肥舎の建設費
+  FERT_PER_COW:2,        // 堆肥舎の肥料生産(袋/頭・月)
+  FERT_PRICE:5000,       // 肥料の売値(1袋)
+  FERT_SAVE_RICE:500000, // 堆肥舎の肥料自給で苗代が安くなる額
+  FERT_SAVE_GRASS:50000, // 同・牧草の作付けが安くなる額
+  LAND_GRASS_PRICE:1500000, // 東の牧草地(牧草生産2倍)
+  LAND_RICE_PRICE:2500000,  // 東の棚田(米の規模1.5倍)
+  LAND_BARN_PRICE:3000000,  // 南の牧場+第二牛舎(母牛8→16頭)
+  RICE_SCALE2:1.5,       // 東の棚田を買った後の米の規模
+  CARE_HUNGRY:4,         // 餌やりを忘れた日の健康低下
+  CARE_RECOVER:2,        // 世話できた日の健康回復
+  CARE_DIRT_ADD:8,       // 掃除を忘れた日の汚れ増加
+  CARE_DIRT_CLEAN:25,    // 掃除1回で減る汚れ
+  CARE_DIRT_BAD:60,      // この汚れ以上で毎日健康-3
+  WATER_MISS_PENALTY:0.05, // 水管理を1ヶ月サボるごとの収量減(最大25%)
 };
 function fmt(n){return '￥'+Math.round(n).toLocaleString();}
 function man(n){const v=n/10000;return (v%1===0?v:v.toFixed(1))+'万円';}
 
 // ---------- ゲーム状態 ----------
-const SAVE_KEY='tamba_v14_save'; // v15: v14とキー共用(セーブ引き継ぎ可)
+const SAVE_KEY='tamba_v16_save'; // v16: 新キー(日次経営に構造変更のため非互換)
 let state=null;
 function freshState(){return{
-  v:15,money:10000000,day:1,time:0.28,
-  year:1,month:4,monthN:0, // 1年目4月開始。monthNは通算の月送り回数
+  v:16,money:10000000,day:1,time:0.28,
+  year:1,month:4,monthN:0, // 1年目4月開始。monthNは通算の月数
+  dom:1,absDay:0,          // v16: dom=月内の日(1..30) / absDay=通算の経済日
   res:{veg:0,bean:0,chestnut:0,compost:0,manure:0,veg_seed:0,bean_seed:0},
   barnRented:false,
   staff:{atsushi:false,yusuke:false,naoto:false},
+  staffJobs:{atsushi:null,yusuke:null,naoto:null}, // v16: 指示した担当(rice/grass/cow/compost)
   cows:[],   // 母牛 {id,name,preg(-1=未妊娠/0..9=妊娠ヶ月),births,debt,retired,bredMonth}
   calves:[], // 子牛 {id,age(月齢),motherId}
   cowSeq:1,
   riceField:'none', // none=未作付け / planted=生育中 / ready=収穫待ち
   riceBags:0,shipMonth:-1,soldRiceBags:0,
+  riceMiss:0,waterMonth:-1, // v16: 水管理(5-9月に月1回)。サボった月数で収量減
   grassSown:false,grassStock:0,grassProdLast:0,grassFedLast:0,
+  grassCutMonth:-1, // v16: 今月の刈り取りが済んだか(サボると生産半減)
+  care:{fedDay:-1,cleanDay:-1,dirt:0,health:100}, // v16: 牛の日次世話
+  compostShed:false,fertStock:0, // v16: 堆肥舎と肥料在庫
+  land:{grass2:false,rice2:false,barn2:false},   // v16: 購入した区画
   bankLoan:0,
-  fy:{sales:0,exp:0,sd:{rice:0,calf:0,mother:0,grass:0,proc:0},ed:{owner:0,emp:0,rent:0,feed:0,seed:0,other:0}},
+  fy:{sales:0,exp:0,sd:{rice:0,calf:0,mother:0,grass:0,proc:0,fert:0},ed:{owner:0,emp:0,rent:0,feed:0,seed:0,other:0,manure:0}},
   lastResult:null,history:[],
   edits:{},crops:{},treeFruit:{},tuftDay:{},
   planted:0,harvestN:0,soldN:0,
   sound:true,questDone:0,
 };}
+// ---- v16: 規模ヘルパ(土地・堆肥舎の効果) ----
+function riceScale(){return state.land.rice2?ECON.RICE_SCALE2:1;}
+function riceSeedCost(){return Math.round(ECON.RICE_SEED_COST*riceScale())-(state.compostShed?ECON.FERT_SAVE_RICE:0);}
+function riceBagsYield(){const base=ECON.RICE_BAGS*riceScale();const miss=Math.min(5,state.riceMiss||0);return Math.round(base*(1-ECON.WATER_MISS_PENALTY*miss));}
+function riceShipMax(){return Math.round(ECON.RICE_SHIP_MAX*riceScale());}
+function grassSowCost(){return ECON.GRASS_SOW_COST-(state.compostShed?ECON.FERT_SAVE_GRASS:0);}
+function grassYieldNow(){const y=ECON.GRASS_YIELD*(state.land.grass2?2:1);return state.grassCutMonth===state.monthN?y:Math.floor(y/2);}
+function barnCapNow(){return ECON.BARN_CAP+(state.land.barn2?8:0);}
+function isWaterSeason(){return state.month>=5&&state.month<=9;}
 
 // ---------- v14: 記帳/財務ヘルパ（決算=売上高−経費。与信/銀行借入はP/L外の負債） ----------
 function addSale(a,cat){state.money+=a;state.fy.sales+=a;state.fy.sd[cat]=(state.fy.sd[cat]||0)+a;state.soldN++;}
@@ -368,11 +429,20 @@ function cowDebtTotal(){let s=0;for(const c of state.cows)s+=c.debt;return s;}
 function totalDebt(){return state.bankLoan+cowDebtTotal();}
 function herdCount(){return state.cows.length+state.calves.length;}
 function staffCount(){let n=0;for(const k in state.staff)if(state.staff[k])n++;return n;}
+// v16: 従業員は「担当の仕事」を指示して使う。誰でもどの仕事にも配置できる。
 const STAFF_META={
-  atsushi:{name:'あつし',job:'牛の世話',desc:'毎月自動: 未妊娠の母牛に種付け・出荷可能な子牛/8産後の親牛をセリで売却'},
-  yusuke:{name:'ゆうすけ',job:'米・牧草',desc:'毎月自動: 4月の作付け・10月の収穫・精米出荷(50袋)・牧草の作付けと余剰売却'},
-  naoto:{name:'なおと',job:'加工・堆肥',desc:'毎月自動: 牛ふん→堆肥・農産物(野菜/黒豆/栗/堆肥)をまとめて売却'},
+  atsushi:{name:'あつし',em:'🤠',hint:'牛の扱いが得意'},
+  yusuke:{name:'ゆうすけ',em:'👨‍🌾',hint:'米と牧草が得意'},
+  naoto:{name:'なおと',em:'🧑‍🔧',hint:'堆肥と加工が得意'},
 };
+const JOBS={
+  rice:{n:'米',em:'🌾',desc:'4月の田植え・5〜9月の水管理・10月の収穫・毎月の精米出荷を自動でやる'},
+  grass:{n:'牧草',em:'🌿',desc:'作付け・毎月の刈り取り(サボると生産半減)・余剰の売却を自動でやる'},
+  cow:{n:'牛の世話',em:'🐂',desc:'毎日の餌やり＋牛舎掃除、月初の種付け・子牛/親牛のセリ売却を自動でやる'},
+  compost:{n:'堆肥',em:'🟫',desc:'牛ふんの回収と堆肥化、肥料の出荷、農産物の売却を自動でやる'},
+};
+function jobLabel(k){const j=state.staffJobs[k];return j?JOBS[j].em+' '+JOBS[j].n:'指示なし(遊んでいる)';}
+function staffWithJob(job){for(const k in state.staff)if(state.staff[k]&&state.staffJobs[k]===job)return k;return null;}
 
 // ---------- three.js 基本 ----------
 let scene,camera,renderer,sun,hemi,moonL,worldGroup;
@@ -398,7 +468,7 @@ function initThree(){
 }
 
 // ---------- ボクセルデータ ----------
-const WS=52,WH=18,CS=8,NC=Math.ceil(WS/CS);
+const WS=68,BASE_WS=52,WH=18,CS=8,NC=Math.ceil(WS/CS); // v16: 世界を52→68に拡張(外周=未開拓)
 const grid={};
 function key(x,y,z){return x+','+y+','+z;}
 function getB(x,y,z){return grid[key(x,y,z)]||0;}
@@ -596,8 +666,20 @@ function riverX(z){return 6+Math.round(2.2*Math.sin(z*0.17)+1.1*Math.sin(z*0.31)
 function genWorld(){
   chestnutTrees.length=0;
   for(const k in grid)delete grid[k];
-  const cx0=WS/2,cz0=WS/2;
+  const cx0=BASE_WS/2,cz0=BASE_WS/2; // v16: 地形の中心は旧世界のまま(既存マップを維持)
   for(let x=0;x<WS;x++)for(let z=0;z<WS;z++){
+    if(x>=BASE_WS||z>=BASE_WS){ // v16: 拡張ゾーン=未開拓の荒れ地(区画を買うと開拓される)
+      let h=2+Math.round(1.1*Math.sin(x*0.35)+1.1*Math.cos(z*0.3)+h2(x,z)*1.4);
+      if(x>=WS-2||z>=WS-2)h+=5; // 外周の山(世界の果て)
+      h=Math.max(1,Math.min(WH-6,h));
+      for(let y=0;y<=h;y++){
+        let t=B.SOIL;
+        if(y===h)t=h>=6?B.STONE:B.GRASS;
+        else if(y<h-1)t=B.STONE;
+        gset(x,y,z,t);
+      }
+      continue;
+    }
     const d=Math.hypot(x-cx0,z-cz0);
     let h=1+Math.round(Math.sin(x*0.21)*0.8+Math.cos(z*0.19)*0.8);
     if(d>19)h+=Math.round((d-19)*0.9);
@@ -681,6 +763,67 @@ function genWorld(){
   for(let z=18;z<=23;z++){const y=topY(27,z);if(y>=0)gset(27,y,z,B.PATH);const y2=topY(28,z);if(y2>=0)gset(28,y2,z,B.PATH);}
   for(let x=32;x<=35;x++){const y=topY(x,14);if(y>=0)gset(x,y,14,B.PATH);}
   for(let z=30;z<=36;z++){const y=topY(27,z);if(y>=0)gset(27,y,z,B.PATH);}
+  // --- v16: 荒れ地の木(区画を買うと整地されて消える) ---
+  [[55,12],[61,17],[63,14],[58,25],[63,30],[54,40],[60,44],[64,38],[57,37],
+   [25,55],[30,60],[22,62],[27,58],[45,55],[55,57],[40,60],[12,55],[8,60],[16,60],[60,60]
+  ].forEach(p=>{if(p[0]<WS-2&&p[1]<WS-2)normalTree(p[0],p[1]);});
+}
+// ---------- v16: 土地区画(ワールド拡張) ----------
+const PARCELS={
+  grass2:{n:'東の牧草地',em:'🌿',price:ECON.LAND_GRASS_PRICE,desc:'牧草の生産が2倍(12→24束/月)になる。荒れ地を開拓して柵付きの牧草地に。'},
+  rice2:{n:'東の棚田',em:'🌾',price:ECON.LAND_RICE_PRICE,desc:'米の規模が1.5倍(苗代450万・収穫450袋・年商1,350万円)に。水管理と出荷の作業量も増える。'},
+  barn2:{n:'南の牧場+第二牛舎',em:'🏠',price:ECON.LAND_BARN_PRICE,desc:'母牛の上限が8→16頭に。南の荒れ地に第二牛舎が建つ。'},
+};
+function terraformGrass2(){
+  flatten(50,66,8,21,2);
+  for(let x=50;x<=66;x++)for(let z=8;z<=21;z++)gset(x,2,z,B.GRASS);
+  for(let x=50;x<=66;x++){gset(x,3,8,B.FENCE);gset(x,3,21,B.FENCE);}
+  for(let z=8;z<=21;z++)gset(66,3,z,B.FENCE);
+  for(let z=13;z<=16;z++)gset(49,3,z,0); // 旧牧草地との柵を開けて接続
+}
+function terraformRice2(){
+  flatten(47,66,31,47,1);
+  for(let x=47;x<=66;x++)for(let z=31;z<=47;z++)gset(x,1,z,B.PATH);
+  for(let x=52;x<=65;x++)for(let z=36;z<=45;z++){
+    gset(x,1,z,0);gset(x,0,z,B.TILLED);gset(x,1,z,B.WATER);
+  }
+}
+function terraformBarn2(){
+  flatten(20,34,50,66,2);
+  for(let x=20;x<=34;x++)for(let z=50;z<=66;z++)gset(x,2,z,B.GRASS);
+  // 第二牛舎(板の壁+干し草の屋根)
+  for(let x=24;x<=29;x++)for(let z=54;z<=59;z++){
+    const wall=(x===24||x===29||z===54||z===59);
+    if(wall){
+      const door=(z===59&&(x===26||x===27));
+      if(!door){gset(x,3,z,B.PLANK);gset(x,4,z,B.PLANK);}
+    }
+    gset(x,5,z,B.HAY);
+  }
+  // 放牧柵
+  for(let x=21;x<=33;x++){gset(x,3,62,B.FENCE);}
+  for(let z=60;z<=62;z++){gset(21,3,z,B.FENCE);gset(33,3,z,B.FENCE);}
+}
+function applyLandParcels(){
+  if(state.land.grass2)terraformGrass2();
+  if(state.land.rice2)terraformRice2();
+  if(state.land.barn2)terraformBarn2();
+}
+function buyLand(k){
+  if(state.land[k]){toast('🗺 その区画はもう持っているよ');return;}
+  const p=PARCELS[k];
+  if(state.money<p.price){toast('💸 '+p.n+'は'+man(p.price)+'。現金が足りないよ');return;}
+  addExpense(p.price,'other');
+  state.land[k]=true;
+  if(k==='grass2')terraformGrass2();
+  else if(k==='rice2')terraformRice2();
+  else terraformBarn2();
+  rebuildAll();
+  if(k==='rice2'&&state.riceField!=='none')buildRiceVisual(0); // 生育中なら新しい田にも稲を表示
+  fanfare();
+  toast('🗺 '+p.n+'を'+man(p.price)+'で購入！世界が広がった！');
+  toast('💡 '+p.desc);
+  updateHUD();if(document.getElementById('menu').style.display==='flex')renderMenu();
 }
 function flatten(x0,x1,z0,z1,h){
   for(let x=x0;x<=x1;x++)for(let z=z0;z<=z1;z++){
@@ -779,11 +922,15 @@ function growCropsMonthly(){
 // 棚田の水セル(下が耕地)を列挙
 function paddyCells(){
   const out=[];
-  for(let x=11;x<=22;x++)for(let z=36;z<=47;z++){
-    for(let y=1;y<=5;y++){
-      if(getB(x,y,z)===B.WATER&&(getB(x,y-1,z)===B.TILLED||getB(x,y-1,z)===B.TILLFERT)){out.push(key(x,y,z));break;}
+  const scan=(x0,x1,z0,z1)=>{
+    for(let x=x0;x<=x1;x++)for(let z=z0;z<=z1;z++){
+      for(let y=1;y<=5;y++){
+        if(getB(x,y,z)===B.WATER&&(getB(x,y-1,z)===B.TILLED||getB(x,y-1,z)===B.TILLFERT)){out.push(key(x,y,z));break;}
+      }
     }
-  }
+  };
+  scan(11,22,36,47);
+  if(state.land.rice2)scan(52,65,36,45); // v16: 東の棚田(区画購入で拡張)
   return out;
 }
 function buildRiceVisual(mon){
@@ -799,29 +946,45 @@ function clearRiceVisual(){
 }
 function doRicePlant(){
   if(state.riceField!=='none'){toast('🌾 もう作付け済みだよ');return;}
-  if(state.month!==4){toast('🌾 作付けは春(4月)だけだよ(今は'+state.month+'月)');return;}
-  if(state.money<ECON.RICE_SEED_COST){toast('💸 苗代300万円が払えない…現金が足りないよ');return;}
-  addExpense(ECON.RICE_SEED_COST,'seed');
+  if(state.month!==4){toast('🌾 田植えは春(4月)だけだよ(今は'+state.month+'月)');return;}
+  const cost=riceSeedCost();
+  if(state.money<cost){toast('💸 苗代'+man(cost)+'が払えない…現金が足りないよ');return;}
+  addExpense(cost,'seed');
   state.riceField='planted';
+  state.riceMiss=0;state.waterMonth=-1; // v16: 水管理カウンタをリセット
   buildRiceVisual(0);
   fanfare();
-  toast('🌾 苗代'+man(ECON.RICE_SEED_COST)+'を払って作付けした！(10月に300袋収穫)');
+  toast('🌾 苗代'+man(cost)+'を払って田植えした！(10月に'+Math.round(ECON.RICE_BAGS*riceScale())+'袋収穫)'+(state.compostShed?'(堆肥舎の肥料で−50万)':''));
+  toast('🚿 5〜9月は毎月1回「水の管理」！サボると収量が5%ずつ減るよ');
   updateHUD();
+}
+// v16: 水管理(5〜9月に月1回)。自分で棚田に行くか、米担当の従業員が自動でやる
+function doRiceWater(who){
+  if(state.riceField!=='planted'){toast('🌾 いまは水管理の必要はないよ');return false;}
+  if(!isWaterSeason()){toast('🚿 水管理は5〜9月だけだよ');return false;}
+  if(state.waterMonth===state.monthN){toast('🚿 今月の水管理は済んでいるよ');return false;}
+  state.waterMonth=state.monthN;
+  if(!who){toast('🚿 田んぼの水を管理した！(今月分OK)');sfx(500,.07,'sine',.05);}
+  updateHUD();
+  return true;
 }
 function doRiceHarvest(){
   if(state.riceField!=='ready'){toast('🌾 まだ収穫できないよ');return;}
   state.riceField='none';
-  state.riceBags+=ECON.RICE_BAGS;
+  const bags=riceBagsYield();
+  state.riceBags+=bags;
   state.harvestN++;
   clearRiceVisual();
   fanfare();
-  toast('🎉 米を一括収穫！倉庫に'+ECON.RICE_BAGS+'袋(1袋3万円で精米出荷できるよ)');
+  const miss=Math.min(5,state.riceMiss||0);
+  toast('🎉 米を一括収穫！倉庫に'+bags+'袋'+(miss>0?'(水管理を'+miss+'ヶ月サボって'+(miss*5)+'%減…)':'')+'(1袋3万円で精米出荷)');
+  state.riceMiss=0;
   updateHUD();
 }
 function shipRice(){
   if(state.riceBags<=0){toast('📦 倉庫に米がないよ(4月作付け→10月収穫)');return;}
   if(state.shipMonth===state.monthN){toast('🍚 精米出荷は月1回。⏭で月を進めてね');return;}
-  const n=Math.min(ECON.RICE_SHIP_MAX,state.riceBags);
+  const n=Math.min(riceShipMax(),state.riceBags);
   state.riceBags-=n;state.soldRiceBags+=n;
   state.shipMonth=state.monthN;
   addSale(n*ECON.RICE_BAG_PRICE,'rice');
@@ -830,26 +993,42 @@ function shipRice(){
   updateHUD();
 }
 function riceFieldLabel(){
-  if(state.riceField==='ready')return'🌾 米を収穫する(300袋)';
-  if(state.riceField==='planted')return'🌾 生育中(10月に収穫)';
-  return state.month===4?'🌾 作付けする(苗代300万円)':'🌾 棚田(作付けは4月)';
+  if(state.riceField==='ready')return'🌾 米を収穫する('+riceBagsYield()+'袋)';
+  if(state.riceField==='planted'){
+    if(isWaterSeason()&&state.waterMonth!==state.monthN)return'🚿 水の管理をする(今月まだ)';
+    return'🌾 生育中(10月に収穫)';
+  }
+  return state.month===4?'🌾 田植えする(苗代'+man(riceSeedCost())+')':'🌾 棚田(田植えは4月)';
 }
 function riceFieldAction(){
   if(state.riceField==='ready'){doRiceHarvest();return;}
-  if(state.riceField==='planted'){toast('🌾 生育中… ⏭で月を進めて10月に収穫しよう');return;}
+  if(state.riceField==='planted'){
+    if(isWaterSeason()&&state.waterMonth!==state.monthN){doRiceWater(null);return;}
+    toast('🌾 生育中… ⏭で日を進めて10月に収穫しよう'+(isWaterSeason()?'(今月の水管理は済み)':''));
+    return;
+  }
   if(state.month===4)doRicePlant();
-  else toast('🌾 作付けは4月だよ(今は'+state.month+'月。⏭で春を待とう)');
+  else toast('🌾 田植えは4月だよ(今は'+state.month+'月。⏭で春を待とう)');
 }
 // ---------- v14: 牧草（作付けで毎月生産→餌代3.5万→1万に。余剰は売却） ----------
 function sowGrass(){
-  if(state.grassSown){toast('🌿 牧草はもう育てているよ(毎月'+ECON.GRASS_YIELD+'束生産)');return;}
-  if(state.money<ECON.GRASS_SOW_COST){toast('💸 牧草の作付けに'+man(ECON.GRASS_SOW_COST)+'必要だよ');return;}
-  addExpense(ECON.GRASS_SOW_COST,'other');
+  if(state.grassSown){toast('🌿 牧草はもう育てているよ(毎月最大'+ECON.GRASS_YIELD*(state.land.grass2?2:1)+'束生産)');return;}
+  const cost=grassSowCost();
+  if(state.money<cost){toast('💸 牧草の作付けに'+man(cost)+'必要だよ');return;}
+  addExpense(cost,'other');
   state.grassSown=true;
   fanfare();
-  toast('🌿 牧草を作付けした！毎月'+ECON.GRASS_YIELD+'束生産(牛1頭は月1束消費)');
-  toast('🐂 牧草でまかなえた牛の餌代は月3.5万→1万円に下がるよ');
+  toast('🌿 牧草を作付けした！毎月最大'+ECON.GRASS_YIELD*(state.land.grass2?2:1)+'束生産(牛1頭は月1束消費)'+(state.compostShed?'(肥料自給で−5万)':''));
+  toast('✂ 毎月「刈り取り」しないと生産が半分になるよ(牧草担当の従業員なら自動)');
   updateHUD();
+}
+// v16: 月1回の刈り取り。やらないとその月の生産が半減。担当従業員は自動
+function doGrassCut(who){
+  if(!state.grassSown){toast('🌿 まだ牧草を作付けしていないよ');return false;}
+  if(state.grassCutMonth===state.monthN){if(!who)toast('✂ 今月の刈り取りは済んでいるよ');return false;}
+  state.grassCutMonth=state.monthN;
+  if(!who){toast('✂ 牧草を刈り取った！(今月は満額の'+ECON.GRASS_YIELD*(state.land.grass2?2:1)+'束生産)');sfx(420,.07);}
+  return true;
 }
 function sellGrassSurplus(auto){
   const reserve=herdCount()*ECON.GRASS_EAT; // 来月の消費分は残す
@@ -1025,6 +1204,7 @@ function buildDecor(){
   addSign(37,14.5,'🌿','牧草地');
   addSign(BANK_POS.x,BANK_POS.z,'🏦','銀行');
   addSign(AUCTION_POS.x,AUCTION_POS.z,'🐂','セリ市場');
+  addSign(21.5,31.5,'🗺','土地販売所'); // v16: ワールド拡張(区画購入)
   buildShopStand();buildShipBox();buildTufts();
   buildTractor(); // かざり（のうかの トラクター）
 }
@@ -1069,6 +1249,10 @@ const CHAR_H=1.55;             // NPC(大人)の身長（ワールド単位）
 const MGLB_ROT=0;              // Meshy(Mixamoリグ)は+Z正面＝ゲームの正面。補正なし
 window.__v4dbg={playerGlb:false,npcGlb:0,errors:[],colliders:decoColliders,scales:{}};
 window.__v4dbg.getState=()=>state; // v14: 検証用
+// v16: 検証用（日送り/月送り/購入をコードから叩ける）
+window.__v4dbg.nextDay=()=>nextDay();
+window.__v4dbg.nextMonth=()=>nextMonthBatch();
+window.__v4dbg.buyLand=k=>buyLand(k);
 let gltfLoaderInst=null;
 function getLoader(){
   if(!gltfLoaderInst&&window.THREE&&THREE.GLTFLoader){try{
@@ -1399,20 +1583,22 @@ function updateHUD(){
   const m=document.getElementById('money');
   m.textContent=fmt(state.money);
   m.style.color=state.money<0?'#c03030':'#b5651d';
-  document.getElementById('day').textContent=ymLabel();
+  document.getElementById('day').textContent=ymdLabel(); // v16: 年月日
+  updateCareChip();
   updateQuest();
 }
 // クエスト（経営チュートリアル：1つずつ）
 const QUESTS=[
- {t:'🎯 4月：🌾棚田で「作付け」しよう(苗代300万円)',c:()=>state.riceField!=='none'||state.riceBags>0||state.soldRiceBags>0},
- {t:'🎯 ⏭で月を進めて10月に米300袋を収穫しよう',c:()=>state.riceBags>0||state.soldRiceBags>0},
+ {t:'🎯 4月：🌾棚田で「田植え」しよう(苗代300万円)',c:()=>state.riceField!=='none'||state.riceBags>0||state.soldRiceBags>0},
+ {t:'🎯 ⏭で日を進めよう(5〜9月は月1回🚿水管理！10月に収穫)',c:()=>state.riceBags>0||state.soldRiceBags>0},
  {t:'🎯 📦倉庫で「精米して出荷」しよう(1袋3万円)',c:()=>state.soldRiceBags>0},
- {t:'🎯 3月まで進めて決算を見よう(黒字を目指せ！)',c:()=>!!state.lastResult},
- {t:'🎯 🏚古い牛舎を借りよう(家賃 月3万円)',c:()=>state.barnRented},
- {t:'🎯 🐂セリ市場でメス牛を買おう(与信100万円=現金は減らない)',c:()=>state.cows.length>0||state.calves.length>0},
- {t:'🎯 種付け→10ヶ月で出産→子牛を8ヶ月育てて出荷しよう',c:()=>state.calves.length>0||state.cows.some(c=>c.births>0)},
- {t:'🎯 🌿牧草を育てて餌代を月3.5万→1万円に下げよう',c:()=>state.grassSown},
- {t:'🌟 従業員(月30万)や銀行も使って経営を拡大しよう！',c:()=>false},
+ {t:'🎯 3月末まで進めて決算を見よう(黒字を目指せ！)',c:()=>!!state.lastResult},
+ {t:'🎯 🏚牛舎を借りて🐂セリでメス牛を買おう(与信100万円)',c:()=>state.cows.length>0||state.calves.length>0},
+ {t:'🎯 牛は毎日🍼餌やり＋🧹掃除！牛舎でやろう(サボると健康低下)',c:()=>state.care.fedDay>=0},
+ {t:'🎯 🏢事務所で従業員を雇い「🐂牛の世話」を指示して自動化！',c:()=>!!staffWithJob('cow')},
+ {t:'🎯 🟫堆肥場に堆肥舎を建てよう(処分費が肥料収益に変わる)',c:()=>state.compostShed},
+ {t:'🎯 🗺土地販売所で区画を買って世界を広げよう！',c:()=>state.land.grass2||state.land.rice2||state.land.barn2},
+ {t:'🌟 従業員の配置と土地・銀行で利益を最大化しよう！',c:()=>false},
 ];
 function updateQuest(){
   while(state.questDone<QUESTS.length-1&&QUESTS[state.questDone].c()){
@@ -1543,7 +1729,7 @@ function cowStatusText(c){
   return c.name+'：未妊娠(牛舎メニューで種付け)・出産'+c.births+'回／'+debt;
 }
 function calfStatusText(c){
-  return '子牛'+c.id+'：月齢'+c.age+'ヶ月'+(c.age>=ECON.CALF_SHIP_AGE?'・出荷できる！(セリで100万円)':'(8ヶ月で出荷可)');
+  return '子牛'+c.id+'：月齢'+c.age+'ヶ月'+(c.age>=ECON.CALF_SHIP_AGE?'・出荷できる！(セリで'+man(calfPriceNow())+')':'(8ヶ月で出荷可)');
 }
 function actCow(m){
   const u=m.userData;
@@ -1558,6 +1744,70 @@ function actNPC(n){
   toast('💬 '+n.cfg.name+'「'+line+'」');
   // v13: 向き直りはメインループでなめらかに行う（スナップ回転を廃止）
   sfx(600,.05,'sine',.04);
+}
+
+// ---------- v16: 牛の日次世話(餌やり＋牛舎掃除) ----------
+// 牛がいる日は毎日必要。担当従業員がいれば自動。サボると健康低下・汚れ蓄積。
+function careDoneToday(){return state.care.fedDay===state.absDay&&state.care.cleanDay===state.absDay;}
+function doCowCare(who){
+  if(herdCount()===0){if(!who)toast('🐂 牛はまだいないよ');return false;}
+  if(careDoneToday()){if(!who)toast('🍼 今日の世話(餌やり+掃除)は済んでいるよ');return false;}
+  state.care.fedDay=state.absDay;
+  state.care.cleanDay=state.absDay;
+  state.care.dirt=Math.max(0,state.care.dirt-ECON.CARE_DIRT_CLEAN);
+  if(!who){
+    toast('🍼 餌やり＆🧹牛舎掃除をした！(汚れ'+state.care.dirt+'・健康'+state.care.health+')');
+    sfx(520,.07,'sine',.05);
+    if(cowMeshes.length)heartBurst(cowMeshes[0].position.x,cowMeshes[0].position.y,cowMeshes[0].position.z);
+  }
+  updateCareChip();
+  return true;
+}
+// 1日の終わり(日送り時)に世話をサボっていないか判定
+function evalCowCareDay(notes){
+  if(herdCount()===0)return;
+  const c=state.care;
+  let bad=false;
+  if(c.fedDay!==state.absDay){c.health=Math.max(0,c.health-ECON.CARE_HUNGRY);bad=true;notes.push('⚠ 餌やりを忘れて牛が腹ぺこ…健康-'+ECON.CARE_HUNGRY+'(いま'+c.health+')');}
+  if(c.cleanDay!==state.absDay){c.dirt=Math.min(100,c.dirt+ECON.CARE_DIRT_ADD);bad=true;}
+  if(c.dirt>=ECON.CARE_DIRT_BAD){c.health=Math.max(0,c.health-3);notes.push('⚠ 牛舎が汚れすぎ(汚れ'+c.dirt+')！牛の健康がさらに低下(いま'+c.health+')');}
+  if(!bad)c.health=Math.min(100,c.health+ECON.CARE_RECOVER);
+}
+// 健康で子牛の売値が変わる(70以上=満額100万/40〜69=80万/40未満=60万)
+function calfPriceNow(){
+  const h=state.care.health;
+  return h>=70?ECON.CALF_PRICE:(h>=40?Math.round(ECON.CALF_PRICE*0.8):Math.round(ECON.CALF_PRICE*0.6));
+}
+function updateCareChip(){
+  const el=document.getElementById('careChip');
+  if(!el||!state)return;
+  if(herdCount()===0){el.style.display='none';return;}
+  const fed=state.care.fedDay===state.absDay,cl=state.care.cleanDay===state.absDay;
+  el.style.display='block';
+  el.textContent='🐂 餌'+(fed?'✅':'⬜')+' 掃除'+(cl?'✅':'⬜')+' 健康'+state.care.health+(state.care.dirt>0?' 汚れ'+state.care.dirt:'');
+  el.style.borderColor=(fed&&cl)?'#7aa35a':'#c03030';
+}
+// ---------- v16: 堆肥舎(牛糞の処分費→肥料の収益に変える投資) ----------
+function buildShed(){
+  if(state.compostShed){toast('🏭 堆肥舎はもうあるよ');return;}
+  if(state.money<ECON.SHED_COST){toast('💸 堆肥舎の建設に'+man(ECON.SHED_COST)+'必要だよ');return;}
+  addExpense(ECON.SHED_COST,'other');
+  state.compostShed=true;
+  buildCompostShed();
+  fanfare();
+  toast('🏭 堆肥舎が完成！牛糞の処分費(月1万/頭)がゼロになったよ');
+  toast('🟫 これからは肥料(頭数×2袋/月・1袋5000円)が売れる＋苗代−50万/牧草−5万の肥料割引！');
+  updateHUD();if(document.getElementById('menu').style.display==='flex')renderMenu();
+}
+function sellFert(auto){
+  if(!state.compostShed){if(!auto)toast('🏭 まず堆肥舎を建てよう(堆肥場で'+man(ECON.SHED_COST)+')');return 0;}
+  const n=state.fertStock;
+  if(n<=0){if(!auto)toast('🟫 出荷できる肥料はまだないよ(毎月 頭数×2袋できる)');return 0;}
+  state.fertStock=0;
+  addSale(n*ECON.FERT_PRICE,'fert');
+  if(!auto){toast('🟫 肥料'+n+'袋を出荷 +'+fmt(n*ECON.FERT_PRICE));sfxSeq([[880,.06],[1100,.08]]);}
+  updateHUD();
+  return n;
 }
 
 // ---------- v10: 近くの対象さがし＆文脈アクション ----------
@@ -1581,10 +1831,19 @@ function nearestAction(wx,wz){
   cand(BANK_POS.x,BANK_POS.z,2.3,'🏦 銀行(借入/返済)',()=>{menuTab='bank';openMenu();});
   cand(AUCTION_POS.x,AUCTION_POS.z,2.3,'🐂 セリ市場',()=>{menuTab='auction';openMenu();});
   cand(25.5,17.5,2.3,state.barnRented?'🏚 牛舎(牛の管理)':'🏚 古い牛舎を借りる(月3万円)',()=>{if(state.barnRented){menuTab='cows';openMenu();}else rentBarn();});
-  cand(37,14.5,2.3,state.grassSown?'🌿 牧草の状況':'🌿 牧草を育てる(10万円)',()=>{
-    if(state.grassSown)toast('🌿 牧草: 毎月'+ECON.GRASS_YIELD+'束生産・在庫'+state.grassStock+'束・牛の消費 月'+herdCount()+'束');
-    else sowGrass();
+  // v16: 牛の日次世話(牛舎の中)。従業員に指示していなければ毎日自分でやる
+  if(herdCount()>0&&!careDoneToday())cand(26,13.5,3.2,'🍼 牛の世話(餌やり+掃除)',()=>doCowCare(null));
+  cand(37,14.5,2.3,state.grassSown?(state.grassCutMonth!==state.monthN?'✂ 牧草を刈り取る(月1回)':'🌿 牧草の状況'):'🌿 牧草を育てる('+man(grassSowCost())+')',()=>{
+    if(!state.grassSown){sowGrass();return;}
+    if(state.grassCutMonth!==state.monthN){doGrassCut(null);return;}
+    toast('🌿 牧草: 毎月最大'+ECON.GRASS_YIELD*(state.land.grass2?2:1)+'束生産(刈り取り済み)・在庫'+state.grassStock+'束・牛の消費 月'+herdCount()+'束');
   });
+  // v16: 堆肥場→堆肥舎の建設/肥料の出荷
+  cand(42,32.5,2.6,state.compostShed?('🟫 肥料を出荷する('+state.fertStock+'袋)'):'🏭 堆肥舎を建てる('+man(ECON.SHED_COST)+')',()=>{
+    if(state.compostShed)sellFert(false);else buildShed();
+  });
+  // v16: 土地販売所(ワールド拡張)
+  cand(21.5,31.5,2.3,'🗺 土地を買う(ワールド拡張)',()=>{menuTab='land';openMenu();});
   // 栗の木
   chestnutTrees.forEach((t,i)=>{
     if(state.treeFruit[i])cand(t.x+0.5,t.z+0.5,2.0,'🌰 栗を取る',()=>actTree(i));
@@ -1662,15 +1921,15 @@ function rentBarn(){
   buildBarnBlocks(true);
   updateBarnSign();
   fanfare();
-  toast('🏚 古い牛舎を借りた！(家賃 月3万円・母牛'+ECON.BARN_CAP+'頭まで)');
-  setTimeout(()=>toast('🐂 セリ市場でメス牛を買おう(与信100万円=現金は減らない)'),1800);
+  toast('🏚 古い牛舎を借りた！(家賃 月3万円・母牛'+barnCapNow()+'頭まで)');
+  setTimeout(()=>toast('🐂 セリ市場でメス牛を買おう(与信100万円=現金は減らない)。牛は毎日世話が要るよ！'),1800);
   updateHUD();
 }
 
 // ---------- v14: セリ市場（与信購入・子牛/親牛の売却） ----------
 function buyCowCredit(){
   if(!state.barnRented){toast('🏚 まず古い牛舎を借りてね(月3万円)');return;}
-  if(state.cows.length>=ECON.BARN_CAP){toast('🏚 牛舎が満員だよ(母牛'+ECON.BARN_CAP+'頭まで)');return;}
+  if(state.cows.length>=barnCapNow()){toast('🏚 牛舎が満員だよ(母牛'+barnCapNow()+'頭まで'+(state.land.barn2?'':'。🗺南の牧場を買うと16頭に')+')');return;}
   const id=state.cowSeq++;
   const cow={id,name:'牛'+id,preg:-1,births:0,debt:ECON.COW_PRICE,retired:false,bredMonth:-1};
   state.cows.push(cow);
@@ -1699,16 +1958,17 @@ function sellCalf(id){
   const cf=state.calves[i];
   if(cf.age<ECON.CALF_SHIP_AGE){toast('🐮 子牛はまだ月齢'+cf.age+'ヶ月(8ヶ月で出荷可)');return;}
   state.calves.splice(i,1);
-  addSale(ECON.CALF_PRICE,'calf');
+  const price=calfPriceNow(); // v16: 牛の健康で売値が変わる(世話をサボると安くなる)
+  addSale(price,'calf');
   const mo=state.cows.find(x=>x.id===cf.motherId);
   let repay=0;
   if(mo&&mo.debt>0){
     repay=Math.min(ECON.CALF_REPAY,mo.debt);
     mo.debt-=repay;state.money-=repay;
-    if(mo.debt<=0)toast('🎉 '+mo.name+'の借金を完済！以降この牛の子牛は満額100万円が利益');
+    if(mo.debt<=0)toast('🎉 '+mo.name+'の借金を完済！以降この牛の子牛は満額が利益');
   }
   fanfare();
-  toast('🐮 子牛を100万円で売却！'+(repay>0?('うち'+man(repay)+'を母牛の返済に充当・現金+'+man(ECON.CALF_PRICE-repay)):'借金なし=満額100万円が現金に'));
+  toast('🐮 子牛を'+man(price)+'で売却！'+(price<ECON.CALF_PRICE?'(健康'+state.care.health+'で減額…毎日世話しよう)':'')+(repay>0?('うち'+man(repay)+'を母牛の返済に充当・現金+'+man(price-repay)):'借金なし=満額が現金に'));
   refreshCowMeshes();updateHUD();renderMenu();
 }
 function sellMother(id){
@@ -1750,60 +2010,111 @@ function bankRepay(amount){
   updateHUD();renderMenu();
 }
 
-// ---------- v14: 雇用（月給30万・担当の自動化） ----------
+// ---------- v16: 雇用と指示（月給30万・担当の仕事を指示して放置自動化） ----------
 function hireStaff(k){
   if(state.staff[k])return;
   state.staff[k]=true;
   fanfare();
-  toast('🤝 '+STAFF_META[k].name+'を雇った！(月給'+man(ECON.EMP_SALARY)+'・担当:'+STAFF_META[k].job+')');
+  toast('🤝 '+STAFF_META[k].name+'を雇った！(月給'+man(ECON.EMP_SALARY)+')');
+  toast('👉 担当の仕事(米/牧草/牛の世話/堆肥)を指示しよう。指示しないと遊んだまま給料だけかかるよ！');
   updateHUD();renderMenu();
 }
 function fireStaff(k){
   if(!state.staff[k])return;
-  state.staff[k]=false;
-  toast('👋 '+STAFF_META[k].name+'との契約を終了した');
+  state.staff[k]=false;state.staffJobs[k]=null;
+  toast('👋 '+STAFF_META[k].name+'との契約を終了した(担当していた仕事は自分でやろう)');
+  updateHUD();renderMenu();
+}
+function assignJob(k,job){
+  if(!state.staff[k]){toast('先に雇用してね');return;}
+  state.staffJobs[k]=job||null;
+  if(job)toast('📋 '+STAFF_META[k].name+'に「'+JOBS[job].em+' '+JOBS[job].n+'」を指示した！毎日/月初に自動でやってくれるよ');
+  else toast('📋 '+STAFF_META[k].name+'の指示を外した(この仕事は自分の手作業に戻るよ)');
+  sfx(660,.07,'sine',.05);
   updateHUD();renderMenu();
 }
 
-// ---------- v14: 従業員の自動作業（その月の仕事として月送り時に実行） ----------
-function runStaffAutomation(notes){
-  if(state.staff.yusuke){
-    if(state.month===4&&state.riceField==='none'&&state.money>=ECON.RICE_SEED_COST){doRicePlant();notes.push('👨‍🌾 ゆうすけ: 苗代300万円で作付けした');}
-    if(state.riceField==='ready'){doRiceHarvest();notes.push('👨‍🌾 ゆうすけ: 米300袋を収穫した');}
-    if(state.riceBags>0&&state.shipMonth!==state.monthN){const n=Math.min(ECON.RICE_SHIP_MAX,state.riceBags);shipRice();notes.push('👨‍🌾 ゆうすけ: '+n+'袋を精米出荷した');}
-    if(!state.grassSown&&state.money>=ECON.GRASS_SOW_COST&&herdCount()>0){sowGrass();notes.push('👨‍🌾 ゆうすけ: 牧草を作付けした');}
-    if(state.grassSown){const s=sellGrassSurplus(true);if(s>0)notes.push('👨‍🌾 ゆうすけ: 余剰牧草'+s+'束を売却');}
+// ---------- v16: 従業員の自動作業（毎日実行・月次仕事は月1回ガードで自動判断） ----------
+// 指示された仕事だけを自動でやる。雇った/指示した日からすぐ働く。
+function staffDaily(notes){
+  // 🐂 牛の世話(毎日): 餌やり＋牛舎掃除
+  const wk=staffWithJob('cow');
+  if(wk&&herdCount()>0&&!careDoneToday()){
+    doCowCare('staff');
+    if(state.dom===1)notes.push('🐂 '+STAFF_META[wk].name+': 毎日の餌やり＋牛舎掃除を担当中(自動)');
   }
-  if(state.staff.atsushi){
+  // 🟫 堆肥(毎日): 落ちている牛ふんを回収
+  const ck=staffWithJob('compost');
+  if(ck&&manures.length>0){
+    const n=manures.length;
+    for(const m of manures)scene.remove(m);
+    manures.length=0;
+    state.res.manure=(state.res.manure||0)+n;
+  }
+  staffMonthlyJobs(notes); // 月次仕事(ガード付き=月1回だけ実行される)
+}
+// 月次系の仕事(田植え/水管理/収穫/出荷・牧草・種付け/セリ・肥料/農産物)。
+// 各処理は月1回ガード付き。月替わり直後(monthEnd後)にも呼んで月初に即実行する。
+function staffMonthlyJobs(notes){
+  const wk=staffWithJob('cow');
+  if(wk){
+    const nm=STAFF_META[wk].name;
     for(const c of state.cows){
       if(!c.retired&&c.preg<0&&c.bredMonth!==state.monthN){
         c.bredMonth=state.monthN;
-        if(Math.random()<ECON.BREED_RATE){c.preg=0;notes.push('🤠 あつし: '+c.name+'の種付け成功');}
-        else notes.push('🤠 あつし: '+c.name+'の種付け失敗(翌月再挑戦)');
+        if(Math.random()<ECON.BREED_RATE){c.preg=0;notes.push('🐂 '+nm+': '+c.name+'の種付け成功');}
+        else notes.push('🐂 '+nm+': '+c.name+'の種付け失敗(翌月再挑戦)');
       }
     }
     for(let i=state.calves.length-1;i>=0;i--){
       const cf=state.calves[i];
-      if(cf.age>=ECON.CALF_SHIP_AGE){notes.push('🤠 あつし: 子牛をセリで売却(100万円)');sellCalf(cf.id);}
+      if(cf.age>=ECON.CALF_SHIP_AGE){notes.push('🐂 '+nm+': 子牛をセリで売却('+man(calfPriceNow())+')');sellCalf(cf.id);}
     }
     for(let i=state.cows.length-1;i>=0;i--){
       const c=state.cows[i];
-      if(c.retired){notes.push('🤠 あつし: 親牛'+c.name+'を売却(50万円)');sellMother(c.id);}
+      if(c.retired){notes.push('🐂 '+nm+': 親牛'+c.name+'を売却(50万円)');sellMother(c.id);}
     }
   }
-  if(state.staff.naoto){
-    if((state.res.manure||0)>0){const n=state.res.manure;state.res.manure=0;state.res.compost+=n;notes.push('🧑‍🔧 なおと: 堆肥を'+n+'個作った');}
+  // 🌾 米: 4月の田植え・5〜9月の水管理(月1)・収穫・精米出荷(月1)
+  const rk=staffWithJob('rice');
+  if(rk){
+    const nm=STAFF_META[rk].name;
+    if(state.month===4&&state.riceField==='none'&&state.money>=riceSeedCost()){doRicePlant();notes.push('🌾 '+nm+': 苗代'+man(riceSeedCost())+'で田植えした');}
+    if(state.riceField==='planted'&&isWaterSeason()&&state.waterMonth!==state.monthN){
+      if(doRiceWater('staff'))notes.push('🚿 '+nm+': 田んぼの水を管理した(今月分)');
+    }
+    if(state.riceField==='ready'){const b=riceBagsYield();doRiceHarvest();notes.push('🌾 '+nm+': 米'+b+'袋を収穫した');}
+    if(state.riceBags>0&&state.shipMonth!==state.monthN){const n=Math.min(riceShipMax(),state.riceBags);shipRice();notes.push('🌾 '+nm+': '+n+'袋を精米出荷した');}
+  }
+  // 🌿 牧草: 作付け・刈り取り(月1)・余剰売却
+  const gk=staffWithJob('grass');
+  if(gk){
+    const nm=STAFF_META[gk].name;
+    if(!state.grassSown&&state.money>=grassSowCost()&&herdCount()>0){sowGrass();notes.push('🌿 '+nm+': 牧草を作付けした');}
+    if(state.grassSown&&doGrassCut('staff'))notes.push('🌿 '+nm+': 牧草を刈り取った(今月は満額生産)');
+    if(state.grassSown){const s=sellGrassSurplus(true);if(s>0)notes.push('🌿 '+nm+': 余剰牧草'+s+'束を売却');}
+  }
+  // 🟫 堆肥: 堆肥化・肥料出荷・農産物売却
+  const ck=staffWithJob('compost');
+  if(ck){
+    const nm=STAFF_META[ck].name;
+    if((state.res.manure||0)>0){const n=state.res.manure;state.res.manure=0;state.res.compost+=n;notes.push('🟫 '+nm+': 堆肥を'+n+'個作った');}
+    if(state.compostShed){const n=sellFert(true);if(n>0)notes.push('🟫 '+nm+': 肥料'+n+'袋を出荷('+fmt(n*ECON.FERT_PRICE)+')');}
     let g=0;
-    for(const k of['veg','bean','chestnut','compost']){const n=state.res[k]||0;if(n>0){g+=n*PRICE[k];state.res[k]=0;}}
-    if(g>0){addSale(g,'proc');notes.push('🧑‍🔧 なおと: 農産物を'+fmt(g)+'で売却');}
+    for(const kk of['veg','bean','chestnut','compost']){const n=state.res[kk]||0;if(n>0){g+=n*PRICE[kk];state.res[kk]=0;}}
+    if(g>0){addSale(g,'proc');notes.push('🟫 '+nm+': 農産物を'+fmt(g)+'で売却');}
   }
 }
 
 // ---------- v14: 牛の月次進行（妊娠+1／出産／子牛の月齢+1） ----------
 function progressCows(notes){
   const newborn=[]; // 生まれたばかりの子牛は当月の月齢+1の対象外(月齢0で誕生)
+  // v16: 世話をサボって健康40未満だと妊娠が進まない(放置ペナルティ)
+  const healthy=state.care.health>=40;
+  if(!healthy&&state.cows.some(c=>c.preg>=0))notes.push('⚠ 牛の健康が'+state.care.health+'で妊娠が進まなかった…毎日世話しよう');
   for(const c of state.cows){
     if(c.preg>=0&&!c.retired){
+      if(!healthy)continue;
       c.preg++;
       if(c.preg>=ECON.PREG_MONTHS){
         c.preg=-1;c.births++;
@@ -1850,44 +2161,133 @@ function restartGame(){
   location.reload();
 }
 
-// ---------- v14: 月送り（作物成長・牛+1ヶ月・月次経費・決算） ----------
-let monthBusy=false;
-function nextMonth(){
-  if(!state||monthBusy||isGameOver)return;
-  // 4月に作付けしないまま進もうとしたら確認（手動プレイ時のみ）
-  if(state.month===4&&state.riceField==='none'&&state.money>=ECON.RICE_SEED_COST&&!state.staff.yusuke){
-    showConfirm('🌾 まだ作付けしていないよ','4月に苗代300万円で作付けしないと、今年は米(年商900万円)を収穫できないよ。<br>それでも5月へ進む？',
-      ()=>{doNextMonth();},'作付けせず進む','やめる');
+// ---------- v16: 時間(日次＋月次＋年次) ----------
+// 「⏭ 次の日へ」=1日。従業員の日次作業→世話のサボり判定→作物成長→日付+1。
+// 30日で月末: 月次経費差引・牧草生産・牛糞処分費/肥料・牛の妊娠進行、
+// 3月末は決算＋税金(v15の計算式)。翌月1日に従業員の月初仕事(田植え/出荷/種付け等)。
+let dayBusy=false;
+function ymdLabel(){return state.year+'年目 '+state.month+'月 '+state.dom+'日';}
+// 作物の日次成長(30日=1ヶ月。堆肥入りは2倍速。稲は等速=v15と同じ)
+function growCropsDaily(){
+  for(const k in state.crops){
+    const c=state.crops[k];
+    if(cropMature(c))continue;
+    const p=k.split(',').map(Number);
+    const fert=getB(p[0],p[1]-1,p[2])===B.TILLFERT||(getB(p[0],p[1]-1,p[2])===B.WATER&&getB(p[0],p[1]-2,p[2])===B.TILLFERT);
+    c.d=(c.d||0)+(c.type==='rice'?1:(fert?2:1));
+    if(c.d>=ECON.DAYS_PER_MONTH){c.d-=ECON.DAYS_PER_MONTH;c.mon++;refreshCropMesh(k);}
+  }
+}
+function nextDay(){
+  if(!state||dayBusy||isGameOver)return;
+  // 4月末に田植えしないまま月を越える時だけ確認(米担当がいれば不要)
+  if(state.dom===ECON.DAYS_PER_MONTH&&state.month===4&&state.riceField==='none'&&state.money>=riceSeedCost()&&!staffWithJob('rice')){
+    showConfirm('🌾 まだ田植えしていないよ','4月に苗代'+man(riceSeedCost())+'で田植えしないと、今年は米(年商'+man(ECON.RICE_BAGS*riceScale()*ECON.RICE_BAG_PRICE)+')を収穫できないよ。<br>それでも5月へ進む？',
+      ()=>{dayBusy=true;const notes=[];advanceDay(notes,false);flashNotes(notes);finishAdvance();},'田植えせず進む','やめる');
     return;
   }
-  doNextMonth();
+  dayBusy=true;
+  hidePCGuide(); // 操作を始めたらガイドは閉じる
+  const notes=[];
+  advanceDay(notes,false);
+  flashNotes(notes);
+  finishAdvance();
 }
-function doNextMonth(){
-  monthBusy=true;
+function nextMonthBatch(){
+  if(!state||dayBusy||isGameOver)return;
+  if(state.month===4&&state.riceField==='none'&&state.money>=riceSeedCost()&&!staffWithJob('rice')){
+    showConfirm('🌾 まだ田植えしていないよ','4月に苗代'+man(riceSeedCost())+'で田植えしないと、今年は米(年商'+man(ECON.RICE_BAGS*riceScale()*ECON.RICE_BAG_PRICE)+')を収穫できないよ。<br>自分で田植えするか、従業員に🌾米を指示してから進むのがおすすめ。それでも30日進む？',
+      ()=>{doMonthBatch();},'田植えせず進む','やめる');
+    return;
+  }
+  doMonthBatch();
+}
+function doMonthBatch(){
+  dayBusy=true;
+  hidePCGuide();
   const notes=[];
   const preMoney=state.money;
-  // 1) 従業員の自動作業(この月の仕事)
-  runStaffAutomation(notes);
-  // 2) 牧草の生産
-  state.grassProdLast=state.grassSown?ECON.GRASS_YIELD:0;
-  state.grassStock+=state.grassProdLast;
-  // 3) 餌の消費と餌代(牧草でまかなえた牛=1万/頭、足りない分=3.5万/頭)
+  let n=0;
+  do{advanceDay(notes,true);n++;}while(state.dom!==1&&n<32&&!isGameOver);
+  if(!isGameOver){
+    const delta=state.money-preMoney;
+    toast('⏭⏭ 30日おまかせで進めて'+ymdLabel()+'(現金'+(delta>=0?'+':'−')+fmt(Math.abs(delta))+')');
+    flashNotes(notes.slice(-8)); // 直近の出来事だけ表示(スパム防止)
+  }
+  finishAdvance();
+}
+function flashNotes(notes){notes.forEach((t,i)=>setTimeout(()=>toast(t),380+i*450));}
+function finishAdvance(){
+  updateHUD();updateCareChip();
+  if(!isGameOver)saveGame(false);
+  if(document.getElementById('menu').style.display==='flex'&&!isGameOver)renderMenu();
+  setTimeout(()=>{dayBusy=false;},150);
+}
+function advanceDay(notes,silent){
+  if(isGameOver)return;
+  // 1) 従業員の日次自動作業(今日の分の世話・水管理・ふん回収)
+  staffDaily(notes);
+  // 2) 牛の世話のサボり判定(健康/汚れ)
+  evalCowCareDay(notes);
+  // 3) 作物の日次成長
+  growCropsDaily();
+  // 4) 日付を進める
+  state.absDay++;state.day++;
+  regrowChestnuts();updateTufts();
+  if(state.dom>=ECON.DAYS_PER_MONTH){
+    state.dom=1;
+    monthEnd(notes);        // 月次経費・生産・(3月なら)決算＋税金
+    if(isGameOver)return;
+    staffMonthlyJobs(notes);// 月初の仕事(田植え/収穫/出荷/種付け/肥料出荷…)を月替わりに即実行
+  }else{
+    state.dom++;
+    if(!silent)toast('⏭ '+ymdLabel());
+  }
+  if(!silent){updateHUD();updateCareChip();}
+}
+// ---------- v16: 月末処理（v15のdoNextMonthの月次部分を継承） ----------
+function monthEnd(notes){
+  const preMoney=state.money;
+  // 0) 水管理のサボり判定(5〜9月・生育中)
+  if(state.riceField==='planted'&&isWaterSeason()&&state.waterMonth!==state.monthN){
+    state.riceMiss=(state.riceMiss||0)+1;
+    notes.push('⚠ 今月は水管理をサボった…収穫が5%減るよ(累計'+Math.min(5,state.riceMiss)+'回)');
+  }
+  // 1) 牧草の生産(刈り取り済みなら満額、サボると半分)
+  if(state.grassSown){
+    const full=ECON.GRASS_YIELD*(state.land.grass2?2:1);
+    const y=grassYieldNow();
+    state.grassProdLast=y;
+    state.grassStock+=y;
+    if(y<full)notes.push('🌿 刈り取りをサボったので牧草は'+y+'束だけ(満額'+full+'束)');
+  }else state.grassProdLast=0;
+  // 2) 餌の消費と餌代(牧草でまかなえた牛=1万/頭、足りない分=3.5万/頭)
   const herd=herdCount();
   const fed=Math.min(state.grassStock,herd*ECON.GRASS_EAT);
   state.grassStock-=fed;
   state.grassFedLast=fed;
   const feedCost=fed*ECON.FEED_GRASS+(herd-fed)*ECON.FEED_MARKET;
   if(feedCost>0)addExpense(feedCost,'feed');
-  // 4) 固定費(自分の給与30万・従業員30万×人数・牛舎家賃3万)
+  // 3) 固定費(自分の給与30万・従業員30万×人数・牛舎家賃3万)
   addExpense(ECON.OWNER_SALARY,'owner');
   const sc=staffCount();
   if(sc>0)addExpense(sc*ECON.EMP_SALARY,'emp');
   if(state.barnRented)addExpense(ECON.BARN_RENT,'rent');
-  // 5) 牛の進行(妊娠/出産/月齢)
+  // 4) v16: 牛糞。堆肥舎なし=処分費(負担)/あり=肥料生産(収益源)
+  if(herd>0){
+    if(!state.compostShed){
+      const fee=herd*ECON.MANURE_FEE;
+      addExpense(fee,'manure');
+      notes.push('🚛 牛糞の処分費 −'+fmt(fee)+'(牛'+herd+'頭×1万円。🏭堆肥舎を建てると収益に変わるよ)');
+    }else{
+      const nfert=herd*ECON.FERT_PER_COW;
+      state.fertStock+=nfert;
+      notes.push('🏭 堆肥舎で肥料'+nfert+'袋ができた(在庫'+state.fertStock+'袋・1袋5000円で出荷できる)');
+    }
+  }
+  // 5) 牛の進行(妊娠/出産/月齢。健康40未満は妊娠が進まない)
   progressCows(notes);
-  // 6) 作物の成長
-  growCropsMonthly();
-  // 7) 月を進める(3月の月送り=年度末→決算)
+  // 6) 月を進める(3月末=年度末→決算＋税金)
   const closing=(state.month===3);
   state.monthN++;
   if(closing){
@@ -1897,34 +2297,29 @@ function doNextMonth(){
   }else{
     state.month=(state.month===12)?1:state.month+1;
   }
-  // 8) 収穫期(10月)
+  // 7) 収穫期(10月)
   if(state.riceField==='planted'&&state.month===10){
     state.riceField='ready';
-    notes.push('🌾 稲が実った！棚田で「収穫」しよう(300袋=900万円分)');
+    notes.push('🌾 稲が実った！棚田で「収穫」しよう('+riceBagsYield()+'袋)');
   }
-  if(state.month===4&&state.riceField==='none')notes.push('🌱 4月！棚田で作付けしよう(苗代300万円)');
+  if(state.month===4&&state.riceField==='none')notes.push('🌱 4月！田植えの季節だよ(苗代'+man(riceSeedCost())+')');
   // 月次サマリー
   const delta=state.money-preMoney;
-  toast('⏭ '+ymLabel()+'になった(現金'+(delta>=0?'+':'−')+fmt(Math.abs(delta))+')');
+  toast('📅 '+state.year+'年目'+state.month+'月になった(月次差引'+(delta>=0?'+':'−')+fmt(Math.abs(delta))+')');
   const cost=[];
   cost.push('自分の給与'+man(ECON.OWNER_SALARY));
   if(sc>0)cost.push('従業員'+man(sc*ECON.EMP_SALARY));
   if(state.barnRented)cost.push('家賃'+man(ECON.BARN_RENT));
   if(feedCost>0)cost.push('餌代'+man(feedCost)+'('+fed+'頭は牧草1万/他'+(herd-fed)+'頭3.5万)');
+  if(herd>0&&!state.compostShed)cost.push('牛糞処分'+man(herd*ECON.MANURE_FEE));
   toast('📉 月次経費: '+cost.join('・'));
-  notes.forEach((n,i)=>setTimeout(()=>toast(n),400+i*450));
   updateHUD();
   // v15: 資金ショート判定（月次経費・決算の税金差引後）。0未満で倒産。
-  if(state.money<0){
-    monthBusy=false;
-    gameOver();
-    return;
-  }
+  if(state.money<0){gameOver();return;}
   if(state.money<1000000)toast('⚠ 現金が残り'+man(state.money)+'！経費が払えず0円を切ると倒産だよ');
-  saveGame(false);
-  if(document.getElementById('menu').style.display==='flex')renderMenu();
-  setTimeout(()=>{monthBusy=false;},200);
 }
+// 旧v14の月送り(メニューの互換のため残置。実体は30日一括)
+function nextMonth(){nextMonthBatch();}
 
 // ---------- v14: 決算（損益計算書） ----------
 function doFiscalClose(){
@@ -1946,13 +2341,13 @@ function doFiscalClose(){
   };
   state.lastResult=r;
   state.history.push({year:r.year,sales:r.sales,exp:r.exp,profit:r.profit,tax});
-  state.fy={sales:0,exp:0,sd:{rice:0,calf:0,mother:0,grass:0,proc:0},ed:{owner:0,emp:0,rent:0,feed:0,seed:0,other:0}};
+  state.fy={sales:0,exp:0,sd:{rice:0,calf:0,mother:0,grass:0,proc:0,fert:0},ed:{owner:0,emp:0,rent:0,feed:0,seed:0,other:0,manure:0}};
   showFiscal(r);
   if(tax>0)toast('🏛 税金'+fmt(tax)+'を納付した(牛の利益は非課税)');
   if(r.profit>=0)fanfare();
 }
-const SD_LABEL={rice:'米の出荷',calf:'子牛の売却',mother:'親牛の売却',grass:'牧草の売却',proc:'加工品・農産物'};
-const ED_LABEL={owner:'自分の給与(役員報酬)',emp:'従業員の給与',rent:'牛舎の家賃',feed:'牛の餌代',seed:'苗代(米の作付け)',other:'その他(牧草作付け等)'};
+const SD_LABEL={rice:'米の出荷',calf:'子牛の売却',mother:'親牛の売却',grass:'牧草の売却',fert:'肥料の売却(堆肥舎)',proc:'加工品・農産物'};
+const ED_LABEL={owner:'自分の給与(役員報酬)',emp:'従業員の給与',rent:'牛舎の家賃',feed:'牛の餌代',manure:'牛糞の処分費',seed:'苗代(米の作付け)',other:'その他(牧草作付け・土地・建設等)'};
 function plRows(obj,labels){
   let h='';
   for(const k in labels){
@@ -2010,23 +2405,43 @@ function dayChange(){
 
 // ---------- メニュー（v14: 帳簿/倉庫/牛舎/セリ/銀行/雇用/設定） ----------
 let menuTab='ledger';
-function openMenu(){document.getElementById('menu').style.display='flex';renderMenu();}
+function openMenu(){hidePCGuide();document.getElementById('menu').style.display='flex';renderMenu();}
 function closeMenu(){document.getElementById('menu').style.display='none';saveGame(false);}
 function renderMenu(){
   const box=document.getElementById('menuBox');
   const tab=(id,label)=>'<div class="tab '+(menuTab===id?'on':'')+'" onclick="menuTab=\''+id+'\';renderMenu()">'+label+'</div>';
-  let html='<h2>🌾 丹波農商 <span style="font-size:13px;color:#8a6a45">'+ymLabel()+'・'+fmt(state.money)+'</span></h2>'+
-    '<div class="tabs">'+tab('ledger','📒 帳簿')+tab('wh','📦 倉庫')+tab('cows','🏚 牛舎')+tab('auction','🐂 セリ')+tab('bank','🏦 銀行')+tab('staff','🤝 雇用')+tab('set','⚙')+'</div>';
+  let html='<h2>🌾 丹波農商 <span style="font-size:13px;color:#8a6a45">'+ymdLabel()+'・'+fmt(state.money)+'</span></h2>'+
+    '<div class="tabs">'+tab('ledger','📒 帳簿')+tab('wh','📦 倉庫')+tab('cows','🏚 牛舎')+tab('auction','🐂 セリ')+tab('bank','🏦 銀行')+tab('staff','🤝 指示')+tab('land','🗺 土地')+tab('set','⚙')+'</div>';
   if(menuTab==='ledger')html+=ledgerHTML();
   else if(menuTab==='wh')html+=whHTML();
   else if(menuTab==='cows')html+=cowsHTML();
   else if(menuTab==='auction')html+=auctionHTML();
   else if(menuTab==='bank')html+=bankHTML();
   else if(menuTab==='staff')html+=staffHTML();
+  else if(menuTab==='land')html+=landHTML();
   else html+=setHTML();
-  html+='<button class="close" style="background:#3a6fd8;border-color:#1f3f8a;box-shadow:0 3px 0 #1f3f8a" onclick="nextMonth()">⏭ 次の月へ進む</button>';
+  html+='<div style="display:flex;gap:6px">'+
+    '<button class="close" style="flex:1;background:#3a6fd8;border-color:#1f3f8a;box-shadow:0 3px 0 #1f3f8a" onclick="nextDay()">⏭ 次の日へ</button>'+
+    '<button class="close" style="flex:1;background:#7a5fd8;border-color:#4a3a8a;box-shadow:0 3px 0 #4a3a8a" onclick="nextMonthBatch()">⏭⏭ 次の月へ(30日)</button></div>';
   html+='<button class="close" onclick="closeMenu()">閉じる</button>';
   box.innerHTML=html;
+}
+// v16: 土地(区画)の購入=ワールド拡張
+function landHTML(){
+  let h='<p>🗺 土地販売所。区画を買うと荒れ地が開拓されて<b>世界が広がり、生産規模が拡大</b>するよ。作業量も増えるので従業員の配置を考えよう。</p>';
+  const rows=[
+    ['grass2','🌿',PARCELS.grass2],
+    ['rice2','🌾',PARCELS.rice2],
+    ['barn2','🏠',PARCELS.barn2],
+  ];
+  for(const[k,em,p]of rows){
+    const owned=state.land[k];
+    h+='<div class="row"><div class="em">'+em+'</div><div class="info"><b>'+p.n+(owned?' ✅所有':'')+'</b><small>'+p.desc+'</small></div>'+
+      (owned?'<span style="font-size:12px;color:#1f7a1f;font-weight:bold">開拓済み</span>'
+      :'<button class="buy orange" '+(state.money>=p.price?'':'disabled')+' onclick="buyLand(\''+k+'\')">'+man(p.price)+'</button>')+'</div>';
+  }
+  h+='<p class="sub2" style="font-size:11.5px;color:#8a6a45">💡 東の牧草地=牧草24束/月(余剰売却も倍増)。東の棚田=米の年商900万→1,350万(苗代も450万に)。南の牧場=母牛16頭で繁殖を倍速に。</p>';
+  return h;
 }
 // 帳簿: 経営状況をいつでも確認
 function ledgerHTML(){
@@ -2040,6 +2455,7 @@ function ledgerHTML(){
   '<tr><td>現金</td><td class="amt '+(state.money<0?'loss':'')+'">'+fmt(state.money)+'</td></tr>'+
   '<tr><td>米倉庫(1袋3万円)</td><td class="amt">'+state.riceBags+'袋</td></tr>'+
   '<tr><td>牧草在庫(1束1万円)</td><td class="amt">'+state.grassStock+'束</td></tr>'+
+  (state.compostShed?'<tr><td>肥料在庫(1袋5000円)</td><td class="amt">'+state.fertStock+'袋</td></tr>':'')+
   '<tr><td>借入金(銀行)</td><td class="amt">'+fmt(state.bankLoan)+'</td></tr>'+
   '<tr><td>借入金(牛の与信 '+state.cows.length+'頭)</td><td class="amt">'+fmt(cowDebtTotal())+'</td></tr>'+
   '<tr class="hd"><td>毎月の経費(⏭で差引)</td><td class="amt"></td></tr>'+
@@ -2047,12 +2463,13 @@ function ledgerHTML(){
   '<tr><td>従業員給与('+sc+'人×30万)</td><td class="amt">'+fmt(sc*ECON.EMP_SALARY)+'</td></tr>'+
   '<tr><td>牛舎家賃'+(state.barnRented?'':'(未賃借)')+'</td><td class="amt">'+fmt(state.barnRented?ECON.BARN_RENT:0)+'</td></tr>'+
   '<tr><td>餌代(牛'+herd+'頭・牧草自給分は1万/頭)</td><td class="amt">'+(herd>0?'約'+fmt(Math.min(state.grassStock+(state.grassSown?ECON.GRASS_YIELD:0),herd)*ECON.FEED_GRASS+Math.max(0,herd-(state.grassStock+(state.grassSown?ECON.GRASS_YIELD:0)))*ECON.FEED_MARKET):'￥0')+'</td></tr>'+
+  (herd>0?'<tr><td>牛糞の処分費'+(state.compostShed?'(🏭堆肥舎で不要✨)':'(1万/頭。🏭堆肥舎で収益化)')+'</td><td class="amt">'+fmt(state.compostShed?0:herd*ECON.MANURE_FEE)+'</td></tr>':'')+
   '<tr class="hd"><td>今期('+state.year+'年目)の途中経過</td><td class="amt"></td></tr>'+
   '<tr><td>売上高</td><td class="amt">'+fmt(state.fy.sales)+'</td></tr>'+
   '<tr><td>経費</td><td class="amt">'+fmt(state.fy.exp)+'</td></tr>'+
   '<tr class="tot"><td>差引(利益見込み)</td><td class="amt '+(state.fy.sales-state.fy.exp>=0?'prof':'loss')+'">'+fmt(state.fy.sales-state.fy.exp)+'</td></tr>'+
   '</table>'+
-  '<p class="sub2" style="font-size:11.5px;color:#8a6a45">🌿 牧草: '+(state.grassSown?('作付け済み(毎月'+ECON.GRASS_YIELD+'束生産)'):'未作付け(牧草地で10万円)')+' / 牛の消費 月'+grassNeed+'束 / 米: '+(state.riceField==='none'?'未作付け(4月に苗代300万)':state.riceField==='planted'?'生育中(10月収穫)':'収穫待ち！')+'</p>';
+  '<p class="sub2" style="font-size:11.5px;color:#8a6a45">🌿 牧草: '+(state.grassSown?('作付け済み(毎月最大'+ECON.GRASS_YIELD*(state.land.grass2?2:1)+'束・今月の刈り取り'+(state.grassCutMonth===state.monthN?'済✅':'まだ⬜')+')'):'未作付け(牧草地で'+man(grassSowCost())+')')+' / 牛の消費 月'+grassNeed+'束 / 米: '+(state.riceField==='none'?'未作付け(4月に苗代'+man(riceSeedCost())+')':state.riceField==='planted'?('生育中(10月に'+riceBagsYield()+'袋。水管理'+(isWaterSeason()?(state.waterMonth===state.monthN?'今月済✅':'今月まだ⬜'):'は5〜9月')+')'):'収穫待ち！')+(herdCount()>0?' / 🐂健康'+state.care.health+'・汚れ'+state.care.dirt:'')+'</p>';
   if(state.history.length){
     h+='<table class="fs"><tr class="hd"><td>決算の歴史</td><td class="amt">純利益</td></tr>';
     for(const r of state.history)h+='<tr><td>'+r.year+'年目(売上'+fmt(r.sales)+')</td><td class="amt '+(r.profit>=0?'prof':'loss')+'">'+(r.profit>=0?'+':'−')+fmt(Math.abs(r.profit))+'</td></tr>';
@@ -2064,8 +2481,8 @@ function ledgerHTML(){
 // 倉庫: 米の精米出荷・牧草売却・農産物・種
 function whHTML(){
   const canShip=state.riceBags>0&&state.shipMonth!==state.monthN;
-  const shipN=Math.min(ECON.RICE_SHIP_MAX,state.riceBags);
-  let h='<p>収穫した米は倉庫へ。毎月「精米して出荷」で現金化(月1回・最大50袋)。</p>'+
+  const shipN=Math.min(riceShipMax(),state.riceBags);
+  let h='<p>収穫した米は倉庫へ。毎月「精米して出荷」で現金化(月1回・最大'+riceShipMax()+'袋)。</p>'+
   '<div class="row"><div class="em">🍚</div><div class="info"><b>米倉庫: '+state.riceBags+'袋</b><small>1袋3万円。'+(state.shipMonth===state.monthN?'今月は出荷済み(⏭で翌月へ)':'今月あと'+shipN+'袋出荷できる('+fmt(shipN*ECON.RICE_BAG_PRICE)+')')+'</small></div>'+
   '<button class="buy" '+(canShip?'':'disabled')+' onclick="shipRice()">精米して出荷</button></div>';
   const reserve=herdCount()*ECON.GRASS_EAT;
@@ -2074,6 +2491,13 @@ function whHTML(){
   '<button class="buy" '+(surplus>0?'':'disabled')+' onclick="sellGrassSurplus(false)">余剰を売る</button></div>';
   h+='<div class="row"><div class="em">🟤</div><div class="info"><b>堆肥を作る</b><small>牛ふん'+(state.res.manure||0)+'個→堆肥に(畑が2倍育つ/売っても2千円)</small></div>'+
   '<button class="buy" '+((state.res.manure||0)>0?'':'disabled')+' onclick="makeCompost()">作る</button></div>';
+  // v16: 堆肥舎の肥料
+  if(state.compostShed){
+    h+='<div class="row"><div class="em">🟫</div><div class="info"><b>肥料在庫: '+state.fertStock+'袋</b><small>堆肥舎で毎月 頭数×2袋生産。1袋'+fmt(ECON.FERT_PRICE)+'×'+state.fertStock+'='+fmt(state.fertStock*ECON.FERT_PRICE)+'</small></div>'+
+    '<button class="buy" '+(state.fertStock>0?'':'disabled')+' onclick="sellFert(false);renderMenu()">出荷する</button></div>';
+  }else if(herdCount()>0){
+    h+='<div class="row"><div class="em">🚛</div><div class="info"><b>牛糞の処分費: 月'+fmt(herdCount()*ECON.MANURE_FEE)+'</b><small>堆肥舎('+man(ECON.SHED_COST)+')を建てると処分費ゼロ＋肥料が売れるよ(🟫堆肥場で建設)</small></div></div>';
+  }
   let any=false;
   for(const k in PRICE){
     const have=state.res[k]||0;
@@ -2095,7 +2519,12 @@ function cowsHTML(){
     '<div class="row"><div class="em">🏚</div><div class="info"><b>古い牛舎を借りる</b><small>設備投資なしの低資本スタート。家賃 月3万円・母牛'+ECON.BARN_CAP+'頭まで</small></div>'+
     '<button class="buy orange" onclick="rentBarn();renderMenu()">借りる</button></div>';
   }
-  let h='<p>🏚 古い牛舎(家賃 月3万円)・母牛 '+state.cows.length+'/'+ECON.BARN_CAP+'頭・子牛 '+state.calves.length+'頭</p>';
+  let h='<p>🏚 牛舎(家賃 月3万円)・母牛 '+state.cows.length+'/'+barnCapNow()+'頭・子牛 '+state.calves.length+'頭'+(state.land.barn2?'(第二牛舎あり)':'')+'</p>';
+  if(herdCount()>0){
+    const fed=state.care.fedDay===state.absDay,cl=state.care.cleanDay===state.absDay;
+    h+='<div class="row"><div class="em">🍼</div><div class="info"><b>今日の世話: 餌'+(fed?'✅':'⬜')+' 掃除'+(cl?'✅':'⬜')+' / 健康'+state.care.health+' 汚れ'+state.care.dirt+'</b><small>毎日必要！サボると健康低下→子牛の売値ダウン(いま'+man(calfPriceNow())+')・健康40未満は妊娠が進まない。従業員に🐂牛の世話を指示すると自動</small></div>'+
+    '<button class="buy" '+((fed&&cl)?'disabled':'')+' onclick="doCowCare(null);renderMenu()">世話する</button></div>';
+  }
   if(!state.cows.length&&!state.calves.length)h+='<p style="color:#8a6a45">牛はまだいないよ。🐂セリ市場でメス牛を買おう(与信100万円)。</p>';
   for(const c of state.cows){
     const canBreed=!c.retired&&c.preg<0&&c.bredMonth!==state.monthN;
@@ -2112,9 +2541,9 @@ function cowsHTML(){
 }
 // セリ市場: メス牛の与信購入・子牛/親牛の売却
 function auctionHTML(){
-  const canBuy=state.barnRented&&state.cows.length<ECON.BARN_CAP;
+  const canBuy=state.barnRented&&state.cows.length<barnCapNow();
   let h='<p>🐂 セリ市場。メス牛は「与信(その牛の借金)」で購入=現金は減らないよ。</p>'+
-  '<div class="row"><div class="em">🐂</div><div class="info"><b>メス牛を買う(与信100万円)</b><small>'+(state.barnRented?('牛舎の空き '+(ECON.BARN_CAP-state.cows.length)+'頭分。現金は出て行かず、この牛に借金100万円が付く'):'先に🏚古い牛舎を借りてね(月3万円)')+'</small></div>'+
+  '<div class="row"><div class="em">🐂</div><div class="info"><b>メス牛を買う(与信100万円)</b><small>'+(state.barnRented?('牛舎の空き '+(barnCapNow()-state.cows.length)+'頭分。現金は出て行かず、この牛に借金100万円が付く'):'先に🏚古い牛舎を借りてね(月3万円)')+'</small></div>'+
   '<button class="buy orange" '+(canBuy?'':'disabled')+' onclick="buyCowCredit()">与信で購入</button></div>';
   const ship=state.calves.filter(c=>c.age>=ECON.CALF_SHIP_AGE);
   h+='<p><b>売る</b></p>';
@@ -2150,16 +2579,25 @@ function bankHTML(){
   '<p class="sub2" style="font-size:11.5px;color:#8a6a45">※牛の与信(セリ市場)は銀行融資とは別枠だよ。</p>';
   return h;
 }
-// 雇用: 月給30万で自動化
+// v16: 雇用と指示。従業員に「担当の仕事」を指示すると毎日/月初に自動でやる
 function staffHTML(){
-  let h='<p>従業員は月給'+man(ECON.EMP_SALARY)+'。担当の仕事を毎月自動でやってくれるよ(規模拡大と人件費のトレードオフ！)。</p>';
+  let h='<p>従業員は月給'+man(ECON.EMP_SALARY)+'。<b>担当の仕事を指示</b>すると、自分が操作しなくても毎日/月初に自動でやってくれるよ(放置経営！)。指示を変えれば別の仕事に回せる。</p>';
   for(const k in STAFF_META){
     const m=STAFF_META[k];
     const on=state.staff[k];
-    h+='<div class="row"><div class="em">'+(k==='atsushi'?'🤠':k==='yusuke'?'👨‍🌾':'🧑‍🔧')+'</div><div class="info"><b>'+m.name+'('+m.job+')'+(on?' ✅雇用中':'')+'</b><small>'+m.desc+'</small></div>'+
+    h+='<div class="row"><div class="em">'+m.em+'</div><div class="info"><b>'+m.name+(on?' ✅雇用中・担当: '+jobLabel(k):'')+'</b><small>'+m.hint+(on&&state.staffJobs[k]?'。'+JOBS[state.staffJobs[k]].desc:'')+'</small>';
+    if(on){
+      h+='<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:5px">';
+      for(const j in JOBS){
+        const sel=state.staffJobs[k]===j;
+        h+='<button class="minibtn'+(sel?'':' blue')+'" style="'+(sel?'background:#1f7a1f;border-color:#144d14;':'')+'" onclick="assignJob(\''+k+'\',\''+j+'\')">'+JOBS[j].em+' '+JOBS[j].n+(sel?'✓':'')+'</button>';
+      }
+      h+='<button class="minibtn" style="background:#988478;border-color:#6a594d" onclick="assignJob(\''+k+'\',null)">指示なし</button></div>';
+    }
+    h+='</div>'+
       (on?'<button class="buy orange" onclick="fireStaff(\''+k+'\')">解雇</button>':'<button class="buy" onclick="hireStaff(\''+k+'\')">雇う(月30万)</button>')+'</div>';
   }
-  h+='<p class="sub2" style="font-size:11.5px;color:#8a6a45">給与は毎月の月送りで差引かれ、決算では経費になるよ。</p>';
+  h+='<p class="sub2" style="font-size:11.5px;color:#8a6a45">仕事: 🌾米=4月田植え・5〜9月水管理・10月収穫・毎月出荷 / 🌿牧草=刈り取りと売却 / 🐂牛の世話=毎日の餌+掃除と種付け・セリ / 🟫堆肥=ふん回収・肥料出荷。米は年数回しか作業がないから、閑散期は指示を変えて有効活用しよう！</p>';
   return h;
 }
 function makeCompost(){
@@ -2188,7 +2626,7 @@ function setHTML(){
   '<div class="row"><div class="em">💾</div><div class="info"><b>セーブ</b><small>自動でも30秒ごとに保存されるよ</small></div><button class="buy" onclick="saveGame(true)">保存</button></div>'+
   '<div class="row"><div class="em">🔊</div><div class="info"><b>効果音</b><small>音のオン/オフ</small></div><button class="buy" onclick="toggleSound()">'+(state.sound?'ON':'OFF')+'</button></div>'+
   '<div class="row"><div class="em">🗑</div><div class="info"><b>最初から</b><small>データを消してやり直す（2回押してね）</small></div><button class="buy orange" onclick="resetGame()">リセット</button></div>'+
-  '<p style="font-size:11.5px">📖 遊び方：画面の好きな所に指を置くとジョイスティックが出て動けるよ（大きく倒すと走る！）。ちょんとタップするとそこへ歩く。カメラは2本目の指でドラッグ。PCはクリック移動・WASD（Shiftで走る）・E/スペース=使う・M=メニュー。<br>⏱ 時間は「⏭ 次の月へ」ボタンでだけ進むよ（毎月：経費差引・作物成長・牛+1ヶ月）。毎年3月の月送りで決算！</p>';
+  '<p style="font-size:11.5px">📖 遊び方：画面の好きな所に指を置くとジョイスティックが出て動けるよ（大きく倒すと走る！）。ちょんとタップするとそこへ歩く。カメラは2本目の指でドラッグ。PCはクリック移動・WASD（Shiftで走る）・E/スペース=使う・M=メニュー。<br>⏱ 時間は「⏭ 次の日へ」で1日、「⏭⏭ 次の月へ」で30日進むよ。牛は毎日世話！月末に経費差引、3月末に決算＋税金。従業員に仕事を指示すれば自動でやってくれる（放置経営）。</p>';
 }
 let resetConfirm=0;
 function resetGame(){
@@ -2201,13 +2639,13 @@ function toggleSound(){state.sound=!state.sound;renderMenu();}
 function saveGame(showToast){
   if(isGameOver)return; // v15: 倒産後は保存しない
   try{
-    const data={v:15,state,player:{x:player.x,y:player.y,z:player.z}};
+    const data={v:16,state,player:{x:player.x,y:player.y,z:player.z}};
     localStorage.setItem(SAVE_KEY,JSON.stringify(data));
     if(showToast)toast('💾 セーブしたよ！');
   }catch(e){if(showToast)toast('セーブできなかった…');}
 }
 function loadSaveData(){
-  try{const s=localStorage.getItem(SAVE_KEY);if(!s)return null;const d=JSON.parse(s);if(d&&(d.v===14||d.v===15))return d;}catch(e){}
+  try{const s=localStorage.getItem(SAVE_KEY);if(!s)return null;const d=JSON.parse(s);if(d&&d.v===16)return d;}catch(e){}
   return null;
 }
 function applyEdits(){
@@ -2336,7 +2774,8 @@ function bindControls(){
   ub.addEventListener('touchstart',ubDown,{passive:false});
   ub.addEventListener('mousedown',ubDown);
   document.getElementById('menuOpenBtn').addEventListener('click',openMenu);
-  document.getElementById('monthBtn').addEventListener('click',()=>{ac();nextMonth();}); // v14: 月送り
+  document.getElementById('dayBtn').addEventListener('click',()=>{ac();nextDay();});          // v16: 日送り(基本操作)
+  document.getElementById('monthBtn').addEventListener('click',()=>{ac();nextMonthBatch();}); // v16: 30日一括(放置)
 }
 
 // ---------- v7: 詰み防止レスキュー ----------
@@ -2368,6 +2807,11 @@ function maybeRescue(){
 
 // ---------- エリア名 ----------
 function areaName(x,z){
+  // v16: 拡張区画
+  if(x>=50&&x<=66&&z>=8&&z<=21)return state.land.grass2?'🌿 東の牧草地':'🧱 販売中の区画(荒れ地)';
+  if(x>=47&&x<=66&&z>=31&&z<=47)return state.land.rice2?'🌾 東の棚田':'🧱 販売中の区画(荒れ地)';
+  if(x>=20&&x<=34&&z>=50&&z<=66)return state.land.barn2?'🏠 南の牧場':'🧱 販売中の区画(荒れ地)';
+  if(x>=BASE_WS||z>=BASE_WS)return'🌲 未開拓の荒れ地';
   if(x>=35&&x<=49&&z>=8&&z<=21)return'🌿 牧草地';
   if(x>=22&&x<=31&&z>=10&&z<=18)return state.barnRented?'🏚 古い牛舎(賃借中)':'🏚 古い牛舎';
   if(x>=24&&x<=31&&z>=23&&z<=29)return'🏢 事務所';
@@ -2572,7 +3016,7 @@ function animate(ts){
     const pe=document.getElementById('place');
     if(pe.textContent!==pl)pe.textContent=pl;
     const de=document.getElementById('day');
-    de.textContent=ymLabel();
+    de.textContent=ymdLabel();
   }
   renderer.render(scene,camera);
 }
@@ -2602,8 +3046,10 @@ function startGame(saveData){
     state=saveData?saveData.state:freshState();
     initThree();
     genWorld();
+    applyLandParcels(); // v16: 購入済み区画の開拓を再現(セーブ復元)
     applyEdits();
     rebuildAll();
+    if(state.compostShed)buildCompostShed(); // v16: 堆肥舎
     // 作物（v14: 初期作物なし=田んぼだけからスタート。セーブ分のみ復元）
     for(const k in state.crops)addCropMesh(k,state.crops[k]);
     buildDecor();
