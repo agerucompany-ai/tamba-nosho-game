@@ -79,6 +79,10 @@
   #monthBtn{background:#7a5fd8;border-color:#4a3a8a;box-shadow:0 4px 0 #4a3a8a;font-size:12px;padding:6px 11px;}
   #monthBtn:active{transform:translateY(2px);box-shadow:0 1px 0 #4a3a8a;}
   #careChip{position:fixed;top:calc(128px + env(safe-area-inset-top));right:8px;z-index:12;padding:5px 10px;font-size:12px;font-weight:bold;color:#5a3714;display:none;background:rgba(255,253,245,.92);border:2px solid #c9a86f;border-radius:10px;pointer-events:none;}
+  /* v24: 牛の🚶散歩(放し飼い)⇄🏠戻す(繋留)トグルボタン */
+  #cowModeBtn{position:fixed;top:calc(162px + env(safe-area-inset-top));right:8px;z-index:13;display:none;background:#3a8a3a;border-color:#1f5a1f;box-shadow:0 4px 0 #1f5a1f;font-size:13px;}
+  #cowModeBtn:active{transform:translateY(2px);box-shadow:0 1px 0 #1f5a1f;}
+  #cowModeBtn.walking{background:#e8743f;border-color:#a04515;box-shadow:0 4px 0 #a04515;}
   .fs{width:100%;border-collapse:collapse;margin:6px 0;}
   .fs td{padding:4px 7px;font-size:13px;color:#5a3714;border-bottom:1px solid #e6d5b8;text-align:left;}
   .fs td.amt{text-align:right;font-weight:bold;white-space:nowrap;}
@@ -108,6 +112,7 @@
 <div id="menuBtn"><div class="mbtn" id="menuOpenBtn">☰ メニュー</div></div>
 <div id="monthBtnWrap"><div class="mbtn" id="dayBtn">⏭ 次の日へ</div><div class="mbtn" id="monthBtn">⏭⏭ 次の月へ(30日)</div></div>
 <div id="careChip">🐂 餌⬜ 掃除⬜</div>
+<div class="mbtn" id="cowModeBtn">🚶 散歩(放し飼い)</div>
 <div id="joy"><div id="joyKnob"></div></div>
 <div id="actHint">🌱 種をまく</div>
 <button class="abtn" id="useBtn">使う<br>取る</button>
@@ -129,7 +134,7 @@
 <div id="seedPick"><div class="panel" id="seedPickBox"></div></div>
 <div id="title">
   <h1>🌾 丹波農商<br>牧場物語 <span style="font-size:16px">放置経営編</span></h1>
-  <div class="sub">現金1,000万円と棚田から始めるリアル農業経営！<br>「⏭ 次の日へ」で時間が進む。牛は毎日 餌やりと掃除。従業員に指示すれば「放置経営」もOK。<br>🏭東の巨大倉庫に農機・米・精米・加工・事務所を集約。🌉川の橋(北・中央・南の3本どれでも)を渡って西へ行くと丹波の街(役場・銀行・農協・修理屋・セリ市場)。<br>🌿牧草地は不動産屋で購入、牧草の収穫は春(5月)と秋(9月)の年2回(1回で半年+予備3ヶ月分)。マップの絵アイコンをタップすると説明が出るよ。毎年3月末は決算、現金が尽きたら倒産…🐂📒💰</div>
+  <div class="sub">現金1,000万円と棚田から始めるリアル農業経営！<br>「⏭ 次の日へ」で時間が進む。牛は毎日 餌やりと掃除。従業員に指示すれば「放置経営」もOK。<br>🐂牛はふだん牛舎の床の定位置に繋がれているよ。右の🚶散歩ボタンで放し飼い⇄🏠戻すで整列。<br>🏭東の巨大倉庫に農機・米・精米・加工・事務所を集約。🌉川の橋(北・中央・南の3本どれでも)を渡って西へ行くと丹波の街(役場・銀行・農協・修理屋・セリ市場)。<br>🌿牧草地は不動産屋で購入、牧草の収穫は春(5月)と秋(9月)の年2回(1回で半年+予備3ヶ月分)。マップの絵アイコンをタップすると説明が出るよ。毎年3月末は決算、現金が尽きたら倒産…🐂📒💰</div>
   <button class="bigbtn" id="newBtn">▶ はじめる</button>
   <button class="bigbtn orange" id="contBtn">💾 続きから</button>
 </div>
@@ -142,6 +147,29 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
 <script>
 /* =====================================================================
+   丹波農商 牧場物語 v24 — 牛まわりの大改修(屋根バグ修正・牛舎拡大・繋留と散歩・糞は足元)
+   v24: v23の全機能を維持したまま牛まわりを4点改修。セーブはv20キー(tamba_v20_save)を共用。
+   ① 牛が牛舎の屋根に乗るバグを修正:
+      旧版は牛のスポーン/接地に topY()(いちばん上のブロック=屋根)を使って
+      いたため、牛も糞も屋根の上に出ていた。v24は cowFloorY()(y=4から下へ
+      走査して屋根の下の床を探す)で常に床レベル(y=3)に接地。さらに移動は
+      barnAreas() の「牛舎の内側の床の矩形」にクランプし、壁・屋根に一切
+      上がれない(複数牛舎/増築牛舎でも各牛は自分の牛舎の床のみ)。
+   ② 牛舎を大型化:
+      ・古い牛舎: 6×6→10×8ブロック(壁3段+屋根y6・南入口3マス)。
+        母10+子10が床に余裕で整列。旧セーブはロード時に貼り替え(migrate)。
+      ・新築牛舎: 7×6→9×9ブロック(壁3段+屋根y6)。母15+子15が床に並ぶ。
+      ・第二牛舎: 6×6→8×8ブロック。開拓地[12,58]は拡大に伴い[10,57]へ。
+   ③ 牛は基本つながれている+🚶散歩⇄🏠戻す:
+      デフォルトは各牛が牛舎の床の定位置(格子状の繋留スロット)に北向きで
+      整列(assignCowSlots)。🚶散歩ボタンで放し飼い=牛舎の床の範囲を自由に
+      徘徊、🏠戻すで全頭が定位置へ歩いて戻る。餌やり/掃除/なでる/種付け/
+      売却はどちらのモードでも可能。状態(state.cowFree)はセーブされる。
+      牛の割当は収容枠どおり(古10+10/第二5+5/新築15+15)に各牛舎へ配分。
+   ④ 糞は牛の足元(床)に:
+      dropManure が牛の現在地の床(cowFloorY)に糞を置く(屋根・宙に浮かない)。
+      近づいて回収→堆肥の原料、の既存ロジックは維持。
+   以下v23の説明:
    丹波農商 牧場物語 v23 — 3本の橋どれでも街へ・牧草の在庫繰越を緩和
    v23: v22の全機能を維持したまま2点改修。セーブはv20キー(tamba_v20_save)を共用。
    ① 3本の橋(北z14-15/中央z21-22/南z29-30)のどれを渡っても街へ:
@@ -643,6 +671,7 @@ function freshState(){return{
   grassOutMonths:0, // v23: 牧草の在庫不足が連続している月数(餌代の段階化に使用)
   grassCutMonth:-1, // v22: 直近の収穫を行った月(monthN)。収穫は5月と9月の年2回だけ
   care:{fedDay:-1,cleanDay:-1,dirt:0,health:100}, // v16: 牛の日次世話
+  cowFree:false, // v24: 牛の放し飼い(🚶散歩)状態。falseなら各牛は牛舎の定位置に繋留
   compostShed:false,fertStock:0, // v16: 堆肥舎と肥料在庫
   land:{pasture1:false,grass2:false,rice2:false,barn2:false},   // v16: 購入した区画 / v22: pasture1=西の牧草地(基本。デフォルト無し)
   bankLoan:0,
@@ -766,6 +795,11 @@ function migrateV20(){
   if(state.grassOutMonths===undefined)state.grassOutMonths=0; // v23: 餌代の段階化カウンタ
   for(const c of state.cows){if(c.sick===undefined){c.sick=false;c.sickDays=0;}if(c.fat===undefined)c.fat=60;if(c.sickCount===undefined)c.sickCount=0;}
   for(const c of state.calves){if(c.sick===undefined){c.sick=false;c.sickDays=0;}if(c.fat===undefined)c.fat=50;if(c.sickCount===undefined)c.sickCount=0;if(!c.sex)c.sex=Math.random()<0.5?'F':'M';}
+  // ---- v24: 牛の繋留/散歩モードと、大きくなった古い牛舎への貼り替え ----
+  if(state.cowFree===undefined)state.cowFree=false;
+  // 旧v23までの小さい牛舎(23-28×10-15)のブロック編集が残っていると屋根が
+  // 新しい牛舎の床の中に浮くため、賃借中なら大きい牛舎のブロックへ貼り替える(冪等)
+  if(state.barnRented)barnEditBlocks((x,y,z,t)=>{state.edits[key(x,y,z)]=t;});
 }
 
 // ---------- v14: 記帳/財務ヘルパ（決算=売上高−経費。与信/銀行借入はP/L外の負債） ----------
@@ -975,7 +1009,8 @@ function circleBlockedDeco(nx,nz,ox,oz,py){
   }
   for(const m of cowMeshes){            // 牛（現在位置で判定）
     if(Math.abs(m.position.y-py)>2)continue;
-    if(hitsCircle(nx,nz,ox,oz,m.position.x,m.position.z,m.userData.big?0.8:0.55))return true;
+    // v24: 繋留で整列した牛の間をプレイヤーが通れるよう半径を小さめに
+    if(hitsCircle(nx,nz,ox,oz,m.position.x,m.position.z,m.userData.big?0.42:0.3))return true;
   }
   for(const n of npcs){                 // NPC
     if(!n.mesh.parent)continue;         // v19: 別マップのNPCは無視
@@ -1261,20 +1296,22 @@ function buildWarehouseComplexBlocks(){
   for(const x of[72,73])for(let y=3;y<=4;y++)gset(x,y,WHZ1,0);
 }
 // ---------- v20: 山を切り開く新築牛舎(3000万・母15+子15。糞置き場が必須) ----------
-const NEW_BARN_PLOTS=[[68,12],[12,58],[68,44],[68,58],[40,58],[54,58]]; // v21: [68,26]は巨大倉庫と干渉するため南西の山[12,58]へ移設
+// v24: 建物を7×6→9×9へ大型化(壁3段+屋根y6)。[12,58]は拡大に伴い第二牛舎の柵と
+//      干渉しない[10,57]へ微移動。母15+子15が床(内側7×7マス)に並ぶ。
+const NEW_BARN_PLOTS=[[68,12],[10,57],[68,44],[68,58],[40,58],[54,58]]; // v21: [68,26]は巨大倉庫と干渉するため南西の山へ移設
 function terraformNewBarn(i){
   const p=NEW_BARN_PLOTS[i];if(!p)return;
   const[px,pz]=p;
-  flatten(px-1,px+7,pz-1,pz+7,2);
-  for(let x=px-1;x<=px+7;x++)for(let z=pz-1;z<=pz+7;z++)if(inWorld(x,z))gset(x,2,z,B.GRASS);
-  for(let x=px;x<=px+6;x++)for(let z=pz;z<=pz+5;z++){
+  flatten(px-1,px+9,pz-1,pz+9,2);
+  for(let x=px-1;x<=px+9;x++)for(let z=pz-1;z<=pz+9;z++)if(inWorld(x,z))gset(x,2,z,B.GRASS);
+  for(let x=px;x<=px+8;x++)for(let z=pz;z<=pz+8;z++){
     if(!inWorld(x,z))continue;
-    const wall=(x===px||x===px+6||z===pz||z===pz+5);
+    const wall=(x===px||x===px+8||z===pz||z===pz+8);
     if(wall){
-      const door=(z===pz+5&&(x===px+3||x===px+4));
-      if(!door){gset(x,3,z,B.PLANK);gset(x,4,z,B.PLANK);}
+      const door=(z===pz+8&&x>=px+3&&x<=px+5); // 南入口3マス
+      if(!door){gset(x,3,z,B.PLANK);gset(x,4,z,B.PLANK);gset(x,5,z,B.PLANK);}
     }
-    gset(x,5,z,B.HAY);
+    gset(x,6,z,B.HAY);
   }
 }
 // ---------- v16: 土地区画(ワールド拡張) ----------
@@ -1310,11 +1347,11 @@ function terraformRice2(){
 function terraformBarn2(){
   flatten(20,34,50,66,2);
   for(let x=20;x<=34;x++)for(let z=50;z<=66;z++)gset(x,2,z,B.GRASS);
-  // 第二牛舎(板の壁+干し草の屋根)
-  for(let x=24;x<=29;x++)for(let z=54;z<=59;z++){
-    const wall=(x===24||x===29||z===54||z===59);
+  // 第二牛舎(板の壁+干し草の屋根) v24: 6×6→8×8に拡大(母+5子+5が床に並ぶ)
+  for(let x=23;x<=30;x++)for(let z=53;z<=60;z++){
+    const wall=(x===23||x===30||z===53||z===60);
     if(wall){
-      const door=(z===59&&(x===26||x===27));
+      const door=(z===60&&(x===26||x===27||x===28));
       if(!door){gset(x,3,z,B.PLANK);gset(x,4,z,B.PLANK);}
     }
     gset(x,5,z,B.HAY);
@@ -1685,7 +1722,7 @@ let barnSign=null;
 function updateBarnSign(){
   if(curMap!=='farm')return; // v19: 街では看板なし(帰農時にbuildDecorで再生成)
   if(barnSign){removeSignInfo(barnSign);decoGroup.remove(barnSign);}
-  barnSign=addSign(25.5,17.5,'🏚',{t:'🏚 古い牛舎',
+  barnSign=addSign(24.0,18.6,'🏚',{t:'🏚 古い牛舎',
     b:()=>state.barnRented
       ?('賃借中(家賃 月3万円)。収容枠: 母牛'+state.cows.length+'/'+barnCapNow()+'頭・子牛'+state.calves.length+'/'+calfCapNow()+'頭。<br>牛は毎日🍼餌やり＋🧹掃除！種付け・売却・世話は牛舎メニューで。')
       :'家賃 月3万円で借りられる古い牛舎(母牛10頭+子牛10頭)。設備投資なしの低資本で牛を飼い始められるよ。牛は🐂街のセリ市場で与信購入(現金は減らない)。',
@@ -1976,7 +2013,7 @@ function buildPastureDecor(){
 // v21: 新牛舎の看板(アイコン+クリック説明)
 function addNewBarnSign(i){
   const p=NEW_BARN_PLOTS[i];
-  addSign(p[0]+3.5,p[1]-0.8,'🐂',{t:'🐂 新牛舎'+(i+1)+'号棟',b:'⛰山を切り開いて建てた新築牛舎(母牛+'+ECON.NEW_BARN_MO+'頭・子牛+'+ECON.NEW_BARN_CALF+'頭・家賃なし)。牛の世話・種付け・売却は牛舎メニューで。',btns:[['🐂 牛舎メニュー',()=>{menuTab='cows';openMenu();}]]});
+  addSign(p[0]+4.5,p[1]-0.8,'🐂',{t:'🐂 新牛舎'+(i+1)+'号棟',b:'⛰山を切り開いて建てた新築牛舎(母牛+'+ECON.NEW_BARN_MO+'頭・子牛+'+ECON.NEW_BARN_CALF+'頭・家賃なし)。牛の世話・種付け・売却は牛舎メニューで。',btns:[['🐂 牛舎メニュー',()=>{menuTab='cows';openMenu();}]]});
 }
 
 // ---------- アバター（ボクセル） ----------
@@ -2266,7 +2303,7 @@ function loadNPCGLBs(){
 //      GLBはマップをまたいで保持(切替のたびに読み直さない)。
 const npcs=[];
 function initNPCs(){
-  const spots={barn:[27.6,17.0],pasture:[39.5,13.5],compost:[35,36.8]}; // v13: 牛舎看板と重ならない位置に / v22: 堆肥場の移設に追従
+  const spots={barn:[30.2,18.6],pasture:[39.5,13.5],compost:[35,36.8]}; // v13: 牛舎看板と重ならない位置に / v22: 堆肥場の移設に追従 / v24: 牛舎拡大に伴い入口の前へ
   const mk=(modelKey,cfg,map,pos,wander)=>{
     const g=new THREE.Group();               // ホルダー（ラベル＋キャラ）
     const vox=buildVoxAvatar(cfg); vox.visible=false; g.add(vox); // v15: ボクセルは非表示で待機(GLB失敗時のみ表示)
@@ -2283,7 +2320,7 @@ function initNPCs(){
 function placeNPCs(){
   for(const n of npcs){
     let pos=n.homePos,show=(n.map===curMap);
-    if(n.key==='juui'&&curMap==='farm'&&state.vetVisitDay===state.absDay){show=true;pos=[30.5,16.5];} // 往診中の獣医
+    if(n.key==='juui'&&curMap==='farm'&&state.vetVisitDay===state.absDay){show=true;pos=[33.0,18.5];} // 往診中の獣医 v24: 拡大した牛舎の前へ
     if(!show){scene.remove(n.mesh);continue;}
     scene.add(n.mesh);
     const y=topY(Math.floor(pos[0]),Math.floor(pos[1]))+1;
@@ -2308,26 +2345,92 @@ function cowMesh(wagyu){
   if(wagyu){g.scale.setScalar(1.25);}else{g.scale.setScalar(0.8);}
   return g;
 }
-function barnCenter(){return[26,13.5];} // v10: 古い牛舎の中心
-// v20: 全牛舎(古い牛舎+第二牛舎+新築牛舎)の中心リスト。牛は各牛舎に分散する
-function barnCenters(){
-  const list=[[26,13.5]];
-  if(state.land.barn2)list.push([26.5,56.5]);
-  for(let i=0;i<state.newBarns;i++){const p=NEW_BARN_PLOTS[i];list.push([p[0]+3.5,p[1]+2.5]);}
+function barnCenter(){return[27,13.5];} // v10: 古い牛舎の中心(v24: 拡大後)
+// v24: 全牛舎(古い牛舎+第二牛舎+新築牛舎)の「内側の床の矩形」。牛のスポーン・
+//      繋留スロット・散歩(徘徊)はすべてこの矩形にクランプされるので、
+//      牛が壁や屋根の上に乗ることは構造的にできない(①屋根バグの根本修正)。
+function barnAreas(){
+  const list=[{cx:27,cz:14,x0:23.4,x1:30.6,z0:11.4,z1:16.4}]; // 古い牛舎(10×8)の床
+  if(state.land.barn2)list.push({cx:27,cz:57,x0:24.4,x1:29.6,z0:54.4,z1:59.4}); // 第二牛舎(8×8)
+  for(let i=0;i<state.newBarns;i++){const p=NEW_BARN_PLOTS[i];if(!p)continue;
+    list.push({cx:p[0]+4.5,cz:p[1]+4.5,x0:p[0]+1.4,x1:p[0]+7.6,z0:p[1]+1.4,z1:p[1]+7.4});} // 新築牛舎(9×9)
   return list;
+}
+function barnCenters(){return barnAreas().map(a=>[a.cx,a.cz]);} // v20互換
+// v24: 牛の接地高さ。topY()は屋根(いちばん上)を返してしまうので、
+//      床の高さ(y=4)から下へ走査して「屋根の下の床」を探す(全牛舎の床はy=3)
+function cowFloorY(x,z){
+  const bx=Math.floor(x),bz=Math.floor(z);
+  for(let y=4;y>=0;y--){
+    const t=getB(bx,y,bz);
+    if(t&&!BI[t].water){
+      const a1=getB(bx,y+1,bz),a2=getB(bx,y+2,bz);
+      if((!a1||BI[a1].water)&&(!a2||BI[a2].water))return y+1;
+    }
+  }
+  return 3;
+}
+// v24: 牛を収容枠どおり(古10+10/第二5+5/新築15+15)に各牛舎へ割当てる
+function barnQuota(){ // barnAreas()と同順の[母枠,子枠]
+  const q=[[state.barnRented?ECON.BARN_CAP:0,state.barnRented?ECON.BARN_CAP_CALF:0]];
+  if(state.land.barn2)q.push([ECON.BARN2_ADD,ECON.BARN2_ADD]);
+  for(let i=0;i<state.newBarns;i++)q.push([ECON.NEW_BARN_MO,ECON.NEW_BARN_CALF]);
+  return q;
+}
+function cowBarnIndex(){ // id→牛舎番号(m=母牛 c=子牛)
+  const q=barnQuota(),map={};
+  const alloc=(list,slot,pre)=>{
+    let i=0,u=0;
+    for(const c of list){
+      while(i<q.length-1&&u>=q[i][slot]){i++;u=0;}
+      map[pre+c.id]=i;u++;
+    }
+  };
+  alloc(state.cows,0,'m');alloc(state.calves,1,'c');
+  return map;
+}
+// v24: 繋留スロット=牛舎の床に格子状の定位置を割り当てる(母牛が北側・子牛が南側。
+//      北向きに整列するので餌やり・なでる等のアクションがやりやすい)
+function assignCowSlots(){
+  const areas=barnAreas();if(!areas.length||!cowMeshes.length)return;
+  const bmap=cowBarnIndex();
+  const groups=areas.map(()=>[]);
+  for(const m of cowMeshes){
+    const u=m.userData;
+    const k2=u.calf?('c'+u.calf.id):('m'+(u.cow?u.cow.id:0));
+    u.bi=Math.min(bmap[k2]!==undefined?bmap[k2]:0,areas.length-1);
+    groups[u.bi].push(m);
+  }
+  groups.forEach((g,bi)=>{
+    const a=areas[bi],w=a.x1-a.x0,d=a.z1-a.z0;
+    g.sort((p,q2)=>((q2.userData.big?1:0)-(p.userData.big?1:0))||(((p.userData.cow||p.userData.calf).id)-((q2.userData.cow||q2.userData.calf).id)));
+    const cols=Math.max(1,Math.floor(w/1.55)+1);
+    const rows=Math.max(1,Math.ceil(g.length/cols));
+    const sx=cols>1?w/(cols-1):0,sz=rows>1?Math.min(1.9,d/(rows-1)):0;
+    g.forEach((m,i)=>{
+      const col=i%cols,row=Math.floor(i/cols);
+      const ox=(row%2===1&&cols>1)?sx*0.5:0; // 千鳥配置(前後の列で頭をずらす)
+      const px=Math.max(a.x0,Math.min(a.x1,a.x0+(cols>1?col*sx+ox:w/2)));
+      const pz=a.z0+(rows>1?row*sz:d/2);
+      m.userData.slot={x:px,z:pz};
+      if(!m.userData.placed){ // 生成直後は即その場へ(以降は歩いて移動)
+        m.position.set(px,cowFloorY(px,pz),pz);
+        m.rotation.y=Math.PI/2; // 北向き
+        m.userData.placed=true;
+      }
+    });
+  });
 }
 // v14: 母牛(大)と子牛(小)を別サイズで表示
 function spawnCowMesh(cow,isCalf){
   if(curMap!=='farm')return null; // v19: 街では牛メッシュを出さない(帰農時に再生成)
   const g=cowMesh(!isCalf);
   if(isCalf)g.scale.setScalar(0.62);
-  const cs=barnCenters();
-  const[bx,bz]=cs[(cow.id||0)%cs.length]; // v20: 牛舎に分散
-  // v10: 牛舎のかべの上に乗らないよう、内側にスポーン
-  const x=bx+(Math.random()*3-1.5),z=bz+(Math.random()*3-1.5);
-  const y=topY(Math.floor(x),Math.floor(z))+1;
-  g.position.set(x,y,z);
-  g.userData={cow:isCalf?null:cow,calf:isCalf?cow:null,big:!isCalf,t:Math.random()*100,tx:x,tz:z,cx:bx,cz:bz,moo:Math.random()*30};
+  // v24: 位置は assignCowSlots() が決める(床レベル・自分の牛舎の内側)。仮置きのみ
+  const a0=barnAreas()[0];
+  const x=a0.cx,z=a0.cz;
+  g.position.set(x,cowFloorY(x,z),z);
+  g.userData={cow:isCalf?null:cow,calf:isCalf?cow:null,big:!isCalf,t:Math.random()*100,tx:x,tz:z,bi:0,slot:null,placed:false,moo:Math.random()*30};
   scene.add(g);cowMeshes.push(g);
   return g;
 }
@@ -2337,15 +2440,17 @@ function refreshCowMeshes(){
   if(curMap!=='farm')return; // v19: 街では表示しない
   for(const c of state.cows)spawnCowMesh(c,false);
   for(const c of state.calves)spawnCowMesh(c,true);
+  assignCowSlots(); // v24: 定位置(繋留スロット)を割り当てて床に整列
+  if(typeof updateCowModeBtn==='function')updateCowModeBtn();
 }
 // 牛ふん
 const manures=[];
+// v24: 糞は牛の足元(牛舎の床)に置く。topY()だと屋根の上になるので cowFloorY() を使う
 function dropManure(x,z){
   if(curMap!=='farm')return; // v19
   if(manures.length>=12)return;
   const g=new THREE.Mesh(new THREE.SphereGeometry(0.2,6,5),new THREE.MeshLambertMaterial({color:0x5a4028}));
-  const y=topY(Math.floor(x),Math.floor(z))+1;
-  g.position.set(x,y+0.12,z);g.scale.y=0.6;
+  g.position.set(x,cowFloorY(x,z)+0.12,z);g.scale.y=0.6;
   scene.add(g);manures.push(g);
 }
 
@@ -2615,6 +2720,28 @@ function updateCareChip(){
   el.style.display='block';
   el.textContent='🐂 餌'+(fed?'✅':'⬜')+' 掃除'+(cl?'✅':'⬜')+' 健康'+state.care.health+(state.care.dirt>0?' 汚れ'+state.care.dirt:'')+(sk>0?' 🤒病気'+sk+'頭':'');
   el.style.borderColor=(fed&&cl&&sk===0)?'#7aa35a':'#c03030';
+  updateCowModeBtn(); // v24: 散歩/戻すボタンの表示も更新
+}
+// ---------- v24: 牛の繋留⇄散歩(放し飼い)トグル ----------
+function toggleCowMode(){
+  if(!state)return;
+  state.cowFree=!state.cowFree;
+  if(state.cowFree){
+    toast('🚶 牛を放し飼いにした！牛舎の床を自由に歩き回るよ(🏠戻すでいつでも定位置へ)');
+  }else{
+    assignCowSlots(); // 定位置を再割当てして全頭が歩いて戻る
+    toast('🏠 牛を定位置に戻した！各牛は自分の牛舎の繋留場所へ戻るよ(世話がしやすい)');
+  }
+  sfx(600,.07,'sine',.05);
+  updateCowModeBtn();
+}
+function updateCowModeBtn(){
+  const el=document.getElementById('cowModeBtn');
+  if(!el||!state)return;
+  const show=herdCount()>0&&curMap==='farm';
+  el.style.display=show?'block':'none';
+  el.textContent=state.cowFree?'🏠 戻す(定位置へ)':'🚶 散歩(放し飼い)';
+  el.classList.toggle('walking',!!state.cowFree);
 }
 // ---------- v20: 糞置き場(簡易・200万)＝糞の処理のみ。牛舎増築の必須条件 ----------
 function buyDungYard(){
@@ -2710,9 +2837,9 @@ function nearestAction(wx,wz){
     if(state.machines.combine.lvl)names.push('🌾コンバイン'+(state.machines.combine.broken?'(⚠故障)':''));
     toast('🚜 農機庫: '+names.join('・')+'。新しい機械は🚜街の農協で(補助で半額)');
   });
-  cand(25.5,17.5,2.3,hasBarn()?'🏚 牛舎(牛の管理)':'🏚 古い牛舎を借りる(月3万円)',()=>{if(hasBarn()){menuTab='cows';openMenu();}else rentBarn();});
+  cand(24.0,18.6,2.3,hasBarn()?'🏚 牛舎(牛の管理)':'🏚 古い牛舎を借りる(月3万円)',()=>{if(hasBarn()){menuTab='cows';openMenu();}else rentBarn();}); // v24: 拡大した牛舎の入口前
   // v16: 牛の日次世話(牛舎の中)。従業員に指示していなければ毎日自分でやる
-  if(herdCount()>0&&!careDoneToday())cand(26,13.5,3.2,'🍼 牛の世話(餌やり+掃除)',()=>doCowCare(null));
+  if(herdCount()>0&&!careDoneToday())cand(27,15.8,3.6,'🍼 牛の世話(餌やり+掃除)',()=>doCowCare(null));
   if(state.land.pasture1)cand(37,14.5,2.3,state.grassSown?(grassHarvestMonth()&&state.grassCutMonth!==state.monthN?'✂ 牧草を収穫する(春秋の年2回)':'🌿 牧草の状況'):'🌿 牧草を育てる('+man(grassSowCost())+')',()=>{
     if(!state.grassSown){sowGrass();return;}
     if(grassHarvestMonth()&&state.grassCutMonth!==state.monthN){doGrassCut(null);return;}
@@ -2781,33 +2908,31 @@ function updateActHint(){
 }
 
 // ---------- v10: 牛舎はショップで買うと完成状態で出現 ----------
-const BARN_X0=23,BARN_X1=28,BARN_Z0=10,BARN_Z1=15,BARN_FLOOR=2;
-function buildBarnBlocks(record){
+// v24: 古い牛舎を6×6→10×8ブロックへ拡大(壁3段+屋根y6・南入口3マス)。
+//      母10頭+子10頭が床(内側8×6マス)に余裕をもって整列できる広さ。
+const BARN_X0=22,BARN_X1=31,BARN_Z0=10,BARN_Z1=17,BARN_FLOOR=2;
+// v24: 牛舎ブロックの配置(共通)。先に領域を更地化するので、旧v23の小さい
+//      牛舎(壁・屋根)の編集が残っていても消えてから建て直される(冪等)
+function barnEditBlocks(put){
   for(let x=BARN_X0;x<=BARN_X1;x++)for(let z=BARN_Z0;z<=BARN_Z1;z++){
+    for(let y=3;y<=6;y++)put(x,y,z,0); // 旧牛舎の壁・屋根や木の枝を撤去
     const wall=(x===BARN_X0||x===BARN_X1||z===BARN_Z0||z===BARN_Z1);
     if(wall){
-      // 南がわに入口（2マス）
-      const door=(z===BARN_Z1&&(x===25||x===26));
-      if(!door){
-        setBlockLive(x,BARN_FLOOR+1,z,B.PLANK,record);
-        setBlockLive(x,BARN_FLOOR+2,z,B.PLANK,record);
-      }
+      // 南がわに入口（3マス。前の小道x27-28へつながる）
+      const door=(z===BARN_Z1&&(x===26||x===27||x===28));
+      if(!door){put(x,3,z,B.PLANK);put(x,4,z,B.PLANK);put(x,5,z,B.PLANK);}
     }
-    setBlockLive(x,BARN_FLOOR+3,z,B.HAY,record); // 屋根
+    put(x,6,z,B.HAY); // 屋根
   }
+}
+function buildBarnBlocks(record){
+  barnEditBlocks((x,y,z,t)=>setBlockLive(x,y,z,t,record));
   flushDirty();
 }
 // v19: 牛舎のブロックを「街に居ても」安全に建てる(state.editsへ記録し、農場なら即反映)
 function ensureBarnBuilt(){
   const put=(x,y,z,t)=>{state.edits[key(x,y,z)]=t;if(curMap==='farm'){gset(x,y,z,t);markDirty(x,z);}};
-  for(let x=BARN_X0;x<=BARN_X1;x++)for(let z=BARN_Z0;z<=BARN_Z1;z++){
-    const wall=(x===BARN_X0||x===BARN_X1||z===BARN_Z0||z===BARN_Z1);
-    if(wall){
-      const door=(z===BARN_Z1&&(x===25||x===26));
-      if(!door){put(x,BARN_FLOOR+1,z,B.PLANK);put(x,BARN_FLOOR+2,z,B.PLANK);}
-    }
-    put(x,BARN_FLOOR+3,z,B.HAY);
-  }
+  barnEditBlocks(put);
   if(curMap==='farm')flushDirty();
 }
 // v20: 新築牛舎(1棟3000万・補助で1500万)。⛰山を切り開いて増築。🟤糞置き場が必須。
@@ -2849,6 +2974,7 @@ function buyCowCredit(){
   const cow={id,name:'牛'+id,preg:-1,births:0,debt:ECON.COW_PRICE,retired:false,bredMonth:-1,sick:false,sickDays:0,fat:60,sickCount:0}; // v19: 病気 v20: 肥育度・病歴
   state.cows.push(cow);
   spawnCowMesh(cow,false);
+  assignCowSlots(); // v24: 新入りに定位置(繋留スロット)を割り当て
   mooSfx();
   toast('🐂 '+cow.name+'を与信で購入！現金は減らず、この牛に借金'+man(ECON.COW_PRICE));
   toast('💡 子牛を売ると半分が返済に充当。2頭で完済だよ');
@@ -3843,6 +3969,9 @@ function cowsHTML(){
     const fed=state.care.fedDay===state.absDay,cl=state.care.cleanDay===state.absDay;
     h+='<div class="row"><div class="em">🍼</div><div class="info"><b>今日の世話: 餌'+(fed?'✅':'⬜')+' 掃除'+(cl?'✅':'⬜')+' / 健康'+state.care.health+' 汚れ'+state.care.dirt+'</b><small>毎日必要！よく食べた牛は肥育度が上がって高く売れる(+30%まで)。サボると痩せて安く(-40%まで)・健康40未満は妊娠が進まない。従業員に🐂牛の世話を指示すると自動</small></div>'+
     '<button class="buy" '+((fed&&cl)?'disabled':'')+' onclick="doCowCare(null);renderMenu()">世話する</button></div>';
+    // v24: 繋留⇄散歩の切り替え(マップ右の🚶ボタンと同じ)
+    h+='<div class="row"><div class="em">'+(state.cowFree?'🚶':'⛓')+'</div><div class="info"><b>'+(state.cowFree?'いま: 散歩中(放し飼い)':'いま: 定位置に繋留中')+'</b><small>ふだんは各牛が牛舎の床の定位置に繋がれている(餌やり・なでるがやりやすい)。🚶散歩で牛舎の床を放し飼い→🏠戻すで全頭が定位置へ整列。どちらでも世話・種付け・売却はできるよ</small></div>'+
+    '<button class="buy'+(state.cowFree?' orange':'')+'" onclick="toggleCowMode();renderMenu()">'+(state.cowFree?'🏠 戻す':'🚶 散歩')+'</button></div>';
   }
   if(!state.cows.length&&!state.calves.length)h+='<p style="color:#8a6a45">牛はまだいないよ。🐂セリ市場でメス牛を買おう(与信100万円)。</p>';
   for(const c of state.cows){
@@ -4184,6 +4313,15 @@ function switchMap(target){
 window.__v4dbg.switchMap=t=>switchMap(t);
 window.__v4dbg.getMap=()=>curMap;
 window.__v4dbg.npcPos=()=>npcs.filter(n=>n.mesh.parent).map(n=>({key:n.key,name:n.cfg.name,x:+n.mesh.position.x.toFixed(1),z:+n.mesh.position.z.toFixed(1)})); // v20: 検証用
+// v24: 検証用(牛の位置・糞の位置・散歩モード・牛舎の床矩形)
+window.__v4dbg.cowPos=()=>cowMeshes.map(m=>({id:(m.userData.cow||m.userData.calf||{id:-1}).id,big:!!m.userData.big,bi:m.userData.bi,x:+m.position.x.toFixed(2),y:+m.position.y.toFixed(2),z:+m.position.z.toFixed(2)}));
+window.__v4dbg.manurePos=()=>manures.map(m=>({x:+m.position.x.toFixed(2),y:+m.position.y.toFixed(2),z:+m.position.z.toFixed(2)}));
+window.__v4dbg.cowMode=v=>{if(v!==undefined&&!!v!==!!state.cowFree)toggleCowMode();return state.cowFree;};
+window.__v4dbg.barnAreas=()=>barnAreas();
+window.__v4dbg.topYAt=(x,z)=>topY(x,z);
+window.__v4dbg.blockAt=(x,y,z)=>getB(x,y,z);
+window.__v4dbg.cowSlots=()=>cowMeshes.map(m=>({id:(m.userData.cow||m.userData.calf||{id:-1}).id,slot:m.userData.slot,x:+m.position.x.toFixed(2),z:+m.position.z.toFixed(2)}));
+window.__v4dbg.forceManure=n=>{for(let i=0;i<(n||1);i++){if(!cowMeshes.length)break;const m=cowMeshes[Math.floor(Math.random()*cowMeshes.length)];const areas=barnAreas(),a=areas[Math.min(m.userData.bi||0,areas.length-1)];const mx=Math.max(a.x0,Math.min(a.x1,m.position.x+(Math.random()-0.5)*0.9)),mz=Math.max(a.z0,Math.min(a.z1,m.position.z+(Math.random()-0.5)*0.9));dropManure(mx,mz);}return manures.length;};
 
 // ---------- セーブ / ロード ----------
 function saveGame(showToast){
@@ -4346,6 +4484,7 @@ function bindControls(){
   document.getElementById('quest').addEventListener('click',()=>{ac();showQuestInfo();});     // v21: クエストの❓タップで詳細
   document.getElementById('dayBtn').addEventListener('click',()=>{ac();nextDay();});          // v16: 日送り(基本操作)
   document.getElementById('monthBtn').addEventListener('click',()=>{ac();nextMonthBatch();}); // v16: 30日一括(放置)
+  document.getElementById('cowModeBtn').addEventListener('click',()=>{ac();toggleCowMode();}); // v24: 🚶散歩⇄🏠戻す
   // v20: カメラズーム。ホイール(PC)+🔍±ボタン(スマホ/PC共通)。ピンチはタッチ側で処理
   el.addEventListener('wheel',e=>{e.preventDefault();setCamDist(camDist+e.deltaY*0.012);},{passive:false});
   const zi=document.getElementById('zoomInBtn'),zo=document.getElementById('zoomOutBtn');
@@ -4499,32 +4638,51 @@ function animate(ts){
     }
   }
   // --- 牛 ---
+  // v24: デフォルト=定位置に繋留(slotへ向かい、着いたら北向きで待機)。
+  //      🚶散歩中=自分の牛舎の床の矩形の中だけを徘徊。どちらも位置を
+  //      barnAreas() の床矩形にクランプ+cowFloorY() 接地なので、
+  //      壁・屋根の上には構造的に乗れない(①屋根バグの修正)。
+  const cowAreas=cowMeshes.length?barnAreas():null;
   for(const m of cowMeshes){
     const u=m.userData;u.t+=dt;
-    if(u.t>4){u.t=0;
-      const bx=(u.cx!==undefined?u.cx:26),bz=(u.cz!==undefined?u.cz:13.5); // v20: 自分の牛舎のまわりを徘徊
-      u.tx=bx+(Math.random()*7-3.5);u.tz=bz+(Math.random()*7-3.5);
-      u.tx=Math.max(1,Math.min(WS-1,u.tx));u.tz=Math.max(1,Math.min(WS-1,u.tz));
+    const a=cowAreas[Math.min(u.bi||0,cowAreas.length-1)];
+    let tx,tz,arrive;
+    if(state.cowFree){ // 🚶散歩(放し飼い): 牛舎の床を自由に歩き回る
+      if(u.t>4){u.t=0;
+        u.tx=a.x0+Math.random()*(a.x1-a.x0);
+        u.tz=a.z0+Math.random()*(a.z1-a.z0);
+      }
+      tx=u.tx;tz=u.tz;arrive=0.4;
+    }else{ // 🏠繋留(デフォルト): 定位置へ(着いていれば待機)
+      const s=u.slot||{x:a.cx,z:a.cz};
+      tx=s.x;tz=s.z;arrive=0.08;
     }
-    const dx=u.tx-m.position.x,dz=u.tz-m.position.z,dl=Math.hypot(dx,dz);
-    if(dl>0.4){
-      // v9: 牛は柵・壁を乗り越えない(walkY判定)。入れないなら目的地を選び直す
-      const nx=m.position.x+dx/dl*dt*0.8,nz=m.position.z+dz/dl*dt*0.8;
-      const sy=walkY(Math.floor(nx),Math.floor(nz),m.position.y);
-      if(sy<=WH){
-        m.position.x=nx;m.position.z=nz;m.position.y=sy;
-        m.rotation.y=Math.atan2(dx,dz)-Math.PI/2;
-      }else u.t=4;
+    const dx=tx-m.position.x,dz=tz-m.position.z,dl=Math.hypot(dx,dz);
+    if(dl>arrive){
+      const sp=state.cowFree?0.8:1.4; // 戻る時は少し早歩き
+      const st2=Math.min(dl,sp*dt);
+      let nx=m.position.x+dx/dl*st2,nz=m.position.z+dz/dl*st2;
+      nx=Math.max(a.x0,Math.min(a.x1,nx));nz=Math.max(a.z0,Math.min(a.z1,nz)); // 床の外(壁・屋根)へは出ない
+      m.position.set(nx,cowFloorY(nx,nz),nz);
+      m.rotation.y=Math.atan2(dx,dz)-Math.PI/2;
+    }else if(!state.cowFree){
+      // 繋留中はなめらかに北向き(頭を飼槽側)へそろえる
+      let dr=Math.PI/2-m.rotation.y;
+      while(dr>Math.PI)dr-=Math.PI*2;while(dr<-Math.PI)dr+=Math.PI*2;
+      m.rotation.y+=dr*Math.min(1,dt*4);
     }
     u.moo-=dt;
     if(u.moo<0){u.moo=20+Math.random()*30;if(Math.hypot(m.position.x-player.x,m.position.z-player.z)<14)mooSfx();}
   }
-  // 牛ふん生成
+  // 牛ふん生成 v24: 牛の現在地の足元(牛舎の床)に落とす(屋根に落ちない)
   manureAcc+=dt;
   if(manureAcc>18){manureAcc=0;
     if(curMap==='farm'&&state.cows.length>0&&cowMeshes.length>0){
       const m=cowMeshes[Math.floor(Math.random()*cowMeshes.length)];
-      dropManure(m.position.x+(Math.random()-0.5),m.position.z+(Math.random()-0.5));
+      const areas=barnAreas(),a=areas[Math.min(m.userData.bi||0,areas.length-1)];
+      const mx=Math.max(a.x0,Math.min(a.x1,m.position.x+(Math.random()-0.5)*0.9));
+      const mz=Math.max(a.z0,Math.min(a.z1,m.position.z+(Math.random()-0.5)*0.9));
+      dropManure(mx,mz);
     }
   }
   // ふん回収（近づくと自動）
