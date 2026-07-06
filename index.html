@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v21 巨大倉庫とアイコン案内</title>
+<title>丹波農商 牧場物語 v22 橋で街へ・超巨大倉庫・牧草は春秋の年2回</title>
 <link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -129,12 +129,12 @@
 <div id="seedPick"><div class="panel" id="seedPickBox"></div></div>
 <div id="title">
   <h1>🌾 丹波農商<br>牧場物語 <span style="font-size:16px">放置経営編</span></h1>
-  <div class="sub">現金1,000万円と棚田から始めるリアル農業経営！<br>「⏭ 次の日へ」で時間が進む。牛は毎日 餌やりと掃除。従業員に指示すれば「放置経営」もOK。<br>🏭東の巨大倉庫に農機・米・精米・加工・事務所を集約。🚌バスで街へ行くと役場・銀行・農協・修理屋・セリ市場。<br>マップの絵アイコンをタップすると説明が出るよ。毎年3月末は決算、現金が尽きたら倒産…🐂📒💰</div>
+  <div class="sub">現金1,000万円と棚田から始めるリアル農業経営！<br>「⏭ 次の日へ」で時間が進む。牛は毎日 餌やりと掃除。従業員に指示すれば「放置経営」もOK。<br>🏭東の巨大倉庫に農機・米・精米・加工・事務所を集約。🌉川の橋を渡って西へ行くと丹波の街(役場・銀行・農協・修理屋・セリ市場)。<br>🌿牧草地は不動産屋で購入、牧草の収穫は春(5月)と秋(9月)の年2回。マップの絵アイコンをタップすると説明が出るよ。毎年3月末は決算、現金が尽きたら倒産…🐂📒💰</div>
   <button class="bigbtn" id="newBtn">▶ はじめる</button>
   <button class="bigbtn orange" id="contBtn">💾 続きから</button>
 </div>
 <div id="loading"><div id="loadSpin"></div><div>よみこみちゅう…</div><div id="loadMsg">丹波の里を準備しているよ</div></div>
-<div id="travel">🚌 移動中…</div>
+<div id="travel">🌉 移動中…</div>
 <div class="ov" id="gameover"><div class="panel" id="gameoverBox"></div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -142,6 +142,28 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
 <script>
 /* =====================================================================
+   丹波農商 牧場物語 v22 — 橋で街へ・机の撤去・倉庫さらに拡大・牧草は春秋の年2回
+   v22: v21の全機能を維持したまま4点改修。セーブはv20キー(tamba_v20_save)を共用。
+   ① バス廃止→橋で街へ: 農場/街のバス停(小屋・ベンチ)を撤去。川の中央の
+      木橋(z=21-22)を渡った西岸に「🏘街の入口」(門+石畳の広場)を新設し、
+      そこへ到達すると自動で街マップへ(アイコンクリックでも遷移)。
+      街側は南の大通りの突き当たりに「🌉農場への道」(門)を新設し、
+      そこへ到達すると農場の橋のたもとへ戻る。暗転演出・共通経営状態は従来通り。
+   ② 邪魔な机類の撤去: 開始地点そばの🛒購買屋台(木のテーブル+屋根)を撤去
+      (種を買う機能は📦出荷箱/倉庫メニューへ集約)。バス停のベンチ+小屋
+      (農場/街)も①で撤去。大倉庫内の事務所の机・作業台は通路外なので存置。
+   ③ 大倉庫をさらに拡大: 29×11→35×13ブロック・壁7段+大屋根(y10)。
+      農機庫/米貯蔵/加工場/事務所の間隔を広げ、西の大搬入口を5マス幅に拡大。
+      北の通用口を新設。柱・吊り照明・高窓も規模に合わせ増設。
+      干渉回避: 堆肥場をx34-41へ移設・東の棚田の整地はz36〜(田はz37-46)。
+   ④ 牧草地はデフォルト無し+収穫は年2回(春5月・秋9月):
+      開始時に牧草地を持たない。街の🏠不動産屋で「西の牧草地」(100万)を
+      買うと農場の空き地が柵付き牧草地になる(東の牧草地150万はその拡張)。
+      作付け(10万)後は育成中となり、5月と9月だけ✂収穫できる(1回72束・
+      東の牧草地で144束)。従業員の牧草担当は収穫月に自動収穫。
+      月次の餌消費(牧草1万/市販3.5万)・余剰売却・帳簿(牧草事業PL/BS)は
+      整合を維持(余剰判定は次の収穫月までの消費分を確保して計算)。
+   以下v21の説明:
    丹波農商 牧場物語 v21 — 巨大倉庫・跡地の更地化・アイコンクリック説明
    v21: v20の全機能を維持したまま3点改修。セーブはv20キー(tamba_v20_save)を共用。
    ① 大倉庫を巨大化: 16×8→29×11ブロック・壁6段+大屋根(y9)に大幅拡大。
@@ -419,7 +441,7 @@ const TOWN_CHARS={
     line2:'赤字だと貸せません…毎年の決算を黒字にするのが信用の第一歩です'},
   fudosan:{model:'naoto',name:'不動産屋の登さん',role:'不動産屋',menu:'land',pos:[25.5,34.6],
     skin:'#eac199',cheek:'#e89a7a',hair:'#241a12',glasses:true,shirt:'#6a5a3a',pants:'#3a352a',shoe:'#333',
-    line:'土地をお探しですか？東の牧草地・東の棚田・南の牧場、いい区画が揃ってますよ🏠',
+    line:'土地をお探しですか？西の牧草地・東の棚田・南の牧場、いい区画が揃ってますよ🏠',
     line2:'土地を買えば農場の世界が広がる。生産規模の拡大は経営の王道です'},
   nokyo:{model:'nokyo',name:'農協の米田さん',role:'農協職員',menu:'ja',pos:[40.5,34.6],
     skin:'#e8b98c',cheek:'#e8907a',hair:'#1c1712',cap:'#2f8a4a',shirt:'#2f8a4a',pants:'#33383f',shoe:'#333',
@@ -524,10 +546,12 @@ const ECON={
   NEW_BARN:30000000,     // v20: 新築牛舎1棟(補助で1500万)。山を切り開いて増築
   NEW_BARN_MO:15,        // v20: 新築牛舎1棟の母牛収容数
   NEW_BARN_CALF:15,      // v20: 新築牛舎1棟の子牛収容数
-  GRASS_SOW_COST:100000, // 牧草の作付け費(1回払えば毎月生産)
-  GRASS_YIELD:12,        // 牧草の月間生産量(束)
+  GRASS_SOW_COST:100000, // 牧草の作付け費(1回払えば毎年育つ)
+  GRASS_YIELD:12,        // 牧草の生産ベース(束/月換算。v22: 収穫は年2回にまとめて行う)
+  GRASS_CUT_MONTHS:6,    // v22: 1回の収穫=6ヶ月分(12束×6=72束。年2回で年144束は従来と同じ)
   GRASS_EAT:1,           // 牛1頭の月間牧草消費(束)
   GRASS_PRICE:10000,     // 余剰牧草の売値(1束)
+  LAND_PASTURE_PRICE:1000000, // v22: 西の牧草地(基本区画)。開始時は牧草地なし→不動産屋で購入
   TAX_RATE:0.3,          // v15: 税率30%(牛の利益は非課税)
   // ---- v16: 日次・土地・堆肥舎の前提値 ----
   DAYS_PER_MONTH:30,     // 1ヶ月=30日
@@ -595,10 +619,10 @@ function freshState(){return{
   riceBags:0,shipMonth:-1,soldRiceBags:0,
   riceMiss:0,waterMonth:-1, // v16: 水管理(5-9月に月1回)。サボった月数で収量減
   grassSown:false,grassStock:0,grassProdLast:0,grassFedLast:0,
-  grassCutMonth:-1, // v16: 今月の刈り取りが済んだか(サボると生産半減)
+  grassCutMonth:-1, // v22: 直近の収穫を行った月(monthN)。収穫は5月と9月の年2回だけ
   care:{fedDay:-1,cleanDay:-1,dirt:0,health:100}, // v16: 牛の日次世話
   compostShed:false,fertStock:0, // v16: 堆肥舎と肥料在庫
-  land:{grass2:false,rice2:false,barn2:false},   // v16: 購入した区画
+  land:{pasture1:false,grass2:false,rice2:false,barn2:false},   // v16: 購入した区画 / v22: pasture1=西の牧草地(基本。デフォルト無し)
   bankLoan:0,
   fy:freshFy(), // v17: 勘定別+事業セグメント別の期中帳簿
   lastResult:null,history:[],
@@ -627,7 +651,12 @@ function riceBagsYield(){
 }
 function riceShipMax(){return Math.round(ECON.RICE_SHIP_MAX*riceScale());}
 function grassSowCost(){return ECON.GRASS_SOW_COST-(state.compostShed?ECON.FERT_SAVE_GRASS:0);}
-function grassYieldNow(){const y=ECON.GRASS_YIELD*(state.land.grass2?2:1);return state.grassCutMonth===state.monthN?y:Math.floor(y/2);}
+// ---- v22: 牧草は春(5月)と秋(9月)の年2回収穫 ----
+function hasPasture(){return !!(state.land.pasture1||state.land.grass2);}
+function grassHarvestMonth(){return state.month===5||state.month===9;}
+function grassCutYield(){return ECON.GRASS_YIELD*ECON.GRASS_CUT_MONTHS*(state.land.grass2?2:1);} // 1回の収穫量(72束/東の牧草地で144束)
+function monthsToNextGrassHarvest(){for(let d=1;d<=12;d++){const mm=((state.month-1+d)%12)+1;if(mm===5||mm===9)return d;}return 12;} // 次の収穫月まで何ヶ月か(余剰計算用)
+function nextGrassHarvestLabel(){return (((state.month-1+monthsToNextGrassHarvest())%12)+1)+'月';}
 // v20: 牛舎の収容枠(母牛/子牛)。古い牛舎=10+10、南の牧場=+5+5、新築牛舎=1棟につき15+15
 function barnCapNow(){return (state.barnRented?ECON.BARN_CAP:0)+(state.land.barn2?ECON.BARN2_ADD:0)+state.newBarns*ECON.NEW_BARN_MO;}
 function calfCapNow(){return (state.barnRented?ECON.BARN_CAP_CALF:0)+(state.land.barn2?ECON.BARN2_ADD:0)+state.newBarns*ECON.NEW_BARN_CALF;}
@@ -701,6 +730,8 @@ function migrateV20(){
   if(state.shedCost===undefined)state.shedCost=state.compostShed?ECON.SHED_COST:0;
   if(state.vetVisitDay===undefined)state.vetVisitDay=-1;
   if(state.ricePlantMonthN===undefined)state.ricePlantMonthN=-1;
+  // v22: 牧草地の区画(旧セーブで牧草を運用していた人には基本区画を付与して互換維持)
+  if(state.land.pasture1===undefined)state.land.pasture1=!!(state.grassSown||state.grassStock>0||state.land.grass2);
   for(const c of state.cows){if(c.sick===undefined){c.sick=false;c.sickDays=0;}if(c.fat===undefined)c.fat=60;if(c.sickCount===undefined)c.sickCount=0;}
   for(const c of state.calves){if(c.sick===undefined){c.sick=false;c.sickDays=0;}if(c.fat===undefined)c.fat=50;if(c.sickCount===undefined)c.sickCount=0;if(!c.sex)c.sex=Math.random()<0.5?'F':'M';}
 }
@@ -770,7 +801,7 @@ function computeBS(){
     bldgDung:state.dungYard?(state.dungCost||ECON.DUNG_COST):0,    // v20: 糞置き場
     bldgBarn:(state.newBarnCosts||[]).reduce((s,c)=>s+c,0),        // v20: 新築牛舎(全棟の取得原価)
     mach:['tractor','polisher','processor','planter','combine'].reduce((s,k)=>s+((state.machines&&state.machines[k]&&state.machines[k].cost)||0),0), // v19/v20: 新品機械
-    landGrass:state.land.grass2?ECON.LAND_GRASS_PRICE:0,
+    landGrass:(state.land.pasture1?ECON.LAND_PASTURE_PRICE:0)+(state.land.grass2?ECON.LAND_GRASS_PRICE:0), // v22: 西の牧草地+東の牧草地
     landRice:state.land.rice2?ECON.LAND_RICE_PRICE:0,
     landBarn:state.land.barn2?ECON.LAND_BARN_PRICE:0,
     bank:state.bankLoan,cowDebt:cowDebtTotal(),
@@ -1080,20 +1111,18 @@ function genWorld(){
   for(let z=36;z<=47;z++){for(const x of[10,15,19,23]){if(!inWorld(x,z))continue;const lv=x<=10?1:(x<=15?2:(x<=19?3:4));for(let y=WH;y>=0;y--)gset(x,y,z,0);for(let y=0;y<lv;y++)gset(x,y,z,B.SOIL);gset(x,lv-1,z,B.PATH);}}
   // --- v21: 旧・加工場/事務所の跡地。機能は大倉庫へ集約済みなので建物を撤去して更地(草地)に ---
   flatten(24,31,23,29,2);
-  // --- 牧草地（東）柵つき ---
+  // --- v22: 牧草地の予定地(東)。開始時はただの草地(柵なし)。🏠不動産屋で
+  //     「西の牧草地」を買うと terraformPasture1() で柵付きの牧草地になる ---
   flatten(35,49,8,21,2);
   for(let x=35;x<=49;x++)for(let z=8;z<=21;z++){gset(x,2,z,B.GRASS);}
-  for(let x=35;x<=49;x++){gset(x,3,8,B.FENCE);gset(x,3,21,B.FENCE);}
-  for(let z=8;z<=21;z++){gset(35,3,z,B.FENCE);gset(49,3,z,B.FENCE);}
-  gset(35,3,14,0);gset(35,3,15,0); // 出入口
   // --- 牛舎建設よてい地（中央北） ---
   flatten(22,31,10,18,2);
   for(let x=22;x<=31;x++)for(let z=10;z<=18;z++)gset(x,2,z,B.GRASS);
-  // --- 堆肥場（南東） ---
-  flatten(38,46,30,37,2);
-  for(let x=38;x<=46;x++)for(let z=30;z<=37;z++)gset(x,2,z,B.SOIL);
-  for(let x=40;x<=43;x++)for(let z=32;z<=34;z++)gset(x,3,z,B.COMPOST);
-  gset(41,4,33,B.COMPOST);
+  // --- 堆肥場（南東） v22: 大倉庫の拡大(西壁x41)と干渉しないよう西へ移設(x34-40) ---
+  flatten(34,40,30,37,2);
+  for(let x=34;x<=40;x++)for(let z=30;z<=37;z++)gset(x,2,z,B.SOIL);
+  for(let x=35;x<=38;x++)for(let z=32;z<=34;z++)gset(x,3,z,B.COMPOST);
+  gset(36,4,33,B.COMPOST);
   // --- 野菜畑（南） ---
   flatten(26,33,36,42,2);
   for(let x=26;x<=33;x++)for(let z=36;z<=42;z++)gset(x,2,z,(x%2===0)?B.TILLED:B.SOIL);
@@ -1105,9 +1134,8 @@ function genWorld(){
   flatten(15,21,23,28,2);
   // --- v21: 旧セリ市場(南東)の跡地。セリ市場は街へ移転済みなので囲いを撤去して更地(草地)に ---
   flatten(29,36,44,49,2);
-  // --- v19: バス停の敷地(街への導線) ---
+  // --- v22: バス停を廃止(小屋・敷地とも撤去して草地に)。街へは川の橋を渡って行く ---
   flatten(23,26,19,22,2);
-  for(let x=23;x<=26;x++)for(let z=19;z<=22;z++)gset(x,2,z,B.PATH);
   // --- 道 ---
   for(let z=18;z<=23;z++){const y=topY(27,z);if(y>=0)gset(27,y,z,B.PATH);const y2=topY(28,z);if(y2>=0)gset(28,y2,z,B.PATH);}
   for(let x=32;x<=35;x++){const y=topY(x,14);if(y>=0)gset(x,y,14,B.PATH);}
@@ -1138,6 +1166,13 @@ function genWorld(){
       if(getB(x,1,zr)===B.WATER){gset(x,2,zr,B.PLANK);gset(x,3,zr,B.FENCE);}
     }
   }
+  // --- v22: 街の入口(中央の橋z=21-22の西岸)。バス廃止に代わる街への導線。
+  //     西岸に石畳の広場と門を作り、ここへ到達すると街マップへ切り替わる ---
+  flatten(0,2,18,25,1); // x3は川岸の小道/橋の取り付きなので触らない
+  for(let x=0;x<=2;x++)for(let z=18;z<=25;z++)gset(x,1,z,B.PAVE);
+  // 門(木の柱2本+梁)。橋の出口(z21-22)を挟む
+  for(let y=2;y<=4;y++){gset(1,y,19,B.WOOD);gset(1,y,24,B.WOOD);}
+  for(let z=19;z<=24;z++)gset(1,5,z,B.PLANK);
   // --- v16: 荒れ地の木(区画を買うと整地されて消える) ---
   [[55,12],[61,17],[63,14],[58,25],[63,30],[54,40],[60,44],[64,38],[57,37],
    [25,55],[30,60],[22,62],[27,58],[45,55],[55,57],[40,60],[12,55],[8,60],[16,60],[60,60],
@@ -1145,43 +1180,41 @@ function genWorld(){
   ].forEach(p=>{if(p[0]<WS-2&&p[1]<WS-2)normalTree(p[0],p[1]);});
   buildWarehouseComplexBlocks(); // v20: 大倉庫(複合施設)。最後に建てて木や荒れ地を整地
 }
-// ---------- v21: 巨大倉庫(複合施設)＝農機庫+米の貯蔵+精米機+食品加工場+事務所 ----------
-// v20の16×8から29×11ブロックへ大幅拡大。壁も6段(+大屋根y9)に上げ、中を広々歩き回れる。
-const WHX0=46,WHX1=74,WHZ0=23,WHZ1=33;
+// ---------- v22: 超巨大倉庫(複合施設)＝農機庫+米の貯蔵+精米機+食品加工場+事務所 ----------
+// v21の29×11から35×13ブロックへさらに拡大。壁7段(+大屋根y10)。中の設備間隔もゆったり。
+const WHX0=41,WHX1=75,WHZ0=23,WHZ1=35;
 function buildWarehouseComplexBlocks(){
   // 農場中心からの取り付け道路(z=26,27)
-  for(let x=34;x<=45;x++)for(const z of[26,27]){const y=topY(x,z);if(y>=0){for(let yy=y;yy>2;yy--)gset(x,yy,z,0);const ny=Math.min(y,2);gset(x,ny,z,B.PATH);for(let yy=0;yy<ny;yy++)gset(x,yy,z,yy<ny-1?B.STONE:B.SOIL);}}
-  // 前庭: 西のアプローチ(x44-45)・北の細道(z=22)・東の裏道(x=75)・南の裾(z=34)。牧草地の柵(z=21)は壊さない
-  flatten(44,45,WHZ0,WHZ1,2);
-  for(let x=44;x<=45;x++)for(let z=WHZ0;z<=WHZ1;z++)gset(x,2,z,B.PATH);
-  flatten(44,75,22,22,2);
-  for(let x=44;x<=75;x++)gset(x,2,22,B.PATH);
-  flatten(75,75,WHZ0,WHZ1,2);
-  for(let z=WHZ0;z<=WHZ1;z++)gset(75,2,z,B.PATH);
-  flatten(46,74,34,34,2);
-  // 本体(白壁・壁6段の大屋根倉庫。東端x70〜=板張りの事務所)
+  for(let x=34;x<=40;x++)for(const z of[26,27]){const y=topY(x,z);if(y>=0){for(let yy=y;yy>2;yy--)gset(x,yy,z,0);const ny=Math.min(y,2);gset(x,ny,z,B.PATH);for(let yy=0;yy<ny;yy++)gset(x,yy,z,yy<ny-1?B.STONE:B.SOIL);}}
+  // 前庭: 西の搬入前アプローチ(x39-40)・北の細道(z=22)・南の裾(z=36)。牧草地(z〜21)は壊さない
+  flatten(39,40,WHZ0,WHZ1,2);
+  for(let x=39;x<=40;x++)for(let z=WHZ0;z<=WHZ1;z++)gset(x,2,z,B.PATH);
+  flatten(41,75,22,22,2);
+  for(let x=41;x<=75;x++)gset(x,2,22,B.PATH);
+  flatten(41,75,36,36,2);
+  // 本体(白壁・壁7段の大屋根倉庫。東端x71〜=板張りの事務所)
   for(let x=WHX0;x<=WHX1;x++)for(let z=WHZ0;z<=WHZ1;z++){
     for(let y=3;y<=WH;y++)gset(x,y,z,0);
-    gset(x,2,z,x>=70?B.PLANK:(x<=55?B.PATH:B.PAVE)); // 床のゾーン分け: 農機庫=土間/事務所=板張り/他=コンクリ
+    gset(x,2,z,x>=71?B.PLANK:(x<=54?B.PATH:B.PAVE)); // 床のゾーン分け: 農機庫=土間/事務所=板張り/他=コンクリ
     const wall=(x===WHX0||x===WHX1||z===WHZ0||z===WHZ1);
     if(wall){
-      for(let y=3;y<=8;y++)gset(x,y,z,x>=70?B.PLANK:B.WHITE);
+      for(let y=3;y<=9;y++)gset(x,y,z,x>=71?B.PLANK:B.WHITE);
       const corner=(x===WHX0||x===WHX1)&&(z===WHZ0||z===WHZ1);
-      if(!corner&&(((z===WHZ0||z===WHZ1)&&x%3===1)||((x===WHX0||x===WHX1)&&z%3===1))){gset(x,6,z,B.WATER);gset(x,7,z,B.WATER);} // 高窓2段
+      if(!corner&&(((z===WHZ0||z===WHZ1)&&x%3===1)||((x===WHX0||x===WHX1)&&z%3===1))){gset(x,6,z,B.WATER);gset(x,7,z,B.WATER);gset(x,8,z,B.WATER);} // 高窓3段
     }
-    gset(x,9,z,B.RROOF); // 大屋根
+    gset(x,10,z,B.RROOF); // 大屋根
   }
-  // 事務所の間仕切り(x=69・全高)と通用口(z=27,28)
-  for(let z=WHZ0+1;z<WHZ1;z++)for(let y=3;y<=8;y++)gset(69,y,z,B.PLANK);
-  for(const z of[27,28])for(let y=3;y<=4;y++)gset(69,y,z,0);
+  // 事務所の間仕切り(x=70・全高)と通用口(z=28,29)
+  for(let z=WHZ0+1;z<WHZ1;z++)for(let y=3;y<=9;y++)gset(70,y,z,B.PLANK);
+  for(const z of[28,29])for(let y=3;y<=4;y++)gset(70,y,z,0);
   // 屋根を支える木の柱(倉庫らしい内観。中央の通路と米の貯蔵棚の前は空ける)
-  for(const px of[52,64])for(let y=3;y<=8;y++)gset(px,y,25,B.WOOD);
-  for(const px of[52,58,64])for(let y=3;y<=8;y++)gset(px,y,31,B.WOOD);
-  // 入口: 西の大搬入口(4マス幅×4段)+南の加工場口/事務所口+東の裏口
-  for(let z=25;z<=28;z++)for(let y=3;y<=6;y++)gset(WHX0,y,z,0);
+  for(const px of[46,52,64])for(let y=3;y<=9;y++)gset(px,y,25,B.WOOD);
+  for(const px of[46,52,58,64])for(let y=3;y<=9;y++)gset(px,y,33,B.WOOD);
+  // 入口: 西の大搬入口(5マス幅×4段)+北の通用口+南の加工場口/事務所口
+  for(let z=25;z<=29;z++)for(let y=3;y<=6;y++)gset(WHX0,y,z,0);
+  for(const x of[47,48])for(let y=3;y<=4;y++)gset(x,y,WHZ0,0);
   for(const x of[65,66])for(let y=3;y<=4;y++)gset(x,y,WHZ1,0);
-  for(const x of[71,72])for(let y=3;y<=4;y++)gset(x,y,WHZ1,0);
-  for(const z of[27,28])for(let y=3;y<=4;y++)gset(WHX1,y,z,0);
+  for(const x of[72,73])for(let y=3;y<=4;y++)gset(x,y,WHZ1,0);
 }
 // ---------- v20: 山を切り開く新築牛舎(3000万・母15+子15。糞置き場が必須) ----------
 const NEW_BARN_PLOTS=[[68,12],[12,58],[68,44],[68,58],[40,58],[54,58]]; // v21: [68,26]は巨大倉庫と干渉するため南西の山[12,58]へ移設
@@ -1202,10 +1235,20 @@ function terraformNewBarn(i){
 }
 // ---------- v16: 土地区画(ワールド拡張) ----------
 const PARCELS={
-  grass2:{n:'東の牧草地',em:'🌿',price:ECON.LAND_GRASS_PRICE,desc:'牧草の生産が2倍(12→24束/月)になる。荒れ地を開拓して柵付きの牧草地に。'},
+  pasture1:{n:'西の牧草地(基本)',em:'🌿',price:ECON.LAND_PASTURE_PRICE,desc:'牛舎の東の空き地を柵付きの牧草地に開拓。作付け(10万)すると🌸春(5月)と🍂秋(9月)の年2回、牧草を収穫できる(1回72束)。牧草があれば牛の餌代が3.5万→1万/頭に。'},
+  grass2:{n:'東の牧草地(拡張)',em:'🌿',price:ECON.LAND_GRASS_PRICE,desc:'牧草の収穫が2倍(72→144束/回)になる拡張区画。荒れ地を開拓して西の牧草地とつなげる(先に西の牧草地が必要)。'},
   rice2:{n:'東の棚田',em:'🌾',price:ECON.LAND_RICE_PRICE,desc:'米の規模が1.5倍(苗代450万・収穫450袋・年商1,350万円)に。水管理と出荷の作業量も増える。'},
   barn2:{n:'南の牧場+第二牛舎',em:'🏠',price:ECON.LAND_BARN_PRICE,desc:'収容枠が母牛+5頭・子牛+5頭に。南の荒れ地に第二牛舎が建つ(低予算の増頭)。'},
 };
+// v22: 西の牧草地(基本区画)。開始時は柵のない空き地→購入で柵付きの牧草地に
+function terraformPasture1(){
+  flatten(35,49,8,21,2);
+  for(let x=35;x<=49;x++)for(let z=8;z<=21;z++)gset(x,2,z,B.GRASS);
+  for(let x=35;x<=49;x++){gset(x,3,8,B.FENCE);gset(x,3,21,B.FENCE);}
+  for(let z=8;z<=21;z++){gset(35,3,z,B.FENCE);gset(49,3,z,B.FENCE);}
+  gset(35,3,14,0);gset(35,3,15,0); // 出入口
+  if(state.land.grass2)for(let z=13;z<=16;z++)gset(49,3,z,0); // 東の牧草地と接続
+}
 function terraformGrass2(){
   flatten(50,66,8,21,2);
   for(let x=50;x<=66;x++)for(let z=8;z<=21;z++)gset(x,2,z,B.GRASS);
@@ -1214,9 +1257,9 @@ function terraformGrass2(){
   for(let z=13;z<=16;z++)gset(49,3,z,0); // 旧牧草地との柵を開けて接続
 }
 function terraformRice2(){
-  flatten(47,66,34,47,1); // v21: 巨大倉庫(z〜33)と干渉しないよう整地はz34〜(棚田52-65×36-45は従来どおり)
-  for(let x=47;x<=66;x++)for(let z=34;z<=47;z++)gset(x,1,z,B.PATH);
-  for(let x=52;x<=65;x++)for(let z=36;z<=45;z++){
+  flatten(47,66,37,47,1); // v22: 超巨大倉庫(z〜35+南裾z36)と干渉しないよう整地はz37〜(棚田は52-65×38-46)
+  for(let x=47;x<=66;x++)for(let z=37;z<=47;z++)gset(x,1,z,B.PATH);
+  for(let x=52;x<=65;x++)for(let z=38;z<=46;z++){
     gset(x,1,z,0);gset(x,0,z,B.TILLED);gset(x,1,z,B.WATER);
   }
 }
@@ -1237,6 +1280,7 @@ function terraformBarn2(){
   for(let z=60;z<=62;z++){gset(21,3,z,B.FENCE);gset(33,3,z,B.FENCE);}
 }
 function applyLandParcels(){
+  if(state.land.pasture1)terraformPasture1(); // v22: 西の牧草地(基本区画)
   if(state.land.grass2)terraformGrass2();
   if(state.land.rice2)terraformRice2();
   if(state.land.barn2)terraformBarn2();
@@ -1244,12 +1288,14 @@ function applyLandParcels(){
 }
 function buyLand(k){
   if(state.land[k]){toast('🗺 その区画はもう持っているよ');return;}
+  if(k==='grass2'&&!state.land.pasture1){toast('🌿 先に「西の牧草地(基本)」('+man(ECON.LAND_PASTURE_PRICE)+')を買って牧草地を作ろう');return;} // v22
   const p=PARCELS[k];
   if(state.money<p.price){toast('💸 '+p.n+'は'+man(p.price)+'。現金が足りないよ');return;}
-  addExpense(p.price,'land',k==='grass2'?'grass':(k==='rice2'?'rice':'cow')); // v17: 土地は用途の事業へ配賦
+  addExpense(p.price,'land',(k==='grass2'||k==='pasture1')?'grass':(k==='rice2'?'rice':'cow')); // v17: 土地は用途の事業へ配賦
   state.land[k]=true;
   if(curMap==='farm'){ // v19: 街で購入した時は帰農時にapplyLandParcelsで開拓される
-    if(k==='grass2')terraformGrass2();
+    if(k==='pasture1'){terraformPasture1();buildPastureDecor();} // v22
+    else if(k==='grass2')terraformGrass2();
     else if(k==='rice2')terraformRice2();
     else terraformBarn2();
     rebuildAll();
@@ -1366,7 +1412,7 @@ function paddyCells(){
     }
   };
   scan(11,22,36,47);
-  if(state.land.rice2)scan(52,65,36,45); // v16: 東の棚田(区画購入で拡張)
+  if(state.land.rice2)scan(52,65,38,46); // v16: 東の棚田(区画購入で拡張) v22: 倉庫拡大に伴いz38-46へ
   return out;
 }
 function buildRiceVisual(mon){
@@ -1460,30 +1506,36 @@ function riceFieldAction(){
   if(state.month===4)doRicePlant();
   else toast('🌾 田植えは4月だよ(今は'+state.month+'月。⏭で春を待とう)');
 }
-// ---------- v14: 牧草（作付けで毎月生産→餌代3.5万→1万に。余剰は売却） ----------
+// ---------- v22: 牧草（作付けで育成開始→収穫は🌸春5月と🍂秋9月の年2回。餌代3.5万→1万に。余剰は売却） ----------
 function sowGrass(){
-  if(state.grassSown){toast('🌿 牧草はもう育てているよ(毎月最大'+ECON.GRASS_YIELD*(state.land.grass2?2:1)+'束生産)');return;}
+  if(!state.land.pasture1){toast('🌿 まだ牧草地がないよ。🏘街の🏠不動産屋で「西の牧草地(基本)」('+man(ECON.LAND_PASTURE_PRICE)+')を買おう');return;}
+  if(state.grassSown){toast('🌿 牧草はもう育てているよ(収穫は🌸5月と🍂9月の年2回・1回'+grassCutYield()+'束)');return;}
   const cost=grassSowCost();
   if(state.money<cost){toast('💸 牧草の作付けに'+man(cost)+'必要だよ');return;}
   addExpense(cost,'grassSow'); // v17: 牧草事業の経費
   state.grassSown=true;
   fanfare();
-  toast('🌿 牧草を作付けした！毎月最大'+ECON.GRASS_YIELD*(state.land.grass2?2:1)+'束生産(牛1頭は月1束消費)'+(state.compostShed?'(肥料自給で−5万)':''));
-  toast('✂ 毎月「刈り取り」しないと生産が半分になるよ(牧草担当の従業員なら自動)');
+  toast('🌿 牧草を作付けした！🌸春(5月)と🍂秋(9月)の年2回、✂収穫できる(1回'+grassCutYield()+'束・牛1頭は月1束消費)'+(state.compostShed?'(肥料自給で−5万)':''));
+  toast('✂ 収穫月に「収穫」しよう(牧草担当の従業員なら自動)。収穫しそびれるとその回の分は無し！');
   updateHUD();
 }
-// v16: 月1回の刈り取り。やらないとその月の生産が半減。担当従業員は自動
+// v22: 収穫は5月と9月の年2回だけ。1回で6ヶ月分(72束・東の牧草地で144束)。担当従業員は自動
 function doGrassCut(who){
   if(!state.grassSown){toast('🌿 まだ牧草を作付けしていないよ');return false;}
-  if(state.grassCutMonth===state.monthN){if(!who)toast('✂ 今月の刈り取りは済んでいるよ');return false;}
+  if(!grassHarvestMonth()){if(!who)toast('🌿 牧草は育成中。収穫は🌸5月と🍂9月の年2回だよ(いまは'+state.month+'月・次は'+nextGrassHarvestLabel()+')');return false;}
+  if(state.grassCutMonth===state.monthN){if(!who)toast('✂ 今シーズンの収穫は済んでいるよ(次は'+nextGrassHarvestLabel()+')');return false;}
   state.grassCutMonth=state.monthN;
-  if(!who){toast('✂ 牧草を刈り取った！(今月は満額の'+ECON.GRASS_YIELD*(state.land.grass2?2:1)+'束生産)');sfx(420,.07);}
+  const y=grassCutYield();
+  state.grassStock+=y;
+  state.grassProdLast=y;
+  if(!who){toast('✂ '+(state.month===5?'🌸春':'🍂秋')+'の牧草を収穫した！+'+y+'束(在庫'+state.grassStock+'束)');sfx(420,.07);}
+  updateHUD();
   return true;
 }
 function sellGrassSurplus(auto){
-  const reserve=herdCount()*ECON.GRASS_EAT; // 来月の消費分は残す
+  const reserve=herdCount()*ECON.GRASS_EAT*monthsToNextGrassHarvest(); // v22: 次の収穫月までの消費分は残す
   const surplus=state.grassStock-reserve;
-  if(surplus<=0){if(!auto)toast('🌿 余剰牧草はないよ(在庫'+state.grassStock+'束は牛の餌に確保)');return 0;}
+  if(surplus<=0){if(!auto)toast('🌿 余剰牧草はないよ(在庫'+state.grassStock+'束は次の収穫'+nextGrassHarvestLabel()+'までの牛の餌に確保)');return 0;}
   state.grassStock-=surplus;
   addSale(surplus*ECON.GRASS_PRICE,'grass');
   toast('🌿 余剰牧草'+surplus+'束を売却 +'+fmt(surplus*ECON.GRASS_PRICE));
@@ -1598,8 +1650,8 @@ function updateBarnSign(){
       :[['🏚 古い牛舎を借りる(月3万円)',()=>rentBarn()]]});
 }
 let tractorMesh=null,polisherMesh=null,processorMesh=null,compostShedMesh=null,dungYardMesh=null,planterMesh=null,combineMesh=null,riceSackGroup=null;
-// v21: 機械の設置座標(巨大倉庫の農機庫x47-55/米貯蔵x56-63/加工場x64-68の中に広々配置)
-const MACH_POS={tractor:[50,28.5],planter:[48.3,25.3],combine:[54.8,29.5],polisher:[61,31],processor:[66,25.5]};
+// v22: 機械の設置座標(超巨大倉庫の農機庫x42-54/米貯蔵x55-63/加工場x64-69の中にさらに広々配置)
+const MACH_POS={tractor:[46,29.5],planter:[43.2,25.5],combine:[51.5,31.5],polisher:[60.5,32],processor:[67,25.5]};
 function buildTractor(){
   if(tractorMesh||curMap!=='farm')return;
   const g=new THREE.Group();
@@ -1656,18 +1708,18 @@ function machineBox(x,z,color,emoji,info,fy){
 function buildPolisher(){if(!polisherMesh&&curMap==='farm')polisherMesh=machineBox(MACH_POS.polisher[0]-0.5,MACH_POS.polisher[1]-0.5,0xdedede,'🍚',{t:'🍚 精米機',
   b:()=>machineBroken('polisher')?'⚠故障中！🔧街の修理屋で修理('+man(machRepairCost('polisher'))+')しないと精米出荷できないよ。'
     :'📦貯蔵中の米(いま'+state.riceBags+'袋)を月1回・最大'+riceShipMax()+'袋、精米して出荷できるよ(1袋3万円)。',
-  btns:()=>machineBroken('polisher')?[['🚌 街の修理屋へ行く',()=>switchMap('town')]]:[['🍚 精米して出荷する',()=>shipRice()]]},3);}
+  btns:()=>machineBroken('polisher')?[['🏘 街の修理屋へ行く',()=>switchMap('town')]]:[['🍚 精米して出荷する',()=>shipRice()]]},3);}
 function buildProcessor(){if(!processorMesh&&curMap==='farm')processorMesh=machineBox(MACH_POS.processor[0]-0.5,MACH_POS.processor[1]-0.5,0x4a7fb5,'🍱',{t:'🍱 加工機',
   b:()=>machineBroken('processor')?'⚠故障中！🔧街の修理屋で直すまで1.5倍加工が止まるよ。'
     :'農産物(野菜/黒豆/栗など)の売値が1.5倍になる加工機。売るのは📦倉庫メニューから。',
-  btns:()=>machineBroken('processor')?[['🚌 街の修理屋へ行く',()=>switchMap('town')]]:[['📦 農産物を売る(倉庫メニュー)',()=>{menuTab='wh';openMenu();}]]},3);}
-// ---------- v19: 機械の故障バッジ(⚠)とバス停 ----------
+  btns:()=>machineBroken('processor')?[['🏘 街の修理屋へ行く',()=>switchMap('town')]]:[['📦 農産物を売る(倉庫メニュー)',()=>{menuTab='wh';openMenu();}]]},3);}
+// ---------- v19: 機械の故障バッジ(⚠) / v22: 街の入口(バス停は廃止) ----------
 let machineBadges={};
 function buildMachineBadges(){
   for(const k in machineBadges){const s=machineBadges[k];decoGroup.remove(s);const i=infoIcons.findIndex(e=>e.sp===s);if(i>=0)infoIcons.splice(i,1);} // v21: 旧バッジを掃除(再構築時の重複防止)
   machineBadges={};
   const mk=(x,z,k)=>{const y=topY(Math.floor(x),Math.floor(z))+1;const s=iconSprite('⚠',1.3);s.position.set(x,y+1.6,z);decoGroup.add(s);s.visible=false;machineBadges[k]=s;
-    addInfoIcon(s,{t:'⚠ '+MACH_META[k].n+'が故障中',b:()=>MACH_META[k].stop+'。🔧街の修理屋で修理('+man(machRepairCost(k))+')すると再稼働するよ。',btns:[['🚌 街へ行く(修理屋)',()=>switchMap('town')]]});}; // v21: ⚠もクリックで説明
+    addInfoIcon(s,{t:'⚠ '+MACH_META[k].n+'が故障中',b:()=>MACH_META[k].stop+'。🔧街の修理屋で修理('+man(machRepairCost(k))+')すると再稼働するよ。',btns:[['🏘 街へ行く(修理屋)',()=>switchMap('town')]]});}; // v21: ⚠もクリックで説明
   for(const k in MACH_POS)if(machineOwned(k))mk(MACH_POS[k][0],MACH_POS[k][1],k); // v20: 大倉庫内の機械(⚠は屋根の上に出る)
   updateMachineBadges();
 }
@@ -1675,17 +1727,13 @@ function updateMachineBadges(){
   if(curMap!=='farm')return;
   for(const k in machineBadges)machineBadges[k].visible=machineBroken(k);
 }
-function buildBusStopFarm(){
-  const y=topY(24,20)+1;
-  const g=new THREE.Group();
-  const pm=new THREE.MeshLambertMaterial({color:0x6a4a25});
-  [[-0.9,-0.9],[0.9,-0.9],[-0.9,0.9],[0.9,0.9]].forEach(p=>{const post=new THREE.Mesh(new THREE.BoxGeometry(0.16,2.3,0.16),pm);post.position.set(p[0],1.15,p[1]);g.add(post);});
-  const roof=new THREE.Mesh(new THREE.BoxGeometry(2.3,0.14,2.2),new THREE.MeshLambertMaterial({color:0xe8743f}));roof.position.set(0,2.35,0);roof.castShadow=true;g.add(roof);
-  const bench=new THREE.Mesh(new THREE.BoxGeometry(1.8,0.32,0.5),new THREE.MeshLambertMaterial({color:0xb5843f}));bench.position.set(0,0.5,-0.6);g.add(bench);
-  g.position.set(24.5,y-1+0.02,20.5);decoGroup.add(g);
-  addDecoCollider(23.6,19.6,0.2,y);addDecoCollider(25.4,19.6,0.2,y);
-  const ic=iconSprite('🚌',1.6);ic.position.set(24.5,y+2.9,20.5);decoGroup.add(ic);
-  addInfoIcon(ic,{t:'🚌 バス停(街行き)',b:'バスで🏘丹波の街へ行けるよ。街には🏛役場(補助金)・🏦銀行・🚜農協(資材/獣医)・🔧修理屋・🐂セリ市場・🏠不動産屋がある。近づいて「使う」でも乗れる。',btns:[['🚌 街へ行く',()=>switchMap('town')]]});
+// v22: バス停は廃止。川の中央の橋(z21-22)を渡った西岸が「街の入口」。
+//      到達すると自動で街へ(アイコンのボタンからも行ける)
+function buildTownGateFarm(){
+  const ic=iconSprite('🏘',1.7);
+  const y=topY(1,21)+1;
+  ic.position.set(1.5,y+3.6,21.5);decoGroup.add(ic);
+  addInfoIcon(ic,{t:'🏘 街の入口(橋の西)',b:'川の橋を渡って西へ進むと🏘丹波の街に着くよ。街には🏛役場(補助金)・🏦銀行・🚜農協(資材/獣医)・🔧修理屋・🐂セリ市場・🏠不動産屋がある。門をくぐると自動で街へ入るよ。',btns:[['🏘 街へ入る',()=>switchMap('town')]]});
 }
 function buildCompostShed(){
   if(compostShedMesh||curMap!=='farm')return; // v19: 農場マップでだけ表示
@@ -1693,10 +1741,10 @@ function buildCompostShed(){
   const pm=new THREE.MeshLambertMaterial({color:0x8a6a3a});
   [[0,0],[3,0],[0,3],[3,3]].forEach(p=>{const post=new THREE.Mesh(new THREE.BoxGeometry(0.25,2.4,0.25),pm);post.position.set(p[0],1.2,p[1]);post.castShadow=true;g.add(post);});
   const roof=new THREE.Mesh(new THREE.BoxGeometry(4,0.2,4),new THREE.MeshLambertMaterial({color:0x9a5f2f}));roof.position.set(1.5,2.5,1.5);roof.castShadow=true;g.add(roof);
-  const y=topY(43,31)+1;
-  g.position.set(42,y-1+0.02,30.5);decoGroup.add(g);compostShedMesh=g;
-  [[42,30.5],[45,30.5],[42,33.5],[45,33.5]].forEach(p=>addDecoCollider(p[0],p[1],0.3,y)); // v9: 柱の衝突
-  const ic=iconSprite('🏭',1.5);ic.position.set(43.5,y+2.9,32);decoGroup.add(ic);
+  const y=topY(36,31)+1; // v22: 大倉庫の拡大に伴い堆肥場ごと西へ移設(x35-38)
+  g.position.set(35,y-1+0.02,30.5);decoGroup.add(g);compostShedMesh=g;
+  [[35,30.5],[38,30.5],[35,33.5],[38,33.5]].forEach(p=>addDecoCollider(p[0],p[1],0.3,y)); // v9: 柱の衝突
+  const ic=iconSprite('🏭',1.5);ic.position.set(36.5,y+2.9,32);decoGroup.add(ic);
   addInfoIcon(ic,{t:'🏭 本格堆肥舎',b:()=>'牛糞→肥料の製造販売(頭数×'+ECON.FERT_PER_COW+'袋/月・1袋'+fmt(ECON.FERT_PRICE)+')。苗代−50万/牧草−5万の肥料割引も付くよ。<br>肥料在庫: '+state.fertStock+'袋',btns:()=>[['🟫 肥料を出荷する('+state.fertStock+'袋)',()=>sellFert(false)]]});
 }
 // ---------- v20: 糞置き場(簡易)。コの字のコンクリ壁+糞の山。処理のみで肥料は作れない ----------
@@ -1708,28 +1756,28 @@ function buildDungYard(){
   wall(3.2,0.3,0,-1.45);wall(0.3,3.2,-1.45,0);wall(0.3,3.2,1.45,0); // コの字(南が開口)
   const pile=new THREE.Mesh(new THREE.SphereGeometry(1.0,8,6),new THREE.MeshLambertMaterial({color:0x5a4028}));
   pile.scale.y=0.5;pile.position.set(0,0.3,0);g.add(pile);
-  const y=topY(39,35)+1;
-  g.position.set(39.5,y-1+0.02,35.5);decoGroup.add(g);dungYardMesh=g;
-  addDecoCollider(39.5,34.1,0.3,y);addDecoCollider(38.1,35.5,0.3,y);addDecoCollider(40.9,35.5,0.3,y);
-  const ic=iconSprite('🟤',1.4);ic.position.set(39.5,y+2.4,35.5);decoGroup.add(ic);
+  const y=topY(36,35)+1; // v22: 大倉庫の拡大に伴い西へ移設
+  g.position.set(36.5,y-1+0.02,35.5);decoGroup.add(g);dungYardMesh=g;
+  addDecoCollider(36.5,34.1,0.3,y);addDecoCollider(35.1,35.5,0.3,y);addDecoCollider(37.9,35.5,0.3,y);
+  const ic=iconSprite('🟤',1.4);ic.position.set(36.5,y+2.4,35.5);decoGroup.add(ic);
   addInfoIcon(ic,{t:'🟤 糞置き場(簡易)',b:'牛糞をここで処理して外部処分費(月1万円/頭)がゼロに。⛰新築牛舎の増築条件もクリア済み✅<br>肥料にして売るには🏭本格堆肥舎('+man(ECON.SHED_COST)+'・🏛補助で半額)が必要だよ。'});
 }
-// ---------- v21: 巨大倉庫の内装(農機庫/米の貯蔵棚/加工場/事務所/吊り照明)とアイコン ----------
+// ---------- v22: 超巨大倉庫の内装(農機庫/米の貯蔵棚/加工場/事務所/吊り照明)とアイコン ----------
 function buildWarehouseInterior(){
   const F=3; // 室内の床の高さ
   const wbox=(x,z,w,h,d,color,rot)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshLambertMaterial({color}));m.position.set(x,F+h/2,z);if(rot)m.rotation.y=rot;m.castShadow=true;decoGroup.add(m);return m;};
-  // --- 天井の吊り照明(倉庫らしい灯り) ---
-  [[50,26.5],[50,30.5],[56,28.5],[61,26.5],[61,29.5],[66.5,28.5],[71.5,26],[71.5,30]].forEach(p=>{
-    const cord=new THREE.Mesh(new THREE.BoxGeometry(0.06,0.7,0.06),new THREE.MeshLambertMaterial({color:0x3a3a3f}));cord.position.set(p[0],8.55,p[1]);decoGroup.add(cord);
-    const lamp=new THREE.Mesh(new THREE.BoxGeometry(0.6,0.18,0.6),new THREE.MeshBasicMaterial({color:0xffedb0}));lamp.position.set(p[0],8.1,p[1]);decoGroup.add(lamp);
+  // --- 天井の吊り照明(倉庫らしい灯り。v22: 拡大に合わせ10灯) ---
+  [[44,26],[44,32],[50,29],[56,26],[56,32],[61,29],[66,26],[66,32],[72.5,26],[72.5,32]].forEach(p=>{
+    const cord=new THREE.Mesh(new THREE.BoxGeometry(0.06,0.7,0.06),new THREE.MeshLambertMaterial({color:0x3a3a3f}));cord.position.set(p[0],9.55,p[1]);decoGroup.add(cord);
+    const lamp=new THREE.Mesh(new THREE.BoxGeometry(0.6,0.18,0.6),new THREE.MeshBasicMaterial({color:0xffedb0}));lamp.position.set(p[0],9.1,p[1]);decoGroup.add(lamp);
   });
-  // --- 農機庫(x47-55・土間): 工具棚・作業台・ドラム缶・予備タイヤ ---
-  wbox(47.4,30.5,0.5,2.0,2.6,0x8a6a3a);addDecoCollider(47.4,30.5,0.6,F); // 工具棚(西壁沿い)
-  wbox(51.5,24.0,2.4,0.9,0.9,0x6a5a4a);wbox(51.0,24.05,0.5,1.3,0.4,0xc23b22);addDecoCollider(51.5,24.0,1.0,F); // 作業台+工具箱
-  [[47.7,26.6],[48.5,27.1]].forEach(p=>{const d=new THREE.Mesh(new THREE.CylinderGeometry(0.34,0.34,0.9,10),new THREE.MeshLambertMaterial({color:0x3a6fd8}));d.position.set(p[0],F+0.45,p[1]);d.castShadow=true;decoGroup.add(d);});
-  addDecoCollider(48.1,26.85,0.75,F); // ドラム缶
-  (function(){const t=new THREE.Mesh(new THREE.CylinderGeometry(0.5,0.5,0.3,10),new THREE.MeshLambertMaterial({color:0x222222}));t.rotation.z=Math.PI/2;t.position.set(54.5,F+0.5,24.2);decoGroup.add(t);addDecoCollider(54.5,24.2,0.5,F);})(); // 予備タイヤ
-  const gi=iconSprite('🚜',1.5);gi.position.set(51,F+3.6,27.5);decoGroup.add(gi);
+  // --- 農機庫(x42-54・土間): 工具棚・作業台・ドラム缶・予備タイヤ ---
+  wbox(41.6,31.5,0.5,2.0,2.6,0x8a6a3a);addDecoCollider(41.6,31.5,0.6,F); // 工具棚(西壁沿い)
+  wbox(47.5,24.0,2.4,0.9,0.9,0x6a5a4a);wbox(47.0,24.05,0.5,1.3,0.4,0xc23b22);addDecoCollider(47.5,24.0,1.0,F); // 作業台+工具箱(北壁沿い)
+  [[42.7,24.3],[43.5,24.8]].forEach(p=>{const d=new THREE.Mesh(new THREE.CylinderGeometry(0.34,0.34,0.9,10),new THREE.MeshLambertMaterial({color:0x3a6fd8}));d.position.set(p[0],F+0.45,p[1]);d.castShadow=true;decoGroup.add(d);});
+  addDecoCollider(43.1,24.55,0.75,F); // ドラム缶(北壁沿い。搬入口の通路は塞がない)
+  (function(){const t=new THREE.Mesh(new THREE.CylinderGeometry(0.5,0.5,0.3,10),new THREE.MeshLambertMaterial({color:0x222222}));t.rotation.z=Math.PI/2;t.position.set(53.5,F+0.5,24.2);decoGroup.add(t);addDecoCollider(53.5,24.2,0.5,F);})(); // 予備タイヤ
+  const gi=iconSprite('🚜',1.5);gi.position.set(47,F+3.6,28.5);decoGroup.add(gi);
   addInfoIcon(gi,{t:'🚜 農機庫(大倉庫・西)',b:()=>{
     const t=state.machines.tractor,names=[];
     names.push('🚜 トラクター: '+(t.lvl==='new'?(t.size==='small'?'小型・新品':'中型・新品'):'中古の中型')+(t.broken?' ⚠故障中':' ✅'));
@@ -1737,38 +1785,38 @@ function buildWarehouseInterior(){
     names.push('🌾 コンバイン: '+(state.machines.combine.lvl?(state.machines.combine.broken?'⚠故障中':'✅稼働(収量+10%)'):'未保有'));
     return '倉庫の西側は農機の格納庫。<br>'+names.join('<br>')+'<br><br>新しい機械は🚜街の農協で購入(🏛役場の補助で半額)。故障したら🔧街の修理屋へ。';
   }});
-  // --- 米の貯蔵(x56-63): 北壁沿いの大きな貯蔵棚2基+床のパレット(貯蔵量が見える規模) ---
+  // --- 米の貯蔵(x55-63): 北壁沿いの大きな貯蔵棚2基+床のパレット(貯蔵量が見える規模) ---
   for(const cx of[57.7,61.3]){
     [-1.5,1.5].forEach(o=>{const post=new THREE.Mesh(new THREE.BoxGeometry(0.16,2.6,0.9),new THREE.MeshLambertMaterial({color:0x6a4a25}));post.position.set(cx+o,F+1.3,24.3);post.castShadow=true;decoGroup.add(post);});
     for(let lv=0;lv<3;lv++){const sh=new THREE.Mesh(new THREE.BoxGeometry(3.2,0.14,1.0),new THREE.MeshLambertMaterial({color:0x8a6a3a}));sh.position.set(cx,F+0.5+lv*0.8,24.3);decoGroup.add(sh);}
     addDecoCollider(cx,24.3,1.2,F);
   }
-  const pallet=new THREE.Mesh(new THREE.BoxGeometry(1.6,0.14,1.2),new THREE.MeshLambertMaterial({color:0x9a6b3a}));pallet.position.set(59.5,F+0.07,27.5);decoGroup.add(pallet);
+  const pallet=new THREE.Mesh(new THREE.BoxGeometry(1.6,0.14,1.2),new THREE.MeshLambertMaterial({color:0x9a6b3a}));pallet.position.set(59.5,F+0.07,28.5);decoGroup.add(pallet);
   updateRiceSacks();
   const ri=iconSprite('📦',1.5);ri.position.set(59.5,F+3.6,24.6);decoGroup.add(ri);
   addInfoIcon(ri,{t:'📦 米の貯蔵庫(大倉庫)',b:()=>'収穫した米はこの棚に貯蔵されるよ。いま <b>'+state.riceBags+'袋</b>(1袋3万円)。<br>毎月1回、奥の🍚精米機で最大'+riceShipMax()+'袋を精米して出荷できる(10〜3月が出荷シーズン)。',btns:()=>[['📦 倉庫メニューを開く',()=>{menuTab='wh';openMenu();}],['🍚 精米して出荷する',()=>shipRice()]]});
-  // --- 食品加工場(x64-68): 作業テーブル・木箱・野菜コンテナ ---
-  wbox(67.5,30.8,2.0,0.9,1.0,0xb5843f);addDecoCollider(67.5,30.8,1.0,F); // 作業テーブル
-  [[64.6,31.0,0x9a6b3a],[65.3,31.0,0x9a6b3a],[64.95,31.7,0xb5843f],[66.2,31.3,0x2f8a4a]].forEach(p=>{
+  // --- 食品加工場(x64-69): 作業テーブル・木箱・野菜コンテナ(南壁沿い) ---
+  wbox(68.5,33.6,2.0,0.9,1.0,0xb5843f);addDecoCollider(68.5,33.6,1.0,F); // 作業テーブル
+  [[64.6,33.8,0x9a6b3a],[65.3,33.8,0x9a6b3a],[64.95,34.4,0xb5843f],[66.2,34.1,0x2f8a4a]].forEach(p=>{
     const c=new THREE.Mesh(new THREE.BoxGeometry(0.66,0.66,0.66),new THREE.MeshLambertMaterial({color:p[2]}));
     c.position.set(p[0],F+0.33,p[1]);c.castShadow=true;decoGroup.add(c);
   });
-  addDecoCollider(65.2,31.2,0.9,F);
-  const pi=iconSprite('🍱',1.5);pi.position.set(66.5,F+3.6,29);decoGroup.add(pi);
+  addDecoCollider(65.2,34.0,0.9,F);
+  const pi=iconSprite('🍱',1.5);pi.position.set(66.5,F+3.6,29.5);decoGroup.add(pi);
   addInfoIcon(pi,{t:'🍱 食品加工場(大倉庫)',b:()=>state.machines.processor.lvl?(machineBroken('processor')?'🍱加工機は⚠故障中！🔧街の修理屋で修理しよう。':'🍱加工機が稼働中！農産物(野菜/黒豆/栗など)の売値が1.5倍。売るのは📦倉庫メニューから。'):'ここに🍱加工機('+man(ECON.MACH_PROCESSOR)+'・🏛補助で半額)を置くと農産物の売値が1.5倍に。🚜街の農協で購入できるよ。',btns:()=>[['📦 農産物を売る(倉庫メニュー)',()=>{menuTab='wh';openMenu();}]]});
-  // --- 事務所(x70-73・板張り): 机+帳簿+書棚+キャビネット ---
-  const desk=wbox(71.5,25.0,1.6,0.12,0.8,0x9a6b3a);desk.position.y=F+0.72;
-  [[-0.65,-0.3],[0.65,-0.3],[-0.65,0.3],[0.65,0.3]].forEach(p=>{const leg=new THREE.Mesh(new THREE.BoxGeometry(0.1,0.7,0.1),new THREE.MeshLambertMaterial({color:0x6a4a25}));leg.position.set(71.5+p[0],F+0.35,25.0+p[1]);decoGroup.add(leg);});
-  const book=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.1,0.36),new THREE.MeshLambertMaterial({color:0xf2ede2}));book.position.set(71.3,F+0.84,25.0);decoGroup.add(book);
-  const book2=new THREE.Mesh(new THREE.BoxGeometry(0.4,0.16,0.3),new THREE.MeshLambertMaterial({color:0x3a6fd8}));book2.position.set(71.9,F+0.87,24.9);decoGroup.add(book2);
-  const chair=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.5,0.5),new THREE.MeshLambertMaterial({color:0x988478}));chair.position.set(71.5,F+0.25,25.9);decoGroup.add(chair);
-  wbox(73.4,28.0,0.4,2.0,2.4,0x8a6a3a);  // 書棚(東壁沿い)
-  wbox(70.4,24.6,0.7,1.3,0.6,0x7a8a95);  // 書類キャビネット
-  addDecoCollider(71.5,25.0,0.8,F);addDecoCollider(73.4,28.0,0.5,F);addDecoCollider(70.4,24.6,0.4,F);
-  const oi=iconSprite('🏢',1.5);oi.position.set(71.5,F+3.6,26.5);decoGroup.add(oi);
+  // --- 事務所(x71-74・板張り): 机+帳簿+書棚+キャビネット ---
+  const desk=wbox(72.5,25.0,1.6,0.12,0.8,0x9a6b3a);desk.position.y=F+0.72;
+  [[-0.65,-0.3],[0.65,-0.3],[-0.65,0.3],[0.65,0.3]].forEach(p=>{const leg=new THREE.Mesh(new THREE.BoxGeometry(0.1,0.7,0.1),new THREE.MeshLambertMaterial({color:0x6a4a25}));leg.position.set(72.5+p[0],F+0.35,25.0+p[1]);decoGroup.add(leg);});
+  const book=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.1,0.36),new THREE.MeshLambertMaterial({color:0xf2ede2}));book.position.set(72.3,F+0.84,25.0);decoGroup.add(book);
+  const book2=new THREE.Mesh(new THREE.BoxGeometry(0.4,0.16,0.3),new THREE.MeshLambertMaterial({color:0x3a6fd8}));book2.position.set(72.9,F+0.87,24.9);decoGroup.add(book2);
+  const chair=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.5,0.5),new THREE.MeshLambertMaterial({color:0x988478}));chair.position.set(72.5,F+0.25,25.9);decoGroup.add(chair);
+  wbox(74.4,29.0,0.4,2.0,2.4,0x8a6a3a);  // 書棚(東壁沿い)
+  wbox(71.4,24.6,0.7,1.3,0.6,0x7a8a95);  // 書類キャビネット
+  addDecoCollider(72.5,25.0,0.8,F);addDecoCollider(74.4,29.0,0.5,F);addDecoCollider(71.4,24.6,0.4,F);
+  const oi=iconSprite('🏢',1.5);oi.position.set(72.5,F+3.6,27);decoGroup.add(oi);
   addInfoIcon(oi,{t:'🏢 事務所(大倉庫・東)',b:'雇用・仕事の指示・帳簿(PL/BS・事業別)はここで。<br>従業員(月給30万)に🌾米/🌿牧草/🐂牛の世話/🟫堆肥を指示すると、毎日/月初に自動でやってくれるよ(放置経営)。',btns:[['🤝 雇用・指示',()=>{menuTab='staff';openMenu();}],['📒 帳簿(PL/BS)を見る',()=>{menuTab='ledger';openMenu();}]]});
   // --- 外の看板(西の大搬入口の前) ---
-  addSign(44.5,24.5,'🏭',{t:'🏭 大倉庫(複合施設)',b:'農機庫・米の貯蔵・精米機・食品加工場・事務所を1棟に集約した巨大倉庫。<br>西の大きな搬入口から中に入って歩き回れるよ。米の出荷は🍚精米機、雇用・帳簿は🏢事務所、農産物の売却は📦倉庫メニューで。',btns:[['📦 倉庫メニュー',()=>{menuTab='wh';openMenu();}],['🏢 雇用・指示(事務所)',()=>{menuTab='staff';openMenu();}]]},1.8);
+  addSign(39.5,24,'🏭',{t:'🏭 大倉庫(複合施設)',b:'農機庫・米の貯蔵・精米機・食品加工場・事務所を1棟に集約した超巨大倉庫(35×13)。<br>西の大きな搬入口から中に入って歩き回れるよ。米の出荷は🍚精米機、雇用・帳簿は🏢事務所、農産物の売却は📦倉庫メニューで。',btns:[['📦 倉庫メニュー',()=>{menuTab='wh';openMenu();}],['🏢 雇用・指示(事務所)',()=>{menuTab='staff';openMenu();}]]},1.8);
 }
 // v20: 倉庫在庫(米袋)の見た目。袋数に応じて棚の米袋が増減する(v21: 大きな棚2基に最大24袋+床の山)
 function updateRiceSacks(){
@@ -1788,25 +1836,15 @@ function updateRiceSacks(){
     const pn=Math.min(4,Math.ceil((state.riceBags||0)/80));
     for(let i=0;i<pn;i++){
       const sack=new THREE.Mesh(new THREE.BoxGeometry(0.44,0.54,0.44),mat);
-      sack.position.set(59.2+(i%2)*0.55,3+0.42+Math.floor(i/2)*0.56,27.4);
+      sack.position.set(59.2+(i%2)*0.55,3+0.42+Math.floor(i/2)*0.56,28.4);
       sack.rotation.y=i*0.35;sack.castShadow=true;riceSackGroup.add(sack);
     }
   }
   decoGroup.add(riceSackGroup);
 }
-// v10: ショップ屋台と出荷箱（近づいてタップでメニュー）
-const SHOP_POS={x:24.5,z:32.5},SHIP_POS={x:30.5,z:32.5};
-function buildShopStand(){
-  const g=new THREE.Group();
-  const y=topY(Math.floor(SHOP_POS.x),Math.floor(SHOP_POS.z))+1;
-  const base=new THREE.Mesh(new THREE.BoxGeometry(1.6,1,1),new THREE.MeshLambertMaterial({color:0xb5843f}));base.position.y=0.5;base.castShadow=true;g.add(base);
-  const roof=new THREE.Mesh(new THREE.BoxGeometry(1.9,0.16,1.3),new THREE.MeshLambertMaterial({color:0xe8743f}));roof.position.y=1.8;roof.castShadow=true;g.add(roof);
-  [[-0.8,-0.5],[0.8,-0.5],[-0.8,0.5],[0.8,0.5]].forEach(p=>{const post=new THREE.Mesh(new THREE.BoxGeometry(0.1,1.8,0.1),new THREE.MeshLambertMaterial({color:0x8a5a2b}));post.position.set(p[0],0.9,p[1]);g.add(post);});
-  g.position.set(SHOP_POS.x,y-1+0.02,SHOP_POS.z);decoGroup.add(g);
-  addDecoCollider(SHOP_POS.x,SHOP_POS.z,0.9,y);
-  const ic=iconSprite('🛒',1.6);ic.position.set(SHOP_POS.x,y+2.4,SHOP_POS.z);decoGroup.add(ic);
-  addInfoIcon(ic,{t:'🛒 購買(お店)',b:'🥕野菜(2ヶ月で育つ)や丹波名物🫛黒豆(4ヶ月)の種を買えるよ。買った種は南の🥬野菜畑にまこう。',btns:[['🛒 種を買う(倉庫メニュー)',()=>{menuTab='wh';openMenu();}]]});
-}
+// v10: 出荷箱（近づいてタップでメニュー）
+// v22: 🛒購買屋台(木のテーブル+屋根の机みたいな屋台)は邪魔なので撤去。種の購入は出荷箱/倉庫メニューに集約
+const SHIP_POS={x:30.5,z:32.5};
 function buildShipBox(){
   const g=new THREE.Group();
   const y=topY(Math.floor(SHIP_POS.x),Math.floor(SHIP_POS.z))+1;
@@ -1815,7 +1853,7 @@ function buildShipBox(){
   g.position.set(SHIP_POS.x,y-1+0.02,SHIP_POS.z);decoGroup.add(g);
   addDecoCollider(SHIP_POS.x,SHIP_POS.z,0.8,y);
   const ic=iconSprite('📦',1.6);ic.position.set(SHIP_POS.x,y+1.8,SHIP_POS.z);decoGroup.add(ic);
-  addInfoIcon(ic,{t:'📦 出荷箱',b:'収穫した野菜・黒豆・栗や堆肥をまとめて売れるよ(🍱加工機が稼働中なら売値1.5倍)。',btns:[['📦 売る(倉庫メニュー)',()=>{menuTab='wh';openMenu();}]]});
+  addInfoIcon(ic,{t:'📦 出荷箱・購買',b:'収穫した野菜・黒豆・栗や堆肥をまとめて売れるよ(🍱加工機が稼働中なら売値1.5倍)。🥕野菜や🫛黒豆の種もここで買える(南の🥬野菜畑にまこう)。',btns:[['📦 売る・種を買う(倉庫メニュー)',()=>{menuTab='wh';openMenu();}]]});
 }
 // v10: 牧草地の草むら（タップで ぼくそう ゲット、翌日はえる）
 const TUFT_SPOTS=[[37.5,10.5],[40.5,12.5],[43.5,10.5],[46.5,13.5],[38.5,16.5],[42.5,18.5],[46.5,17.5],[44.5,15.5],[39.5,19.5],[47.5,11.5]];
@@ -1839,13 +1877,12 @@ function updateTufts(){
 // v14: 施設の対話ポイント → v21: 旧銀行/旧セリ/旧事務所は更地化したので撤去
 function buildDecor(){
   scene.add(decoGroup);
-  hayRoll(38.5,11.5);hayRoll(41,17.2);hayRoll(45.5,10.3);hayRoll(44,19.5);
   // v21: 看板はアイコンのみ(クリックで説明)。移転済み施設の案内看板は撤去(跡地は更地)
   updateBarnSign();
   addSign(13.5,36.2,'🌾',{t:'🌾 棚田(米づくり)',
     b:()=>'米は年1サイクル: 4月に田植え(苗代'+man(riceSeedCost())+')→5〜9月は月1回🚿水管理→10月に収穫→毎月🍚精米出荷。<br>いまの状態: '+riceFieldLabel()+'<br>棚田に近づいて「使う」でも操作できるよ。',
     btns:()=>[[riceFieldLabel(),()=>riceFieldAction()]]});
-  addSign(42,30.2,'🟫',{t:'🟫 堆肥場',
+  addSign(36.5,29.4,'🟫',{t:'🟫 堆肥場',
     b:()=>'牛糞の処理設備を建てる場所。<br>🟤糞置き場('+man(ECON.DUNG_COST)+')=処分費ゼロ+⛰牛舎増築の必須条件。<br>🏭本格堆肥舎('+man(ECON.SHED_COST)+'・🏛補助で半額)=牛糞→肥料(頭数×'+ECON.FERT_PER_COW+'袋/月・1袋'+fmt(ECON.FERT_PRICE)+')の製造販売。<br>いま: '+(state.compostShed?'🏭本格堆肥舎が稼働中(肥料在庫'+state.fertStock+'袋)':state.dungYard?'🟤糞置き場で処理中(処分費ゼロ)':'未整備(牛がいると処分費 月1万円/頭)'),
     btns:()=>{const a=[];
       if(!state.dungYard&&!state.compostShed)a.push(['🟤 糞置き場を作る('+man(ECON.DUNG_COST)+')',()=>buyDungYard()]);
@@ -1853,10 +1890,8 @@ function buildDecor(){
       else a.push(['🟫 肥料を出荷する('+state.fertStock+'袋)',()=>sellFert(false)]);
       return a;}});
   addSign(17,11.8,'🌰',{t:'🌰 栗園',b:'栗の木に近づいて「使う」で栗を拾えるよ(翌日また実る)。拾った栗は📦出荷箱/倉庫メニューで売れる(🍱加工機があれば1.5倍)。'});
-  addSign(37,14.5,'🌿',{t:'🌿 牧草地',
-    b:()=>'牧草を作付け('+man(grassSowCost())+')すると毎月最大'+ECON.GRASS_YIELD*(state.land.grass2?2:1)+'束生産。牛1頭は月1束消費、余りは1束1万円で売れる(餌代が3.5万→1万/頭に)。<br>毎月1回✂刈り取りしないと生産が半分に！<br>いま: '+(state.grassSown?('作付け済み・在庫'+state.grassStock+'束・今月の刈り取り'+(state.grassCutMonth===state.monthN?'✅済':'⬜まだ')):'未作付け'),
-    btns:()=>state.grassSown?(state.grassCutMonth!==state.monthN?[['✂ 牧草を刈り取る(月1回)',()=>doGrassCut(null)]]:[]):[['🌿 牧草を育てる('+man(grassSowCost())+')',()=>sowGrass()]]});
-  buildShopStand();buildShipBox();buildTufts();
+  buildPastureDecor(); // v22: 牧草地の看板・干し草・草むらは区画を持っている時だけ
+  buildShipBox(); // v22: 🛒購買屋台(机みたいな屋台)は撤去。種は📦出荷箱/倉庫メニューで買う
   buildWarehouseInterior(); // v21: 巨大倉庫の内装(米袋の棚・農機庫・加工場・事務所・照明)
   buildTractor();  // v20: トラクターは大倉庫の農機庫に格納
   buildPlanter();buildCombine(); // v20: 田植え機/コンバイン(購入すると農機庫に並ぶ)
@@ -1864,8 +1899,24 @@ function buildDecor(){
   if(state.machines.processor.lvl)buildProcessor(); // v20: 加工機は大倉庫の加工場に設置
   if(state.dungYard)buildDungYard(); // v20: 糞置き場(簡易)
   for(let i=0;i<state.newBarns;i++)addNewBarnSign(i); // v20/v21
-  buildBusStopFarm(); // v19: 街へ行くバス停
+  buildTownGateFarm(); // v22: 橋の西の「街の入口」(バス停は廃止)
   buildMachineBadges(); // v19: 故障中の⚠表示
+}
+// ---------- v22: 牧草地の装飾。区画(西の牧草地)を持っている時だけ看板・干し草・草むらを置く ----------
+let pastureVacantSign=null;
+function buildPastureDecor(){
+  if(curMap!=='farm')return;
+  if(pastureVacantSign){removeSignInfo(pastureVacantSign);decoGroup.remove(pastureVacantSign);pastureVacantSign=null;}
+  if(!state.land.pasture1){ // 未購入: 空き地の案内だけ
+    pastureVacantSign=addSign(37,14.5,'🧱',{t:'🧱 空き地(牧草地の予定地)',
+      b:()=>'ここは牧草地にできる空き地。🏘街の🏠不動産屋で「西の牧草地(基本)」('+man(ECON.LAND_PASTURE_PRICE)+')を買うと柵付きの牧草地になるよ。<br>牧草を育てると🌸春(5月)と🍂秋(9月)の年2回収穫でき、牛の餌代が3.5万→1万/頭に下がる(いまは市販飼料のみ)。'});
+    return;
+  }
+  hayRoll(38.5,11.5);hayRoll(41,17.2);hayRoll(45.5,10.3);hayRoll(44,19.5);
+  addSign(37,14.5,'🌿',{t:'🌿 牧草地',
+    b:()=>'牧草を作付け('+man(grassSowCost())+')すると育成が始まり、🌸春(5月)と🍂秋(9月)の年2回✂収穫できる(1回'+grassCutYield()+'束)。牛1頭は月1束消費、余りは1束1万円で売れる(餌代が3.5万→1万/頭に)。<br>いま: '+(state.grassSown?('作付け済み・在庫'+state.grassStock+'束・'+(grassHarvestMonth()?(state.grassCutMonth===state.monthN?'今シーズンの収穫✅済':'✂収穫できる月！'):'育成中(次の収穫は'+nextGrassHarvestLabel()+')')):'未作付け'),
+    btns:()=>state.grassSown?(grassHarvestMonth()&&state.grassCutMonth!==state.monthN?[['✂ 牧草を収穫する(春・秋の年2回)',()=>doGrassCut(null)]]:[]):[['🌿 牧草を育てる('+man(grassSowCost())+')',()=>sowGrass()]]});
+  buildTufts();updateTufts();
 }
 // v21: 新牛舎の看板(アイコン+クリック説明)
 function addNewBarnSign(i){
@@ -2160,7 +2211,7 @@ function loadNPCGLBs(){
 //      GLBはマップをまたいで保持(切替のたびに読み直さない)。
 const npcs=[];
 function initNPCs(){
-  const spots={barn:[27.6,17.0],pasture:[39.5,13.5],compost:[41.5,35.5]}; // v13: 牛舎看板と重ならない位置に
+  const spots={barn:[27.6,17.0],pasture:[39.5,13.5],compost:[35,36.8]}; // v13: 牛舎看板と重ならない位置に / v22: 堆肥場の移設に追従
   const mk=(modelKey,cfg,map,pos,wander)=>{
     const g=new THREE.Group();               // ホルダー（ラベル＋キャラ）
     const vox=buildVoxAvatar(cfg); vox.visible=false; g.add(vox); // v15: ボクセルは非表示で待機(GLB失敗時のみ表示)
@@ -2301,13 +2352,13 @@ const QUESTS=[
  {s:'⏭ 日を進めよう',t:'⏭で日を進めよう。5〜9月は月1回🚿水管理(サボると収量減)！10月に収穫できるよ',c:()=>state.riceBags>0||state.soldRiceBags>0},
  {s:'🍚 精米して出荷',t:'📦大倉庫の🍚精米機で「精米して出荷」しよう(1袋3万円・月1回)。精米機のアイコンからも出荷できるよ',c:()=>state.soldRiceBags>0},
  {s:'📒 決算を見よう',t:'3月末まで進めて決算を見よう(黒字を目指せ！)。帳簿はメニューか🏢事務所のアイコンから',c:()=>!!state.lastResult},
- {s:'🐂 牛を飼おう',t:'🏚牛舎を借りて(月3万円)、🚌バスで街へ行き🐂セリでメス牛を買おう(与信100万円=現金は減らない)',c:()=>state.cows.length>0||state.calves.length>0},
+ {s:'🐂 牛を飼おう',t:'🏚牛舎を借りて(月3万円)、🌉川の橋を渡って街へ行き🐂セリでメス牛を買おう(与信100万円=現金は減らない)',c:()=>state.cows.length>0||state.calves.length>0},
  {s:'🍼 牛の世話をしよう',t:'牛は毎日🍼餌やり＋🧹掃除！よく食べた牛は太って高く売れる(+30%まで)。サボると健康低下で安くなるよ',c:()=>state.care.fedDay>=0},
  {s:'🤝 従業員に指示',t:'🏭大倉庫の🏢事務所で従業員を雇い「🐂牛の世話」を指示して自動化しよう(放置経営！)',c:()=>!!staffWithJob('cow')},
  {s:'🟤 糞置き場を作ろう',t:'🟫堆肥場に🟤糞置き場(200万)を作ろう(糞の処分費ゼロ＋⛰牛舎増築の必須条件)',c:()=>state.dungYard||state.compostShed},
  {s:'🏭 堆肥舎を建てよう',t:'🏭本格堆肥舎(1500万・🏛役場の補助で750万)を建てて肥料事業を始めよう(牛糞→肥料の製造販売)',c:()=>state.compostShed},
  {s:'⛰ 牛舎を増築しよう',t:'⛰山を切り開いて新築牛舎(3000万・🏛補助で1500万・母15子15)を建てよう！🚜街の農協で建てられるよ',c:()=>state.newBarns>0},
- {s:'🏠 土地を買おう',t:'🏠街の不動産屋で土地(区画)を買って世界を広げよう！(東の牧草地150万/東の棚田250万/南の牧場300万)',c:()=>state.land.grass2||state.land.rice2||state.land.barn2},
+ {s:'🏠 土地を買おう',t:'🏠街の不動産屋で土地(区画)を買って世界を広げよう！(西の牧草地100万/東の牧草地150万/東の棚田250万/南の牧場300万)',c:()=>state.land.pasture1||state.land.grass2||state.land.rice2||state.land.barn2},
  {s:'🌟 規模拡大へ！',t:'♀メスの子牛を母牛に残して牛舎を増築、規模拡大で利益を最大化しよう！',c:()=>false},
 ];
 function updateQuest(){
@@ -2559,7 +2610,7 @@ function nearestAction(wx,wz){
     const d=Math.hypot(x-wx,z-wz);
     if(d<r&&(!best||d<best.d))best={d,tx:x,tz:z,label,fn};
   };
-  // ---- v19: 街マップの対象(施設・NPC・バス停) ----
+  // ---- v19: 街マップの対象(施設・NPC) / v22: 農場への道 ----
   if(curMap==='town'){
     for(const n of npcs){
       if(!n.mesh.parent)continue;
@@ -2571,7 +2622,7 @@ function nearestAction(wx,wz){
     cand(44.5,34.5,2.6,'🚜 農協(資材・獣医)',()=>{menuTab='ja';openMenu();});
     cand(13.5,28.6,2.4,'🔧 修理屋(機械の修理)',()=>{menuTab='repair';openMenu();});
     cand(47.5,44.3,2.6,'🐂 セリ市場',()=>{menuTab='auction';openMenu();});
-    cand(36.2,57.5,2.8,'🚌 農場へ帰る',()=>switchMap('farm'));
+    cand(33,61,3.2,'🌉 農場へ帰る(橋への道)',()=>switchMap('farm')); // v22: バス廃止→南の道の突き当たりから農場へ
     return best;
   }
   // ---- 農場マップの対象 ----
@@ -2581,24 +2632,23 @@ function nearestAction(wx,wz){
   }
   // NPC
   for(const n of npcs){if(!n.mesh.parent)continue;cand(n.mesh.position.x,n.mesh.position.z,1.6,'💬 話す',()=>actNPC(n));}
-  // v19: バス停(街へ行く)
-  cand(24.5,20.8,2.8,'🚌 街へ行く(バス)',()=>switchMap('town'));
+  // v22: 街の入口(橋の西岸)。バス停は廃止
+  cand(1.5,21.5,3.0,'🏘 街へ入る(橋の西)',()=>switchMap('town'));
   // v19: 故障中の機械(修理屋への案内) v20: 大倉庫内の設置場所に合わせた
   const mc=(x,z,k)=>{if(machineBroken(k))cand(x,z,2.2,'⚠ '+MACH_META[k].n+'が故障中！',()=>{
-    showConfirm('⚠ '+MACH_META[k].n+'が故障中','🔧街の修理屋で修理('+man(machRepairCost(k))+')すると再稼働するよ。'+MACH_META[k].stop+'。<br>バスで街へ行く？',()=>switchMap('town'),'🚌 街へ行く','やめる');});};
+    showConfirm('⚠ '+MACH_META[k].n+'が故障中','🔧街の修理屋で修理('+man(machRepairCost(k))+')すると再稼働するよ。'+MACH_META[k].stop+'。<br>街へ行く？(🌉川の橋を渡って向かってもOK)',()=>switchMap('town'),'🏘 街へ行く','やめる');});};
   for(const k in MACH_POS)if(machineOwned(k))mc(MACH_POS[k][0],MACH_POS[k][1],k);
-  // v14: 施設（倉庫・購買・牛舎・牧草地）※v21: 旧銀行/旧セリ/旧事務所/旧不動産屋は更地化して撤去
-  cand(SHOP_POS.x,SHOP_POS.z,1.9,'🛒 購買(種を買う)',()=>{menuTab='wh';openMenu();});
-  cand(SHIP_POS.x,SHIP_POS.z,1.9,'📦 出荷箱(農産物)',()=>{menuTab='wh';openMenu();});
+  // v14: 施設（倉庫・牛舎・牧草地）※v21: 旧銀行/旧セリ/旧事務所は更地化 v22: 🛒購買屋台は撤去(出荷箱に集約)
+  cand(SHIP_POS.x,SHIP_POS.z,1.9,'📦 出荷箱(売る・種を買う)',()=>{menuTab='wh';openMenu();});
   // v21: 巨大倉庫(複合施設)の中の対話ポイント(新レイアウトの座標)
   cand(MACH_POS.polisher[0],MACH_POS.polisher[1],2.0,machineBroken('polisher')?'⚠ 精米機(故障中)':'🍚 精米機(精米して出荷)',()=>{if(machineBroken('polisher')){toast('🍚 精米機が故障中！🔧街の修理屋で修理を('+man(machRepairCost('polisher'))+')');}else shipRice();});
   cand(59.5,25.2,2.2,'📦 米の貯蔵('+state.riceBags+'袋)・倉庫',()=>{menuTab='wh';openMenu();});
-  cand(71.5,25.6,2.6,'🏢 事務所(雇用・帳簿・指示)',()=>{menuTab='staff';openMenu();});
-  cand(66.2,29.8,2.2,'🍱 食品加工場',()=>{
+  cand(72.5,25.6,2.6,'🏢 事務所(雇用・帳簿・指示)',()=>{menuTab='staff';openMenu();});
+  cand(66.5,30.2,2.2,'🍱 食品加工場',()=>{
     if(state.machines.processor.lvl)toast('🍱 加工機'+(machineBroken('processor')?'は⚠故障中！🔧街の修理屋へ':'が稼働中！農産物の売値1.5倍(出荷箱/倉庫から売却)'));
     else toast('🍱 加工機はまだ無いよ。🚜街の農協で購入('+man(ECON.MACH_PROCESSOR)+'・補助で半額)すると農産物の売値1.5倍');
   });
-  cand(50.5,27.2,2.4,'🚜 農機庫(機械の格納)',()=>{
+  cand(46.5,28.2,2.4,'🚜 農機庫(機械の格納)',()=>{
     const t=state.machines.tractor,names=[];
     names.push('🚜トラクター('+(t.lvl==='new'?(t.size==='small'?'小型・新品':'中型・新品'):'中古')+(t.broken?'⚠故障':'')+')');
     if(state.machines.planter.lvl)names.push('🌱田植え機'+(state.machines.planter.broken?'(⚠故障)':''));
@@ -2608,25 +2658,25 @@ function nearestAction(wx,wz){
   cand(25.5,17.5,2.3,hasBarn()?'🏚 牛舎(牛の管理)':'🏚 古い牛舎を借りる(月3万円)',()=>{if(hasBarn()){menuTab='cows';openMenu();}else rentBarn();});
   // v16: 牛の日次世話(牛舎の中)。従業員に指示していなければ毎日自分でやる
   if(herdCount()>0&&!careDoneToday())cand(26,13.5,3.2,'🍼 牛の世話(餌やり+掃除)',()=>doCowCare(null));
-  cand(37,14.5,2.3,state.grassSown?(state.grassCutMonth!==state.monthN?'✂ 牧草を刈り取る(月1回)':'🌿 牧草の状況'):'🌿 牧草を育てる('+man(grassSowCost())+')',()=>{
+  if(state.land.pasture1)cand(37,14.5,2.3,state.grassSown?(grassHarvestMonth()&&state.grassCutMonth!==state.monthN?'✂ 牧草を収穫する(春秋の年2回)':'🌿 牧草の状況'):'🌿 牧草を育てる('+man(grassSowCost())+')',()=>{
     if(!state.grassSown){sowGrass();return;}
-    if(state.grassCutMonth!==state.monthN){doGrassCut(null);return;}
-    toast('🌿 牧草: 毎月最大'+ECON.GRASS_YIELD*(state.land.grass2?2:1)+'束生産(刈り取り済み)・在庫'+state.grassStock+'束・牛の消費 月'+herdCount()+'束');
+    if(grassHarvestMonth()&&state.grassCutMonth!==state.monthN){doGrassCut(null);return;}
+    toast('🌿 牧草: 収穫は🌸5月と🍂9月(1回'+grassCutYield()+'束)・在庫'+state.grassStock+'束・牛の消費 月'+herdCount()+'束・次の収穫は'+nextGrassHarvestLabel());
   });
   // v20: 堆肥場は2段階。🟤糞置き場(処理のみ・牛舎増築の必須条件)と🏭本格堆肥舎(肥料事業)
-  if(!state.compostShed)cand(39.5,36.2,2.4,state.dungYard?'🟤 糞置き場(糞の処理のみ)':'🟤 糞置き場を作る('+man(ECON.DUNG_COST)+')',()=>{
+  if(!state.compostShed)cand(36.5,36.2,2.4,state.dungYard?'🟤 糞置き場(糞の処理のみ)':'🟤 糞置き場を作る('+man(ECON.DUNG_COST)+')',()=>{
     if(state.dungYard)toast('🟤 糞置き場: 牛糞をここで処理(外部処分費ゼロ)。肥料にして売るには🏭本格堆肥舎('+man(ECON.SHED_COST)+'・補助で半額)。⛰新築牛舎の必須条件はクリア済み✅');
     else buyDungYard();
   });
-  cand(42,32.5,2.6,state.compostShed?('🟫 肥料を出荷する('+state.fertStock+'袋)'):'🏭 本格堆肥舎を建てる('+man(shedPriceNow())+(subApproved('shed')?'・補助済半額':'・補助で半額')+')',()=>{
+  cand(36.5,32.3,2.6,state.compostShed?('🟫 肥料を出荷する('+state.fertStock+'袋)'):'🏭 本格堆肥舎を建てる('+man(shedPriceNow())+(subApproved('shed')?'・補助済半額':'・補助で半額')+')',()=>{
     if(state.compostShed)sellFert(false);else buildShed();
   });
   // 栗の木
   chestnutTrees.forEach((t,i)=>{
     if(state.treeFruit[i])cand(t.x+0.5,t.z+0.5,2.0,'🌰 栗を取る',()=>actTree(i));
   });
-  // 草むら
-  TUFT_SPOTS.forEach((p,i)=>{
+  // 草むら(v22: 牧草地を持っている時だけ)
+  if(state.land.pasture1)TUFT_SPOTS.forEach((p,i)=>{
     if(state.tuftDay[i]!==state.day)cand(p[0],p[1],1.3,'🌿 草を取る',()=>actTuft(i));
   });
   // 作物・畑（クリック地点のセルと周囲1セル）
@@ -3058,12 +3108,13 @@ function staffMonthlyJobs(notes){
       else{const n=Math.min(riceShipMax(),state.riceBags);shipRice();notes.push('🌾 '+nm+': '+n+'袋を精米出荷した');}
     }
   }
-  // 🌿 牧草: 作付け・刈り取り(月1)・余剰売却
+  // 🌿 牧草: 作付け・収穫(🌸5月/🍂9月の年2回)・余剰売却 ※v22: 牧草地の区画が必要
   const gk=staffWithJob('grass');
   if(gk){
     const nm=STAFF_META[gk].name;
-    if(!state.grassSown&&state.money>=grassSowCost()&&herdCount()>0){sowGrass();notes.push('🌿 '+nm+': 牧草を作付けした');}
-    if(state.grassSown&&doGrassCut('staff'))notes.push('🌿 '+nm+': 牧草を刈り取った(今月は満額生産)');
+    if(!state.land.pasture1)notes.push('🌿 '+nm+': 牧草地がない！🏘街の🏠不動産屋で「西の牧草地」を買おう');
+    if(!state.grassSown&&state.land.pasture1&&state.money>=grassSowCost()&&herdCount()>0){sowGrass();notes.push('🌿 '+nm+': 牧草を作付けした');}
+    if(state.grassSown&&grassHarvestMonth()&&doGrassCut('staff'))notes.push('🌿 '+nm+': '+(state.month===5?'🌸春':'🍂秋')+'の牧草を収穫した(+'+state.grassProdLast+'束)');
     if(state.grassSown){const s=sellGrassSurplus(true);if(s>0)notes.push('🌿 '+nm+': 余剰牧草'+s+'束を売却');}
   }
   // 🟫 堆肥: 堆肥化・肥料出荷・農産物売却
@@ -3232,14 +3283,11 @@ function monthEnd(notes){
     state.riceMiss=(state.riceMiss||0)+1;
     notes.push('⚠ 今月は水管理をサボった…収穫が5%減るよ(累計'+Math.min(5,state.riceMiss)+'回)');
   }
-  // 1) 牧草の生産(刈り取り済みなら満額、サボると半分)
-  if(state.grassSown){
-    const full=ECON.GRASS_YIELD*(state.land.grass2?2:1);
-    const y=grassYieldNow();
-    state.grassProdLast=y;
-    state.grassStock+=y;
-    if(y<full)notes.push('🌿 刈り取りをサボったので牧草は'+y+'束だけ(満額'+full+'束)');
-  }else state.grassProdLast=0;
+  // 1) v22: 牧草の生産は月次では行わない(春5月・秋9月の✂収穫時に在庫へ加算)。
+  //    収穫月に収穫しそびれた場合はその回の分を逃す(担当従業員がいれば自動収穫済み)
+  if(state.grassSown&&grassHarvestMonth()&&state.grassCutMonth!==state.monthN){
+    notes.push('⚠ '+state.month+'月の牧草の✂収穫をしそびれた…('+grassCutYield()+'束を逃した。次は'+(state.month===5?'9月':'来年5月')+')');
+  }
   // 2) 餌の消費と餌代(牧草でまかなえた牛=1万/頭、足りない分=3.5万/頭)
   const herd=herdCount();
   const fed=Math.min(state.grassStock,herd*ECON.GRASS_EAT);
@@ -3426,7 +3474,7 @@ function segPLHTML(segKey,g){
 function segBSHTML(segKey,b){
   const rows=[];const liabs=[];
   if(segKey==='rice'){rows.push(['🍚 米在庫('+b.nRice+'袋×3万)',b.invRice],['🌾 東の棚田(取得原価)',b.landRice],['🚜 機械(トラクター/田植え機/コンバイン/精米機・新品分)',(state.machines.tractor.cost||0)+(state.machines.polisher.cost||0)+(state.machines.planter.cost||0)+(state.machines.combine.cost||0)]);}
-  else if(segKey==='grass'){rows.push(['🌿 牧草在庫('+b.nGrass+'束×1万)',b.invGrass],['🗺 東の牧草地(取得原価)',b.landGrass]);}
+  else if(segKey==='grass'){rows.push(['🌿 牧草在庫('+b.nGrass+'束×1万)',b.invGrass],['🗺 牧草地(西/東・取得原価)',b.landGrass]);}
   else if(segKey==='cow'){rows.push(['🐂 母牛'+b.nCows+'頭',b.cowsV],['🐮 子牛'+b.nCalves+'頭',b.calvesV],['🏠 新築牛舎'+state.newBarns+'棟(取得原価)',b.bldgBarn],['🟤 糞置き場(取得原価)',b.bldgDung],['🏠 南の牧場+第二牛舎(取得原価)',b.landBarn]);liabs.push(['🐂 牛の与信(繁殖ローン)',b.cowDebt]);}
   else if(segKey==='compost'){rows.push(['🏭 本格堆肥舎(取得原価)',b.bldgShed],['🟫 肥料在庫('+b.nFert+'袋×8千)',b.invFert]);}
   else if(segKey==='other'){rows.push(['🍱 加工機(取得原価)',state.machines.processor.cost||0]);}
@@ -3527,18 +3575,21 @@ function renderMenu(){
 // v16: 土地(区画)の購入=ワールド拡張
 function landHTML(){
   let h='<p>🏠 不動産屋。土地(区画)を買うと荒れ地が開拓されて<b>世界が広がり、生産規模が拡大</b>するよ。作業量も増えるので従業員の配置を考えよう。</p>';
+  if(!state.land.pasture1)h+='<p style="color:#c03030;font-weight:bold;font-size:12.5px">🌿 牧草地はまだ持っていないよ！「西の牧草地(基本)」を買うと牧草を育てられる(餌代3.5万→1万/頭)。</p>';
   const rows=[
+    ['pasture1','🌿',PARCELS.pasture1], // v22: 基本の牧草地(開始時は持っていない)
     ['grass2','🌿',PARCELS.grass2],
     ['rice2','🌾',PARCELS.rice2],
     ['barn2','🏠',PARCELS.barn2],
   ];
   for(const[k,em,p]of rows){
     const owned=state.land[k];
-    h+='<div class="row"><div class="em">'+em+'</div><div class="info"><b>'+p.n+(owned?' ✅所有':'')+'</b><small>'+p.desc+'</small></div>'+
+    const locked=(k==='grass2'&&!state.land.pasture1); // v22: 東の牧草地は西の牧草地が先
+    h+='<div class="row"><div class="em">'+em+'</div><div class="info"><b>'+p.n+(owned?' ✅所有':'')+'</b><small>'+p.desc+(locked?'<br><span style="color:#c03030">🔒 先に「西の牧草地(基本)」の購入が必要</span>':'')+'</small></div>'+
       (owned?'<span style="font-size:12px;color:#1f7a1f;font-weight:bold">開拓済み</span>'
-      :'<button class="buy orange" '+(state.money>=p.price?'':'disabled')+' onclick="buyLand(\''+k+'\')">'+man(p.price)+'</button>')+'</div>';
+      :'<button class="buy orange" '+(state.money>=p.price&&!locked?'':'disabled')+' onclick="buyLand(\''+k+'\')">'+man(p.price)+'</button>')+'</div>';
   }
-  h+='<p class="sub2" style="font-size:11.5px;color:#8a6a45">💡 東の牧草地=牧草24束/月(余剰売却も倍増)。東の棚田=米の年商900万→1,350万(苗代も450万に)。南の牧場=母牛16頭で繁殖を倍速に。</p>';
+  h+='<p class="sub2" style="font-size:11.5px;color:#8a6a45">💡 西の牧草地=🌸5月と🍂9月の年2回収穫(1回72束)で餌代を圧縮。東の牧草地=収穫2倍(144束/回)。東の棚田=米の年商900万→1,350万(苗代も450万に)。南の牧場=母牛16頭で繁殖を倍速に。</p>';
   return h;
 }
 // ---------- v19: 役場(補助金)・農協(資材/獣医)・修理屋のメニュー ----------
@@ -3662,10 +3713,10 @@ function ledgerStatusHTML(){
   '<tr><td>自分の給与/生活費</td><td class="amt">'+fmt(ECON.OWNER_SALARY)+'</td></tr>'+
   '<tr><td>従業員給与('+sc+'人×30万)</td><td class="amt">'+fmt(sc*ECON.EMP_SALARY)+'</td></tr>'+
   '<tr><td>牛舎家賃'+(state.barnRented?'':(state.newBarns>0?'(新築牛舎は家賃なし)':'(未賃借)'))+'</td><td class="amt">'+fmt(state.barnRented?ECON.BARN_RENT:0)+'</td></tr>'+
-  '<tr><td>餌代(牛'+herd+'頭・牧草自給分は1万/頭)</td><td class="amt">'+(herd>0?'約'+fmt(Math.min(state.grassStock+(state.grassSown?ECON.GRASS_YIELD:0),herd)*ECON.FEED_GRASS+Math.max(0,herd-(state.grassStock+(state.grassSown?ECON.GRASS_YIELD:0)))*ECON.FEED_MARKET):'￥0')+'</td></tr>'+
+  '<tr><td>餌代(牛'+herd+'頭・牧草自給分は1万/頭)</td><td class="amt">'+(herd>0?'約'+fmt(Math.min(state.grassStock,herd)*ECON.FEED_GRASS+Math.max(0,herd-state.grassStock)*ECON.FEED_MARKET):'￥0')+'</td></tr>'+
   (herd>0?'<tr><td>牛糞の処分費'+(state.compostShed?'(🏭本格堆肥舎で収益化✨)':(state.dungYard?'(🟤糞置き場で不要✨)':'(1万/頭。🟤糞置き場でゼロに)'))+'</td><td class="amt">'+fmt((state.compostShed||state.dungYard)?0:herd*ECON.MANURE_FEE)+'</td></tr>':'')+
   '</table>'+
-  '<p class="sub2" style="font-size:11.5px;color:#8a6a45">🌿 牧草: '+(state.grassSown?('作付け済み(毎月最大'+ECON.GRASS_YIELD*(state.land.grass2?2:1)+'束・今月の刈り取り'+(state.grassCutMonth===state.monthN?'済✅':'まだ⬜')+')'):'未作付け(牧草地で'+man(grassSowCost())+')')+' / 牛の消費 月'+grassNeed+'束 / 米: '+(state.riceField==='none'?'未作付け(4月に苗代'+man(riceSeedCost())+')':state.riceField==='planted'?('生育中(10月に'+riceBagsYield()+'袋。水管理'+(isWaterSeason()?(state.waterMonth===state.monthN?'今月済✅':'今月まだ⬜'):'は5〜9月')+')'):'収穫待ち！')+(herdCount()>0?' / 🐂健康'+state.care.health+'・汚れ'+state.care.dirt:'')+'</p>';
+  '<p class="sub2" style="font-size:11.5px;color:#8a6a45">🌿 牧草: '+(state.grassSown?('作付け済み(収穫は🌸5月/🍂9月・1回'+grassCutYield()+'束・'+(grassHarvestMonth()?('今月は収穫月！'+(state.grassCutMonth===state.monthN?'収穫済✅':'まだ⬜')):'次は'+nextGrassHarvestLabel())+')'):(state.land.pasture1?'未作付け(牧草地で'+man(grassSowCost())+')':'牧草地なし(🏠不動産屋で購入)'))+' / 牛の消費 月'+grassNeed+'束 / 米: '+(state.riceField==='none'?'未作付け(4月に苗代'+man(riceSeedCost())+')':state.riceField==='planted'?('生育中(10月に'+riceBagsYield()+'袋。水管理'+(isWaterSeason()?(state.waterMonth===state.monthN?'今月済✅':'今月まだ⬜'):'は5〜9月')+')'):'収穫待ち！')+(herdCount()>0?' / 🐂健康'+state.care.health+'・汚れ'+state.care.dirt:'')+'</p>';
 }
 // 倉庫: 米の精米出荷・牧草売却・農産物・種
 function whHTML(){
@@ -3675,9 +3726,9 @@ function whHTML(){
   let h='<p>収穫した米は倉庫へ。毎月「精米して出荷」で現金化(月1回・最大'+riceShipMax()+'袋)。</p>'+
   '<div class="row"><div class="em">🍚</div><div class="info"><b>米倉庫: '+state.riceBags+'袋</b><small>1袋3万円。'+(polBroken?'<span class="loss">⚠精米機が故障中！🔧街の修理屋で修理を</span>':(state.shipMonth===state.monthN?'今月は出荷済み(⏭で翌月へ)':'今月あと'+shipN+'袋出荷できる('+fmt(shipN*ECON.RICE_BAG_PRICE)+')'))+'</small></div>'+
   '<button class="buy" '+(canShip?'':'disabled')+' onclick="shipRice()">精米して出荷</button></div>';
-  const reserve=herdCount()*ECON.GRASS_EAT;
+  const reserve=herdCount()*ECON.GRASS_EAT*monthsToNextGrassHarvest(); // v22: 次の収穫月まで持たせる
   const surplus=Math.max(0,state.grassStock-reserve);
-  h+='<div class="row"><div class="em">🌿</div><div class="info"><b>牧草在庫: '+state.grassStock+'束</b><small>牛の1ヶ月分'+reserve+'束は確保。余剰'+surplus+'束×1万円='+fmt(surplus*ECON.GRASS_PRICE)+'</small></div>'+
+  h+='<div class="row"><div class="em">🌿</div><div class="info"><b>牧草在庫: '+state.grassStock+'束</b><small>収穫は🌸5月/🍂9月の年2回。次の収穫('+nextGrassHarvestLabel()+')までの牛の餌'+reserve+'束は確保。余剰'+surplus+'束×1万円='+fmt(surplus*ECON.GRASS_PRICE)+'</small></div>'+
   '<button class="buy" '+(surplus>0?'':'disabled')+' onclick="sellGrassSurplus(false)">余剰を売る</button></div>';
   h+='<div class="row"><div class="em">🟤</div><div class="info"><b>堆肥を作る</b><small>牛ふん'+(state.res.manure||0)+'個→堆肥に(畑が2倍育つ/売っても2千円)</small></div>'+
   '<button class="buy" '+((state.res.manure||0)>0?'':'disabled')+' onclick="makeCompost()">作る</button></div>';
@@ -3840,7 +3891,8 @@ function toggleSound(){state.sound=!state.sound;renderMenu();}
 
 // ========== v19: 街マップ（生成・装飾・農場⇔街の切替） ==========
 let curMap='farm',mapBusy=false;
-const FARM_SPAWN={x:26.8,z:22.8},TOWN_SPAWN={x:33.0,z:57.5};
+// v22: 農場側は「橋の東のたもと」・街側は「南の門の内側」に出る(橋を渡って行き来する導線)
+const FARM_SPAWN={x:9.5,z:21.5},TOWN_SPAWN={x:33.0,z:57.5};
 // 街のボクセル生成(大通り・広場・噴水・建物・セリ市場の囲い)
 function genTown(){
   chestnutTrees.length=0;
@@ -3889,6 +3941,10 @@ function genTown(){
   gset(49,3,46,0);gset(50,3,46,0); // 出入口(北)
   for(const p of[[51,53],[55,53],[51,57],[55,57]]){gset(p[0],3,p[1],B.WOOD);gset(p[0],4,p[1],B.WOOD);gset(p[0],5,p[1],B.WOOD);}
   for(let x=51;x<=55;x++)for(let z=53;z<=57;z++)gset(x,6,z,B.HAY); // 競り台の屋根
+  // v22: 南の大通りの突き当たり=農場へ続く道(門)。バス停の代わりの帰り道
+  for(let z=62;z<=65;z++)for(let x=31;x<=34;x++)gset(x,2,z,B.PATH); // 道を南へ延長
+  for(let y=3;y<=5;y++){gset(30,y,61,B.WOOD);gset(35,y,61,B.WOOD);} // 門柱
+  for(let x=30;x<=35;x++)gset(x,6,61,B.PLANK); // 門の梁
   // 並木
   [[7,28],[13,28],[19,28],[38,28],[44,28],[50,28],[56,28],[59,35],[7,35],[36,50],[38,58],[16,44],[28,44],[7,41],[60,41]].forEach(p=>normalTree(p[0],p[1]));
 }
@@ -3952,28 +4008,19 @@ function buildTownInteriors(){
   tiBox(10.4,23.9,0.6,0.4,0.4,0xc23b22);
   (function(){const t=new THREE.Mesh(new THREE.CylinderGeometry(0.5,0.5,0.3,10),new THREE.MeshLambertMaterial({color:0x222222}));t.rotation.z=Math.PI/2;t.position.set(13.0,3.5,25.8);decoGroup.add(t);addDecoCollider(13.0,25.8,0.5,3);})();
 }
-// 街の装飾(看板・街灯・ベンチ・バス停・展示の牛)
+// 街の装飾(看板・街灯・ベンチ・農場への道・展示の牛)
 function buildTownDecor(){
   scene.add(decoGroup);
   buildTownInteriors(); // v20: 施設の内装
   // v21: 街の看板もアイコンのみ+クリック説明(機能ボタン付き)
   addSign(31.8,21.2,'🏛',{t:'🏛 役場',b:'補助金の申請窓口(担当: 山田さん)。申請→'+ECON.SUB_DAYS+'日で承認→'+ECON.SUB_VALID+'日以内の対象購入(新品の機械/新築牛舎/本格堆肥舎)が半額(50%補助)になるよ。未申請で買うと定価！',btns:[['🏛 補助金を申請する',()=>{menuTab='yakuba';openMenu();}]]});
   addSign(19.5,34.5,'🏦',{t:'🏦 丹波銀行',b:'直近の決算が黒字なら、売上高と同じ額まで無利息で借りられるよ(担当: 丹波さん)。返済はいつでもOK。',btns:[['🏦 借入・返済',()=>{menuTab='bank';openMenu();}]]});
-  addSign(27.8,34.5,'🏠',{t:'🏠 不動産屋',b:'土地(区画)を買うと農場の世界が広がるよ(担当: 登さん)。🌿東の牧草地150万・🌾東の棚田250万・🏠南の牧場300万。',btns:[['🏠 土地を買う',()=>{menuTab='land';openMenu();}]]});
+  addSign(27.8,34.5,'🏠',{t:'🏠 不動産屋',b:'土地(区画)を買うと農場の世界が広がるよ(担当: 登さん)。🌿西の牧草地100万(基本・年2回収穫)・🌿東の牧草地150万・🌾東の棚田250万・🏠南の牧場300万。',btns:[['🏠 土地を買う',()=>{menuTab='land';openMenu();}]]});
   addSign(44.5,34.5,'🚜',{t:'🚜 農協',b:'新品の機械・⛰新築牛舎の資材窓口と、🩺獣医の往診の手配(担当: 米田さん/犬飼先生)。牛が病気になったらここで獣医を呼ぼう(放置は最悪死亡)。',btns:[['🚜 資材・獣医の窓口',()=>{menuTab='ja';openMenu();}]]});
   addSign(13.5,28.6,'🔧',{t:'🔧 修理屋',b:'故障した機械(トラクター/田植え機/コンバイン/精米機/加工機)を修理代で直してくれるよ(担当: 鉄男さん)。故障中はその機械の作業が止まる！',btns:[['🔧 修理を頼む',()=>{menuTab='repair';openMenu();}]]});
   addSign(47.5,44.3,'🐂',{t:'🐂 セリ市場',b:'メス牛を与信100万(現金は減らない)で購入できるよ(担当: 勝さん)。子牛はベース♀100万/♂120万+状態補正、8産後の親牛は50万+補正で売却。',btns:[['🐂 セリ(牛の売買)',()=>{menuTab='auction';openMenu();}]]});
-  addSign(36.2,57.5,'🚌',{t:'🚌 バス停(農場行き)',b:'バスで🌾農場へ帰るよ。近づいて「使う」でも乗れる。',btns:[['🚌 農場へ帰る',()=>switchMap('farm')]]});
-  // バス停の小屋
-  (function(){
-    const y=topY(36,57)+1;
-    const g=new THREE.Group();
-    const pm=new THREE.MeshLambertMaterial({color:0x6a4a25});
-    [[-0.9,-0.9],[0.9,-0.9],[-0.9,0.9],[0.9,0.9]].forEach(p=>{const post=new THREE.Mesh(new THREE.BoxGeometry(0.16,2.3,0.16),pm);post.position.set(p[0],1.15,p[1]);g.add(post);});
-    const roof=new THREE.Mesh(new THREE.BoxGeometry(2.3,0.14,2.2),new THREE.MeshLambertMaterial({color:0x3a6fd8}));roof.position.set(0,2.35,0);roof.castShadow=true;g.add(roof);
-    const bench=new THREE.Mesh(new THREE.BoxGeometry(1.8,0.32,0.5),new THREE.MeshLambertMaterial({color:0xb5843f}));bench.position.set(0,0.5,0.6);g.add(bench);
-    g.position.set(36.8,y-1+0.02,57.5);decoGroup.add(g);
-  })();
+  // v22: バス停(小屋・ベンチ)は撤去。南の大通りの突き当たり=「農場への道」(門をくぐると農場の橋のたもとへ)
+  addSign(36.2,59.5,'🌉',{t:'🌉 農場への道(橋)',b:'南の道を進むと🌾農場へ続く川の橋に出るよ。門をくぐると自動で農場へ帰る。',btns:[['🌾 農場へ帰る',()=>switchMap('farm')]]});
   // 街灯(大通り沿い)
   [[9,29.2],[17,29.2],[25,29.2],[38,29.2],[46,29.2],[54,29.2],[30.2,12],[30.2,20],[30.2,40],[30.2,48],[30.2,56],[35.8,50],[45,43.2],[22,34.8]].forEach(p=>townLamp(p[0],p[1]));
   // 広場のベンチ
@@ -3992,7 +4039,7 @@ function areaNameTown(x,z){
   if(x>=8&&x<=14&&z>=22&&z<=27)return'🔧 修理屋';
   if(x>=44&&x<=56&&z>=44&&z<=58)return'🐂 セリ市場';
   if(x>=21&&x<=30&&z>=21&&z<=29)return'⛲ 中央広場';
-  if(x>=31&&x<=34&&z>=54)return'🚌 バス停通り';
+  if(x>=30&&x<=35&&z>=54)return'🌉 農場への道(橋)';
   if((z>=30&&z<=33)||(x>=31&&x<=34))return'🛣 大通り';
   return'🏘 丹波の街';
 }
@@ -4008,7 +4055,7 @@ function teardownMap(){
   for(const m of cowMeshes)scene.remove(m);cowMeshes.length=0;
   for(const m of manures)scene.remove(m);manures.length=0;
   chestnutTrees.length=0;
-  tractorMesh=null;polisherMesh=null;processorMesh=null;compostShedMesh=null;dungYardMesh=null;planterMesh=null;combineMesh=null;riceSackGroup=null;barnSign=null;machineBadges={}; // v20
+  tractorMesh=null;polisherMesh=null;processorMesh=null;compostShedMesh=null;dungYardMesh=null;planterMesh=null;combineMesh=null;riceSackGroup=null;barnSign=null;machineBadges={};pastureVacantSign=null; // v20/v22
   for(const n of npcs)scene.remove(n.mesh);
   cancelMoveTarget();pendingAct=null;
   dirtySet.clear();
@@ -4047,7 +4094,7 @@ function switchMap(target){
   if(mapBusy||isGameOver||!state||target===curMap)return;
   mapBusy=true;
   sfxSeq([[520,.08],[660,.1]]);
-  showTravel(target==='town'?'🚌 街に移動中…':'🚌 農場に帰り中…',()=>{
+  showTravel(target==='town'?'🌉 橋を渡って街へ…':'🌉 橋を渡って農場へ…',()=>{
     teardownMap();
     curMap=target;state.map=target;
     buildMapWorld();
@@ -4056,7 +4103,7 @@ function switchMap(target){
     if(walkY(Math.floor(player.x),Math.floor(player.z),WH)>WH){player.x=target==='town'?32.5:27.5;player.z=target==='town'?40.5:34.5;} // 保険
     player.y=topY(Math.floor(player.x),Math.floor(player.z))+1;player.vy=0;player.onGround=true;
     camera.position.set(player.x-Math.sin(camYaw)*8,player.y+6,player.z-Math.cos(camYaw)*8);
-    toast(target==='town'?'🏘 丹波の街に着いた！役場・銀行・農協・修理屋・セリ市場・不動産屋があるよ':'🌾 農場に帰ってきた！');
+    toast(target==='town'?'🏘 橋を渡って丹波の街に着いた！役場・銀行・農協・修理屋・セリ市場・不動産屋があるよ':'🌾 橋を渡って農場に帰ってきた！');
     updateHUD();updateMachineBadges();saveGame(false);
     mapBusy=false;
   });
@@ -4270,16 +4317,17 @@ function areaName(x,z){
   for(let i=0;i<state.newBarns;i++){const p=NEW_BARN_PLOTS[i];if(x>=p[0]-1&&x<=p[0]+7&&z>=p[1]-1&&z<=p[1]+7)return'🐂 新牛舎'+(i+1)+'号棟';}
   // v16: 拡張区画
   if(x>=50&&x<=66&&z>=8&&z<=21)return state.land.grass2?'🌿 東の牧草地':'🧱 販売中の区画(荒れ地)';
-  if(x>=47&&x<=66&&z>=31&&z<=47)return state.land.rice2?'🌾 東の棚田':'🧱 販売中の区画(荒れ地)';
+  if(x>=47&&x<=66&&z>=37&&z<=47)return state.land.rice2?'🌾 東の棚田':'🧱 販売中の区画(荒れ地)';
   if(x>=20&&x<=34&&z>=50&&z<=66)return state.land.barn2?'🏠 南の牧場':'🧱 販売中の区画(荒れ地)';
   if(x>=BASE_WS||z>=BASE_WS)return'🌲 未開拓の荒れ地';
-  if(x>=35&&x<=49&&z>=8&&z<=21)return'🌿 牧草地';
+  if(x>=35&&x<=49&&z>=8&&z<=21)return state.land.pasture1?'🌿 牧草地':'🧱 空き地(牧草地の予定地・販売中)'; // v22
+  if(x<=3&&z>=18&&z<=25)return'🏘 街の入口(橋の西)'; // v22
   if(x>=22&&x<=31&&z>=10&&z<=18)return state.barnRented?'🏚 古い牛舎(賃借中)':'🏚 古い牛舎';
   if(x>=24&&x<=31&&z>=23&&z<=29)return'🌱 空き地(旧事務所の跡地)'; // v21: 更地化
   if(x>=15&&x<=21&&z>=23&&z<=28)return'🌱 空き地(旧銀行の跡地)';   // v21: 更地化
   if(x>=29&&x<=36&&z>=44&&z<=49)return'🌱 空き地(旧セリ市場の跡地)'; // v21: 更地化
   if(x>=10&&x<=23&&z>=36)return'🌾 棚田';
-  if(x>=38&&x<=46&&z>=30&&z<=37)return'🟫 堆肥場';
+  if(x>=33&&x<=41&&z>=30&&z<=37)return'🟫 堆肥場'; // v22: 西へ移設
   if(x>=26&&x<=33&&z>=36&&z<=42)return'🥬 野菜畑';
   if(z<=13&&x>=8&&x<=26)return'🌰 栗園';
   if(Math.abs(x-riverX(z))<=2)return'🏞 川';
@@ -4486,6 +4534,11 @@ function animate(ts){
   // --- 生産/成長/セーブ（v14: 作物成長は月送り時のみ） ---
   tickParticles();
   saveAcc+=dt;if(saveAcc>30){saveAcc=0;saveGame(false);}
+  // v22: 橋を渡り切った「街の入口」(農場・西岸)/「農場への道」(街・南端)に到達したら自動でマップ切替
+  if(state&&!mapBusy&&!isGameOver){
+    if(curMap==='farm'&&player.x<=2.6&&player.z>=18&&player.z<=25.5)switchMap('town');
+    else if(curMap==='town'&&player.z>=62.5&&player.x>=30&&player.x<=35.5)switchMap('farm');
+  }
   tickAcc+=dt;
   if(tickAcc>0.5){tickAcc=0;
     updateActHint(); // v10: 近くの対象をボタン上に表示
