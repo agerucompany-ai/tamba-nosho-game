@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v16 放置経営とワールド拡張</title>
+<title>丹波農商 牧場物語 v17 帳簿PL/BSと事業別会計</title>
 <link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -133,6 +133,23 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
 <script>
 /* =====================================================================
+   丹波農商 牧場物語 v17 — 帳簿のPL/BS分割と事業別(セグメント)会計
+   v17: v16の全機能(日次+月次+年次・放置自動化・ワールド拡張・牛の日次世話・
+        堆肥舎・銀行・セリ/繁殖・税金・倒産)を維持したまま3点追加。
+   ① 「土地販売所」→「不動産屋」に名称変更(看板🏠・メニュー・案内文)。
+      区画購入=土地を買う機能はそのまま。
+   ② 帳簿をPL(損益計算書/期間)とBS(貸借対照表/時点)の2表に分割。
+      PL: 売上高(内訳)−経費(内訳)=税引前利益→税金(牛は非課税・他30%)→税引後。
+      BS: 資産(現金/棚卸=米3万・牧草1万・肥料5千/固定資産=牛・建物・土地の
+          取得原価) = 負債(銀行借入+牛の与信) + 純資産(資産−負債)。
+      決算(3月末)はPL+期末BSを両方表示。帳簿メニューでいつでも途中経過。
+   ③ 事業セグメント別のPL/BS: 米/牧草/牛(繁殖)/堆肥(肥料)/加工・野菜/共通。
+      売上と経費を発生時に事業へ記帳(苗代→米、餌代・処分費・家賃→牛、
+      作付け→牧草、従業員給与→担当事業、自分の給与と土地は共通/本部)。
+      全社利益 = Σ事業利益 + 共通/本部(費用) が常に一致する。
+      土地は用途区画(牧草地→牧草/棚田→米/牧場→牛)のBSに配賦。
+   セーブ: v16のキー(tamba_v16_save)を共用。v16セーブは自動移行(migrateFy)。
+   以下v16の説明:
    丹波農商 牧場物語 v16 — 従業員に指示を出す放置経営＋ワールド拡張
    v16: v15の経営ロジック(1000万スタート/米年商900万/牧草/銀行/セリ/繁殖/
         決算/税金30%/倒産)を土台に、以下を追加。
@@ -406,7 +423,7 @@ function freshState(){return{
   compostShed:false,fertStock:0, // v16: 堆肥舎と肥料在庫
   land:{grass2:false,rice2:false,barn2:false},   // v16: 購入した区画
   bankLoan:0,
-  fy:{sales:0,exp:0,sd:{rice:0,calf:0,mother:0,grass:0,proc:0,fert:0},ed:{owner:0,emp:0,rent:0,feed:0,seed:0,other:0,manure:0}},
+  fy:freshFy(), // v17: 勘定別+事業セグメント別の期中帳簿
   lastResult:null,history:[],
   edits:{},crops:{},treeFruit:{},tuftDay:{},
   planted:0,harvestN:0,soldN:0,
@@ -423,8 +440,80 @@ function barnCapNow(){return ECON.BARN_CAP+(state.land.barn2?8:0);}
 function isWaterSeason(){return state.month>=5&&state.month<=9;}
 
 // ---------- v14: 記帳/財務ヘルパ（決算=売上高−経費。与信/銀行借入はP/L外の負債） ----------
-function addSale(a,cat){state.money+=a;state.fy.sales+=a;state.fy.sd[cat]=(state.fy.sd[cat]||0)+a;state.soldN++;}
-function addExpense(a,cat){state.money-=a;state.fy.exp+=a;state.fy.ed[cat]=(state.fy.ed[cat]||0)+a;}
+// ---------- v17: 事業セグメント別の複式記帳（米/牧草/牛/堆肥/加工・野菜/共通） ----------
+// 費用の帰属ルール(注記): 苗代→米 / 餌代・牛糞処分費・牛舎家賃→牛 /
+// 牧草作付け→牧草 / 堆肥舎建設→堆肥 / 種代(野菜・豆)→加工・野菜 /
+// 従業員給与→その従業員の担当事業(指示なしは共通) /
+// 自分の給与(役員報酬)と土地の購入は「共通/本部」。
+const SEG_META={
+  rice:{n:'米',em:'🌾'},grass:{n:'牧草',em:'🌿'},cow:{n:'牛(繁殖)',em:'🐂'},
+  compost:{n:'堆肥(肥料)',em:'🟫'},other:{n:'加工・野菜',em:'🥬'},common:{n:'共通/本部',em:'🏢'},
+};
+const SALE_SEG={rice:'rice',calf:'cow',mother:'cow',grass:'grass',fert:'compost',proc:'other'};
+const EXP_SEG={owner:'common',emp:'common',rent:'cow',feed:'cow',manure:'cow',seed:'rice',grassSow:'grass',shed:'compost',land:'common',other:'common'};
+function freshSeg(){const o={};for(const k in SEG_META)o[k]={s:0,e:0,sd:{},ed:{}};return o;}
+function freshFy(){return{sales:0,exp:0,
+  sd:{rice:0,calf:0,mother:0,grass:0,proc:0,fert:0},
+  ed:{owner:0,emp:0,rent:0,feed:0,seed:0,grassSow:0,shed:0,land:0,other:0,manure:0},
+  seg:freshSeg()};}
+// v16セーブ(セグメント帳簿なし)の引き継ぎ: 既存fyの勘定別集計からセグメント帳簿を再構成
+function migrateFy(){
+  const f=state.fy;if(!f)return;
+  for(const k of['grassSow','shed','land'])if(f.ed[k]===undefined)f.ed[k]=0;
+  if(!f.seg){
+    f.seg=freshSeg();
+    for(const c in f.sd){const v=f.sd[c]||0;if(v>0){const g=f.seg[SALE_SEG[c]||'other'];g.s+=v;g.sd[c]=(g.sd[c]||0)+v;}}
+    for(const c in f.ed){const v=f.ed[c]||0;if(v>0){const g=f.seg[EXP_SEG[c]||'common'];g.e+=v;g.ed[c]=(g.ed[c]||0)+v;}}
+  }
+}
+function addSale(a,cat){
+  state.money+=a;state.fy.sales+=a;state.fy.sd[cat]=(state.fy.sd[cat]||0)+a;state.soldN++;
+  const g=state.fy.seg[SALE_SEG[cat]||'other'];g.s+=a;g.sd[cat]=(g.sd[cat]||0)+a; // v17: 事業別に記帳
+}
+function addExpense(a,cat,seg){
+  state.money-=a;state.fy.exp+=a;state.fy.ed[cat]=(state.fy.ed[cat]||0)+a;
+  const g=state.fy.seg[seg||EXP_SEG[cat]||'common'];g.e+=a;g.ed[cat]=(g.ed[cat]||0)+a; // v17: 事業別に記帳
+}
+// v17: 税金計算(v15式)。牛の利益は非課税=牛の売上と牛の餌代を除いて30%
+function taxCalc(f){
+  const cowSales=(f.sd.calf||0)+(f.sd.mother||0);
+  const cowFeed=f.ed.feed||0;
+  const taxable=(f.sales-cowSales)-(f.exp-cowFeed);
+  const tax=Math.round(ECON.TAX_RATE*Math.max(0,taxable));
+  return{cowSales,cowFeed,taxable,tax,afterTax:f.sales-f.exp-tax};
+}
+// ---------- v17: BS(貸借対照表)の算定 ----------
+// 評価ルール(注記): 棚卸資産=米3万/袋・牧草1万/束・肥料5千/袋。
+// 牛=母牛は取得原価100万(8産終了後は処分価値50万)・子牛=いまの売値×月齢/8ヶ月。
+// 建物・土地=取得原価(堆肥舎200万・東の牧草地150万・東の棚田250万・南の牧場+第二牛舎300万)。
+// 純資産=資産−負債(開始時1,000万=元手。差額は利益の蓄積等)。
+// この定義により「資産合計 = 負債+純資産」は必ず一致(貸借一致)する。
+function cowValue(c){return c.retired?ECON.MOTHER_PRICE:ECON.COW_PRICE;}
+function calfValue(cf){return Math.round(calfPriceNow()*Math.min(1,cf.age/ECON.CALF_SHIP_AGE));}
+function computeBS(){
+  let cowsV=0;for(const c of state.cows)cowsV+=cowValue(c);
+  let calvesV=0;for(const cf of state.calves)calvesV+=calfValue(cf);
+  const b={
+    cash:state.money,
+    invRice:state.riceBags*ECON.RICE_BAG_PRICE,
+    invGrass:state.grassStock*ECON.GRASS_PRICE,
+    invFert:state.fertStock*ECON.FERT_PRICE,
+    cowsV,calvesV,
+    bldgShed:state.compostShed?ECON.SHED_COST:0,
+    landGrass:state.land.grass2?ECON.LAND_GRASS_PRICE:0,
+    landRice:state.land.rice2?ECON.LAND_RICE_PRICE:0,
+    landBarn:state.land.barn2?ECON.LAND_BARN_PRICE:0,
+    bank:state.bankLoan,cowDebt:cowDebtTotal(),
+    nRice:state.riceBags,nGrass:state.grassStock,nFert:state.fertStock,
+    nCows:state.cows.length,nCalves:state.calves.length,
+  };
+  b.inventory=b.invRice+b.invGrass+b.invFert;
+  b.fixed=b.cowsV+b.calvesV+b.bldgShed+b.landGrass+b.landRice+b.landBarn;
+  b.assets=b.cash+b.inventory+b.fixed;
+  b.liab=b.bank+b.cowDebt;
+  b.equity=b.assets-b.liab;
+  return b;
+}
 function cowDebtTotal(){let s=0;for(const c of state.cows)s+=c.debt;return s;}
 function totalDebt(){return state.bankLoan+cowDebtTotal();}
 function herdCount(){return state.cows.length+state.calves.length;}
@@ -813,7 +902,7 @@ function buyLand(k){
   if(state.land[k]){toast('🗺 その区画はもう持っているよ');return;}
   const p=PARCELS[k];
   if(state.money<p.price){toast('💸 '+p.n+'は'+man(p.price)+'。現金が足りないよ');return;}
-  addExpense(p.price,'other');
+  addExpense(p.price,'land',k==='grass2'?'grass':(k==='rice2'?'rice':'cow')); // v17: 土地は用途の事業へ配賦
   state.land[k]=true;
   if(k==='grass2')terraformGrass2();
   else if(k==='rice2')terraformRice2();
@@ -1015,7 +1104,7 @@ function sowGrass(){
   if(state.grassSown){toast('🌿 牧草はもう育てているよ(毎月最大'+ECON.GRASS_YIELD*(state.land.grass2?2:1)+'束生産)');return;}
   const cost=grassSowCost();
   if(state.money<cost){toast('💸 牧草の作付けに'+man(cost)+'必要だよ');return;}
-  addExpense(cost,'other');
+  addExpense(cost,'grassSow'); // v17: 牧草事業の経費
   state.grassSown=true;
   fanfare();
   toast('🌿 牧草を作付けした！毎月最大'+ECON.GRASS_YIELD*(state.land.grass2?2:1)+'束生産(牛1頭は月1束消費)'+(state.compostShed?'(肥料自給で−5万)':''));
@@ -1204,7 +1293,7 @@ function buildDecor(){
   addSign(37,14.5,'🌿','牧草地');
   addSign(BANK_POS.x,BANK_POS.z,'🏦','銀行');
   addSign(AUCTION_POS.x,AUCTION_POS.z,'🐂','セリ市場');
-  addSign(21.5,31.5,'🗺','土地販売所'); // v16: ワールド拡張(区画購入)
+  addSign(21.5,31.5,'🏠','不動産屋'); // v17: 名称変更(旧: 土地販売所)。区画購入=ワールド拡張
   buildShopStand();buildShipBox();buildTufts();
   buildTractor(); // かざり（のうかの トラクター）
 }
@@ -1597,7 +1686,7 @@ const QUESTS=[
  {t:'🎯 牛は毎日🍼餌やり＋🧹掃除！牛舎でやろう(サボると健康低下)',c:()=>state.care.fedDay>=0},
  {t:'🎯 🏢事務所で従業員を雇い「🐂牛の世話」を指示して自動化！',c:()=>!!staffWithJob('cow')},
  {t:'🎯 🟫堆肥場に堆肥舎を建てよう(処分費が肥料収益に変わる)',c:()=>state.compostShed},
- {t:'🎯 🗺土地販売所で区画を買って世界を広げよう！',c:()=>state.land.grass2||state.land.rice2||state.land.barn2},
+ {t:'🎯 🏠不動産屋で土地(区画)を買って世界を広げよう！',c:()=>state.land.grass2||state.land.rice2||state.land.barn2},
  {t:'🌟 従業員の配置と土地・銀行で利益を最大化しよう！',c:()=>false},
 ];
 function updateQuest(){
@@ -1791,7 +1880,7 @@ function updateCareChip(){
 function buildShed(){
   if(state.compostShed){toast('🏭 堆肥舎はもうあるよ');return;}
   if(state.money<ECON.SHED_COST){toast('💸 堆肥舎の建設に'+man(ECON.SHED_COST)+'必要だよ');return;}
-  addExpense(ECON.SHED_COST,'other');
+  addExpense(ECON.SHED_COST,'shed'); // v17: 堆肥事業の経費(BSでは建物=取得原価)
   state.compostShed=true;
   buildCompostShed();
   fanfare();
@@ -1842,8 +1931,8 @@ function nearestAction(wx,wz){
   cand(42,32.5,2.6,state.compostShed?('🟫 肥料を出荷する('+state.fertStock+'袋)'):'🏭 堆肥舎を建てる('+man(ECON.SHED_COST)+')',()=>{
     if(state.compostShed)sellFert(false);else buildShed();
   });
-  // v16: 土地販売所(ワールド拡張)
-  cand(21.5,31.5,2.3,'🗺 土地を買う(ワールド拡張)',()=>{menuTab='land';openMenu();});
+  // v17: 不動産屋(旧: 土地販売所。ワールド拡張)
+  cand(21.5,31.5,2.3,'🏠 不動産屋(土地を買う)',()=>{menuTab='land';openMenu();});
   // 栗の木
   chestnutTrees.forEach((t,i)=>{
     if(state.treeFruit[i])cand(t.x+0.5,t.z+0.5,2.0,'🌰 栗を取る',()=>actTree(i));
@@ -2271,7 +2360,8 @@ function monthEnd(notes){
   // 3) 固定費(自分の給与30万・従業員30万×人数・牛舎家賃3万)
   addExpense(ECON.OWNER_SALARY,'owner');
   const sc=staffCount();
-  if(sc>0)addExpense(sc*ECON.EMP_SALARY,'emp');
+  // v17: 従業員給与はその従業員の担当事業に帰属(指示なし=共通/本部)
+  for(const k in state.staff)if(state.staff[k])addExpense(ECON.EMP_SALARY,'emp',state.staffJobs[k]||'common');
   if(state.barnRented)addExpense(ECON.BARN_RENT,'rent');
   // 4) v16: 牛糞。堆肥舎なし=処分費(負担)/あり=肥料生産(収益源)
   if(herd>0){
@@ -2327,27 +2417,27 @@ function doFiscalClose(){
   // v15: 税金。牛の利益は非課税＝牛の売上(子牛+親牛)と牛の餌代を除いて計算。
   // 課税所得 = (総売上 − 牛の売上) − (総経費 − 牛の餌代)
   // 税額 = 30% × max(0, 課税所得)。赤字なら税0。決算時に現金から差引く。
-  const cowSales=(f.sd.calf||0)+(f.sd.mother||0);
-  const cowFeed=f.ed.feed||0;
-  const taxable=(f.sales-cowSales)-(f.exp-cowFeed);
-  const tax=Math.round(ECON.TAX_RATE*Math.max(0,taxable));
+  const t=taxCalc(f);
+  const{cowSales,cowFeed,taxable,tax}=t;
   if(tax>0)state.money-=tax; // 税は決算の現金精算(P/Lの黒字判定は税引前のまま)
   const r={
     year:state.year,
     sales:f.sales,exp:f.exp,profit:f.sales-f.exp,
-    cowSales,cowFeed,taxable,tax,afterTax:f.sales-f.exp-tax,
+    cowSales,cowFeed,taxable,tax,afterTax:t.afterTax,
     sd:{...f.sd},ed:{...f.ed},
+    seg:JSON.parse(JSON.stringify(f.seg)), // v17: 事業別の当期実績
     cash:state.money,bank:state.bankLoan,cowDebt:cowDebtTotal(),
   };
+  r.bs=computeBS(); // v17: 期末(税納付後)時点の貸借対照表
   state.lastResult=r;
   state.history.push({year:r.year,sales:r.sales,exp:r.exp,profit:r.profit,tax});
-  state.fy={sales:0,exp:0,sd:{rice:0,calf:0,mother:0,grass:0,proc:0,fert:0},ed:{owner:0,emp:0,rent:0,feed:0,seed:0,other:0,manure:0}};
+  state.fy=freshFy();
   showFiscal(r);
   if(tax>0)toast('🏛 税金'+fmt(tax)+'を納付した(牛の利益は非課税)');
   if(r.profit>=0)fanfare();
 }
 const SD_LABEL={rice:'米の出荷',calf:'子牛の売却',mother:'親牛の売却',grass:'牧草の売却',fert:'肥料の売却(堆肥舎)',proc:'加工品・農産物'};
-const ED_LABEL={owner:'自分の給与(役員報酬)',emp:'従業員の給与',rent:'牛舎の家賃',feed:'牛の餌代',manure:'牛糞の処分費',seed:'苗代(米の作付け)',other:'その他(牧草作付け・土地・建設等)'};
+const ED_LABEL={owner:'自分の給与(役員報酬)',emp:'従業員の給与',rent:'牛舎の家賃',feed:'牛の餌代',manure:'牛糞の処分費',seed:'苗代(米の作付け)',grassSow:'牧草の作付け',shed:'堆肥舎の建設',land:'土地の購入',other:'その他(種代等)'};
 function plRows(obj,labels){
   let h='';
   for(const k in labels){
@@ -2356,32 +2446,133 @@ function plRows(obj,labels){
   }
   return h;
 }
+// ---------- v17: PL/BS/事業別のHTML部品(決算画面と帳簿メニューで共用) ----------
+function signed(v){return (v>=0?'+':'−')+fmt(Math.abs(v));}
+// 全社PL(期間)。f={sales,exp,sd,ed} / interim=true なら税金は「見込み」表示
+function companyPLHTML(f,interim){
+  const prof=f.sales-f.exp>=0;
+  const t=taxCalc(f);
+  return '<table class="fs">'+
+    '<tr class="hd"><td>売上高</td><td class="amt">'+fmt(f.sales)+'</td></tr>'+
+    plRows(f.sd,SD_LABEL)+
+    '<tr class="hd"><td>経費</td><td class="amt">'+fmt(f.exp)+'</td></tr>'+
+    plRows(f.ed,ED_LABEL)+
+    '<tr class="tot"><td>当期純利益(税引前)</td><td class="amt '+(prof?'prof':'loss')+'">'+signed(f.sales-f.exp)+'</td></tr>'+
+    '<tr class="hd"><td>税金の計算(牛の利益は非課税)</td><td class="amt"></td></tr>'+
+    '<tr><td style="padding-left:18px">課税所得＝(売上−牛の売上'+fmt(t.cowSales)+')−(経費−牛の餌代'+fmt(t.cowFeed)+')</td><td class="amt">'+fmt(t.taxable)+'</td></tr>'+
+    '<tr><td style="padding-left:18px">税金(30%'+(t.taxable<=0?'・赤字なので税0':'')+(interim?'・3月末納付の見込み':'')+')</td><td class="amt loss">−'+fmt(t.tax)+'</td></tr>'+
+    '<tr class="tot"><td>税引後利益'+(interim?'(見込み)':'')+'</td><td class="amt '+(t.afterTax>=0?'prof':'loss')+'">'+signed(t.afterTax)+'</td></tr>'+
+    '</table>';
+}
+// 全社BS(時点)。左=資産 / 右=負債+純資産 の左右バランス表示
+function bsHTML(b){
+  const row=(lb,v,strong)=>'<tr'+(strong?' class="tot"':'')+'><td'+(strong?'':' style="padding-left:14px"')+'>'+lb+'</td><td class="amt">'+fmt(v)+'</td></tr>';
+  let A='<tr class="hd"><td>資産の部</td><td class="amt"></td></tr>';
+  A+=row('💴 現金',b.cash);
+  if(b.inventory>0){
+    A+='<tr><td style="padding-left:8px;color:#8a6a45">棚卸資産</td><td class="amt"></td></tr>';
+    if(b.invRice>0)A+=row('🍚 米在庫('+b.nRice+'袋×3万)',b.invRice);
+    if(b.invGrass>0)A+=row('🌿 牧草在庫('+b.nGrass+'束×1万)',b.invGrass);
+    if(b.invFert>0)A+=row('🟫 肥料在庫('+b.nFert+'袋×5千)',b.invFert);
+  }
+  if(b.fixed>0){
+    A+='<tr><td style="padding-left:8px;color:#8a6a45">固定資産</td><td class="amt"></td></tr>';
+    if(b.cowsV>0)A+=row('🐂 母牛'+b.nCows+'頭',b.cowsV);
+    if(b.calvesV>0)A+=row('🐮 子牛'+b.nCalves+'頭',b.calvesV);
+    if(b.bldgShed>0)A+=row('🏭 建物(堆肥舎)',b.bldgShed);
+    if(b.landGrass+b.landRice+b.landBarn>0)A+=row('🗺 土地(購入区画)',b.landGrass+b.landRice+b.landBarn);
+  }
+  A+=row('資産合計',b.assets,true);
+  let L='<tr class="hd"><td>負債の部</td><td class="amt"></td></tr>';
+  L+=row('🏦 銀行借入金',b.bank);
+  L+=row('🐂 牛の与信(繁殖ローン)',b.cowDebt);
+  L+=row('負債合計',b.liab,true);
+  L+='<tr class="hd"><td>純資産の部</td><td class="amt"></td></tr>';
+  L+=row('元手(資本金)',10000000);
+  L+='<tr><td style="padding-left:14px">利益の蓄積等</td><td class="amt '+(b.equity-10000000>=0?'prof':'loss')+'">'+signed(b.equity-10000000)+'</td></tr>';
+  L+=row('純資産合計(資産−負債)',b.equity,true);
+  L+=row('負債・純資産合計',b.liab+b.equity,true);
+  const ok=b.assets===b.liab+b.equity;
+  return '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start">'+
+    '<table class="fs" style="flex:1;min-width:215px">'+A+'</table>'+
+    '<table class="fs" style="flex:1;min-width:215px">'+L+'</table></div>'+
+    '<p style="font-size:12px;font-weight:bold" class="'+(ok?'prof':'loss')+'">'+(ok?'✅':'⚠')+' 貸借一致: 資産合計'+fmt(b.assets)+' ＝ 負債'+fmt(b.liab)+'＋純資産'+fmt(b.equity)+'</p>';
+}
+const BS_NOTE='<p style="font-size:11.5px;color:#8a6a45">📐 評価ルール: 米=3万/袋・牧草=1万/束・肥料=5千/袋。母牛=取得原価100万(8産終了後は50万)・子牛=いまの売値×月齢/8ヶ月(健康で変動)。建物・土地=取得原価(堆肥舎200万/牧草地150万/棚田250万/牧場+第二牛舎300万)。純資産=資産−負債(元手1,000万+利益の蓄積)。</p>';
+// 事業別の利益一覧(Σ事業利益+共通=全社 の整合が見える表)
+function segSummaryHTML(seg,total){
+  let h='<table class="fs"><tr class="hd"><td>事業別の利益(売上−経費)</td><td class="amt"></td></tr>';
+  let sum=0;
+  for(const k in SEG_META){
+    const g=seg[k];if(!g)continue;
+    const p=g.s-g.e;sum+=p;
+    if(k==='common'){h+='<tr><td style="padding-left:14px">'+SEG_META[k].em+' '+SEG_META[k].n+'(自分の給与・土地等)</td><td class="amt '+(p>=0?'':'loss')+'">'+signed(p)+'</td></tr>';continue;}
+    if(g.s===0&&g.e===0)continue;
+    h+='<tr><td style="padding-left:14px">'+SEG_META[k].em+' '+SEG_META[k].n+'</td><td class="amt '+(p>=0?'prof':'loss')+'">'+signed(p)+'</td></tr>';
+  }
+  h+='<tr class="tot"><td>合計(＝全社の当期純利益'+(sum===total?' ✅一致':'')+')</td><td class="amt '+(sum>=0?'prof':'loss')+'">'+signed(sum)+'</td></tr></table>';
+  return h;
+}
+// 事業別PL
+function segPLHTML(segKey,g){
+  const p=g.s-g.e;
+  let h='<table class="fs">'+
+    '<tr class="hd"><td>'+SEG_META[segKey].em+' '+SEG_META[segKey].n+'事業の売上高</td><td class="amt">'+fmt(g.s)+'</td></tr>'+
+    plRows(g.sd,SD_LABEL)+
+    '<tr class="hd"><td>'+SEG_META[segKey].n+'事業の経費</td><td class="amt">'+fmt(g.e)+'</td></tr>'+
+    plRows(g.ed,ED_LABEL)+
+    '<tr class="tot"><td>事業利益</td><td class="amt '+(p>=0?'prof':'loss')+'">'+signed(p)+'</td></tr></table>';
+  if(segKey==='common')h+='<p style="font-size:11.5px;color:#8a6a45">🏢 共通/本部＝どの事業にも直接ひも付かない費用(自分の給与=役員報酬、土地の購入、指示なし従業員の給与など)。全社利益＝Σ事業利益−この共通費だよ。</p>';
+  else h+='<p style="font-size:11.5px;color:#8a6a45">💡 帰属ルール: 苗代→米 / 餌代・処分費・家賃→牛 / 作付け→牧草 / 堆肥舎→堆肥 / 種代→加工・野菜 / 従業員給与→担当事業。税金は全社でまとめて計算(牛は非課税)。</p>';
+  return h;
+}
+// 事業別BS(その事業にひも付く資産・負債)
+function segBSHTML(segKey,b){
+  const rows=[];const liabs=[];
+  if(segKey==='rice'){rows.push(['🍚 米在庫('+b.nRice+'袋×3万)',b.invRice],['🌾 東の棚田(取得原価)',b.landRice]);}
+  else if(segKey==='grass'){rows.push(['🌿 牧草在庫('+b.nGrass+'束×1万)',b.invGrass],['🗺 東の牧草地(取得原価)',b.landGrass]);}
+  else if(segKey==='cow'){rows.push(['🐂 母牛'+b.nCows+'頭',b.cowsV],['🐮 子牛'+b.nCalves+'頭',b.calvesV],['🏠 南の牧場+第二牛舎(取得原価)',b.landBarn]);liabs.push(['🐂 牛の与信(繁殖ローン)',b.cowDebt]);}
+  else if(segKey==='compost'){rows.push(['🏭 堆肥舎(取得原価)',b.bldgShed],['🟫 肥料在庫('+b.nFert+'袋×5千)',b.invFert]);}
+  else if(segKey==='common'){rows.push(['💴 現金(全社の資金は本部で管理)',b.cash]);liabs.push(['🏦 銀行借入金',b.bank]);}
+  else rows.push(['(この事業の在庫は少額のため計上なし)',0]);
+  let at=0,lt=0;
+  let h='<table class="fs"><tr class="hd"><td>'+SEG_META[segKey].em+' '+SEG_META[segKey].n+'事業の資産</td><td class="amt"></td></tr>';
+  for(const[lb,v]of rows){at+=v;h+='<tr><td style="padding-left:14px">'+lb+'</td><td class="amt">'+fmt(v)+'</td></tr>';}
+  h+='<tr class="tot"><td>資産合計</td><td class="amt">'+fmt(at)+'</td></tr>';
+  h+='<tr class="hd"><td>'+SEG_META[segKey].n+'事業の負債</td><td class="amt"></td></tr>';
+  if(liabs.length)for(const[lb,v]of liabs){lt+=v;h+='<tr><td style="padding-left:14px">'+lb+'</td><td class="amt">'+fmt(v)+'</td></tr>';}
+  else h+='<tr><td style="padding-left:14px">(なし)</td><td class="amt">￥0</td></tr>';
+  h+='<tr class="tot"><td>負債合計</td><td class="amt">'+fmt(lt)+'</td></tr>';
+  h+='<tr class="tot"><td>差引(この事業の正味資産)</td><td class="amt '+(at-lt>=0?'prof':'loss')+'">'+signed(at-lt)+'</td></tr></table>';
+  h+='<p style="font-size:11.5px;color:#8a6a45">💡 現金と銀行借入は🏢共通/本部にまとめているよ。全事業+共通を合算すると全社のBSと一致する。</p>';
+  return h;
+}
 function showFiscal(r){
   const box=document.getElementById('fiscalBox');
   const prof=r.profit>=0;
   // v15: 税金(v14セーブのlastResultにはtaxが無いので0扱い)
   const tax=r.tax||0,taxable=r.taxable||0,afterTax=(r.afterTax!==undefined)?r.afterTax:r.profit-tax;
-  box.innerHTML='<h2>📒 '+r.year+'年目 決算(損益計算書)</h2>'+
-    '<p>'+r.year+'年目4月〜3月の経営成績だよ。</p>'+
+  // v17: PL(当期)＋BS(期末時点)＋事業別利益を1画面で。BSは決算時のスナップショット(旧セーブは現時点)
+  const bs=r.bs||computeBS();
+  box.innerHTML='<h2>📒 '+r.year+'年目 決算</h2>'+
+    '<p><b>PL(損益計算書)</b>='+r.year+'年目4月〜3月の経営成績、<b>BS(貸借対照表)</b>=期末時点の財産だよ。</p>'+
+    '<h2 style="font-size:16px">📈 PL(損益計算書)</h2>'+
     '<table class="fs">'+
     '<tr class="hd"><td>売上高</td><td class="amt">'+fmt(r.sales)+'</td></tr>'+
     plRows(r.sd,SD_LABEL)+
     '<tr class="hd"><td>経費</td><td class="amt">'+fmt(r.exp)+'</td></tr>'+
     plRows(r.ed,ED_LABEL)+
-    '<tr class="tot"><td>当期純利益(売上−経費)</td><td class="amt '+(prof?'prof':'loss')+'">'+(prof?'+':'−')+fmt(Math.abs(r.profit)).replace('￥','￥')+'</td></tr>'+
+    '<tr class="tot"><td>当期純利益(税引前)</td><td class="amt '+(prof?'prof':'loss')+'">'+signed(r.profit)+'</td></tr>'+
     '<tr class="hd"><td>税金の計算(牛の利益は非課税)</td><td class="amt"></td></tr>'+
     '<tr><td style="padding-left:18px">課税所得 ＝ (売上'+fmt(r.sales)+'−牛の売上'+fmt(r.cowSales||0)+')−(経費'+fmt(r.exp)+'−牛の餌代'+fmt(r.cowFeed||0)+')</td><td class="amt">'+fmt(taxable)+'</td></tr>'+
     '<tr><td style="padding-left:18px">税金(30%'+(taxable<=0?'・赤字なので税0':'')+')</td><td class="amt loss">−'+fmt(tax)+'</td></tr>'+
-    '<tr class="tot"><td>税引後利益</td><td class="amt '+(afterTax>=0?'prof':'loss')+'">'+(afterTax>=0?'+':'−')+fmt(Math.abs(afterTax))+'</td></tr>'+
+    '<tr class="tot"><td>税引後利益</td><td class="amt '+(afterTax>=0?'prof':'loss')+'">'+signed(afterTax)+'</td></tr>'+
     '</table>'+
+    (r.seg?segSummaryHTML(r.seg,r.profit):'')+
     '<p style="font-size:12px;color:#8a6a45">🐂 牛の利益(子牛・親牛の売却)は非課税だから、課税所得の計算では牛の売上と牛の餌代を除くよ。税金は現金から納付済み。</p>'+
     '<p style="font-size:14px;font-weight:bold" class="'+(prof?'prof':'loss')+'">'+(prof?'🎉 黒字決算！銀行から売上高'+fmt(r.sales)+'まで借入できるよ':'⚠ 赤字決算…銀行融資は受けられないよ(経費を見直そう)')+'</p>'+
-    '<table class="fs">'+
-    '<tr><td>現金残高</td><td class="amt">'+fmt(r.cash)+'</td></tr>'+
-    '<tr><td>借入金残高(銀行)</td><td class="amt">'+fmt(r.bank)+'</td></tr>'+
-    '<tr><td>借入金残高(牛の与信)</td><td class="amt">'+fmt(r.cowDebt)+'</td></tr>'+
-    '<tr class="tot"><td>負債合計</td><td class="amt">'+fmt(r.bank+r.cowDebt)+'</td></tr>'+
-    '</table>'+
+    '<h2 style="font-size:16px">🏦 BS(貸借対照表・期末時点)</h2>'+
+    bsHTML(bs)+BS_NOTE+
     '<button class="close" onclick="closeFiscal()">閉じる(新年度スタート！)</button>';
   document.getElementById('fiscal').style.display='flex';
 }
@@ -2411,7 +2602,7 @@ function renderMenu(){
   const box=document.getElementById('menuBox');
   const tab=(id,label)=>'<div class="tab '+(menuTab===id?'on':'')+'" onclick="menuTab=\''+id+'\';renderMenu()">'+label+'</div>';
   let html='<h2>🌾 丹波農商 <span style="font-size:13px;color:#8a6a45">'+ymdLabel()+'・'+fmt(state.money)+'</span></h2>'+
-    '<div class="tabs">'+tab('ledger','📒 帳簿')+tab('wh','📦 倉庫')+tab('cows','🏚 牛舎')+tab('auction','🐂 セリ')+tab('bank','🏦 銀行')+tab('staff','🤝 指示')+tab('land','🗺 土地')+tab('set','⚙')+'</div>';
+    '<div class="tabs">'+tab('ledger','📒 帳簿')+tab('wh','📦 倉庫')+tab('cows','🏚 牛舎')+tab('auction','🐂 セリ')+tab('bank','🏦 銀行')+tab('staff','🤝 指示')+tab('land','🏠 不動産屋')+tab('set','⚙')+'</div>';
   if(menuTab==='ledger')html+=ledgerHTML();
   else if(menuTab==='wh')html+=whHTML();
   else if(menuTab==='cows')html+=cowsHTML();
@@ -2428,7 +2619,7 @@ function renderMenu(){
 }
 // v16: 土地(区画)の購入=ワールド拡張
 function landHTML(){
-  let h='<p>🗺 土地販売所。区画を買うと荒れ地が開拓されて<b>世界が広がり、生産規模が拡大</b>するよ。作業量も増えるので従業員の配置を考えよう。</p>';
+  let h='<p>🏠 不動産屋。土地(区画)を買うと荒れ地が開拓されて<b>世界が広がり、生産規模が拡大</b>するよ。作業量も増えるので従業員の配置を考えよう。</p>';
   const rows=[
     ['grass2','🌿',PARCELS.grass2],
     ['rice2','🌾',PARCELS.rice2],
@@ -2443,40 +2634,55 @@ function landHTML(){
   h+='<p class="sub2" style="font-size:11.5px;color:#8a6a45">💡 東の牧草地=牧草24束/月(余剰売却も倍増)。東の棚田=米の年商900万→1,350万(苗代も450万に)。南の牧場=母牛16頭で繁殖を倍速に。</p>';
   return h;
 }
-// 帳簿: 経営状況をいつでも確認
+// 帳簿: v17=PL(損益計算書)とBS(貸借対照表)を切替、さらに事業別タブ
+let ledgerView='pl',ledgerSeg='all';
+function setLedger(v,s){if(v)ledgerView=v;if(s)ledgerSeg=s;renderMenu();}
 function ledgerHTML(){
+  const vt=(id,label)=>'<div class="tab '+(ledgerView===id?'on':'')+'" onclick="setLedger(\''+id+'\',null)">'+label+'</div>';
+  const st=(id,label)=>'<div class="tab" style="'+(ledgerSeg===id?'background:#3a8a3a;color:#fff;border-color:#1f5a1f;':'')+'" onclick="setLedger(null,\''+id+'\')">'+label+'</div>';
+  let h='<p><b>PL(損益計算書)</b>=今期('+state.year+'年目)の成績(期間)、<b>BS(貸借対照表)</b>=いまの財産(時点)。事業タブでどの事業が儲かっているかが分かるよ。</p>';
+  h+='<div class="tabs">'+vt('pl','📈 PL(損益計算書)')+vt('bs','🏦 BS(貸借対照表)')+'</div>';
+  h+='<div class="tabs">'+st('all','全社')+st('rice','🌾米')+st('grass','🌿牧草')+st('cow','🐂牛')+st('compost','🟫堆肥')+st('other','🥬加工・野菜')+st('common','🏢共通')+'</div>';
+  if(ledgerView==='pl'){
+    if(ledgerSeg==='all'){
+      h+='<p style="font-size:12.5px;color:#5a3714;font-weight:bold">📈 全社PL: '+state.year+'年目(4月〜3月)の途中経過</p>';
+      h+=companyPLHTML(state.fy,true);
+      h+=segSummaryHTML(state.fy.seg,state.fy.sales-state.fy.exp);
+      h+=ledgerStatusHTML();
+    }else{
+      h+=segPLHTML(ledgerSeg,state.fy.seg[ledgerSeg]);
+    }
+  }else{
+    const b=computeBS();
+    if(ledgerSeg==='all'){
+      h+='<p style="font-size:12.5px;color:#5a3714;font-weight:bold">🏦 全社BS: '+ymdLabel()+'時点の財産と借金</p>';
+      h+=bsHTML(b)+BS_NOTE;
+    }else{
+      h+=segBSHTML(ledgerSeg,b);
+    }
+  }
+  if(state.history.length&&ledgerSeg==='all'){
+    h+='<table class="fs"><tr class="hd"><td>決算の歴史</td><td class="amt">純利益</td></tr>';
+    for(const r of state.history)h+='<tr><td>'+r.year+'年目(売上'+fmt(r.sales)+')</td><td class="amt '+(r.profit>=0?'prof':'loss')+'">'+(r.profit>=0?'+':'−')+fmt(Math.abs(r.profit))+'</td></tr>';
+    h+='</table>';
+    h+='<div class="row"><div class="em">📒</div><div class="info"><b>直近の決算書(PL+BS)を見る</b></div><button class="minibtn blue" onclick="showFiscal(state.lastResult)">表示</button></div>';
+  }
+  return h;
+}
+// 毎月の経費見込みと農場の状況(v16の帳簿の下段を継承)
+function ledgerStatusHTML(){
   const herd=herdCount();
   const grassNeed=herd*ECON.GRASS_EAT;
   const sc=staffCount();
-  const fixed=ECON.OWNER_SALARY+sc*ECON.EMP_SALARY+(state.barnRented?ECON.BARN_RENT:0);
-  let h='<p>いまの経営状況(いつでも確認できるよ)。</p>'+
-  '<table class="fs">'+
-  '<tr class="hd"><td>財産・負債</td><td class="amt"></td></tr>'+
-  '<tr><td>現金</td><td class="amt '+(state.money<0?'loss':'')+'">'+fmt(state.money)+'</td></tr>'+
-  '<tr><td>米倉庫(1袋3万円)</td><td class="amt">'+state.riceBags+'袋</td></tr>'+
-  '<tr><td>牧草在庫(1束1万円)</td><td class="amt">'+state.grassStock+'束</td></tr>'+
-  (state.compostShed?'<tr><td>肥料在庫(1袋5000円)</td><td class="amt">'+state.fertStock+'袋</td></tr>':'')+
-  '<tr><td>借入金(銀行)</td><td class="amt">'+fmt(state.bankLoan)+'</td></tr>'+
-  '<tr><td>借入金(牛の与信 '+state.cows.length+'頭)</td><td class="amt">'+fmt(cowDebtTotal())+'</td></tr>'+
+  return '<table class="fs">'+
   '<tr class="hd"><td>毎月の経費(⏭で差引)</td><td class="amt"></td></tr>'+
   '<tr><td>自分の給与/生活費</td><td class="amt">'+fmt(ECON.OWNER_SALARY)+'</td></tr>'+
   '<tr><td>従業員給与('+sc+'人×30万)</td><td class="amt">'+fmt(sc*ECON.EMP_SALARY)+'</td></tr>'+
   '<tr><td>牛舎家賃'+(state.barnRented?'':'(未賃借)')+'</td><td class="amt">'+fmt(state.barnRented?ECON.BARN_RENT:0)+'</td></tr>'+
   '<tr><td>餌代(牛'+herd+'頭・牧草自給分は1万/頭)</td><td class="amt">'+(herd>0?'約'+fmt(Math.min(state.grassStock+(state.grassSown?ECON.GRASS_YIELD:0),herd)*ECON.FEED_GRASS+Math.max(0,herd-(state.grassStock+(state.grassSown?ECON.GRASS_YIELD:0)))*ECON.FEED_MARKET):'￥0')+'</td></tr>'+
   (herd>0?'<tr><td>牛糞の処分費'+(state.compostShed?'(🏭堆肥舎で不要✨)':'(1万/頭。🏭堆肥舎で収益化)')+'</td><td class="amt">'+fmt(state.compostShed?0:herd*ECON.MANURE_FEE)+'</td></tr>':'')+
-  '<tr class="hd"><td>今期('+state.year+'年目)の途中経過</td><td class="amt"></td></tr>'+
-  '<tr><td>売上高</td><td class="amt">'+fmt(state.fy.sales)+'</td></tr>'+
-  '<tr><td>経費</td><td class="amt">'+fmt(state.fy.exp)+'</td></tr>'+
-  '<tr class="tot"><td>差引(利益見込み)</td><td class="amt '+(state.fy.sales-state.fy.exp>=0?'prof':'loss')+'">'+fmt(state.fy.sales-state.fy.exp)+'</td></tr>'+
   '</table>'+
   '<p class="sub2" style="font-size:11.5px;color:#8a6a45">🌿 牧草: '+(state.grassSown?('作付け済み(毎月最大'+ECON.GRASS_YIELD*(state.land.grass2?2:1)+'束・今月の刈り取り'+(state.grassCutMonth===state.monthN?'済✅':'まだ⬜')+')'):'未作付け(牧草地で'+man(grassSowCost())+')')+' / 牛の消費 月'+grassNeed+'束 / 米: '+(state.riceField==='none'?'未作付け(4月に苗代'+man(riceSeedCost())+')':state.riceField==='planted'?('生育中(10月に'+riceBagsYield()+'袋。水管理'+(isWaterSeason()?(state.waterMonth===state.monthN?'今月済✅':'今月まだ⬜'):'は5〜9月')+')'):'収穫待ち！')+(herdCount()>0?' / 🐂健康'+state.care.health+'・汚れ'+state.care.dirt:'')+'</p>';
-  if(state.history.length){
-    h+='<table class="fs"><tr class="hd"><td>決算の歴史</td><td class="amt">純利益</td></tr>';
-    for(const r of state.history)h+='<tr><td>'+r.year+'年目(売上'+fmt(r.sales)+')</td><td class="amt '+(r.profit>=0?'prof':'loss')+'">'+(r.profit>=0?'+':'−')+fmt(Math.abs(r.profit))+'</td></tr>';
-    h+='</table>';
-    h+='<div class="row"><div class="em">📒</div><div class="info"><b>直近の決算書を見る</b></div><button class="minibtn blue" onclick="showFiscal(state.lastResult)">表示</button></div>';
-  }
-  return h;
 }
 // 倉庫: 米の精米出荷・牧草売却・農産物・種
 function whHTML(){
@@ -2618,7 +2824,7 @@ function sellProduce(k){
 function buySeed(k){
   const c=SEED_PRICE[k]*3;
   if(state.money<c)return;
-  addExpense(c,'other');addRes(k,3);
+  addExpense(c,'other','other');addRes(k,3); // v17: 種代は加工・野菜事業へ
   toast(RES[k].em+' '+RES[k].n+'×3を買ったよ(−'+fmt(c)+')');sfx(500,.06);renderMenu();
 }
 function setHTML(){
@@ -3044,6 +3250,7 @@ function startGame(saveData){
   document.getElementById('loading').style.display='flex';
   setTimeout(()=>{
     state=saveData?saveData.state:freshState();
+    migrateFy(); // v17: v16セーブに事業セグメント帳簿を追補
     initThree();
     genWorld();
     applyLandParcels(); // v16: 購入済み区画の開拓を再現(セーブ復元)
