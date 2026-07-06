@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v22 橋で街へ・超巨大倉庫・牧草は春秋の年2回</title>
+<title>丹波農商 牧場物語 v23 3本の橋どれでも街へ・牧草の繰越緩和</title>
 <link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -129,7 +129,7 @@
 <div id="seedPick"><div class="panel" id="seedPickBox"></div></div>
 <div id="title">
   <h1>🌾 丹波農商<br>牧場物語 <span style="font-size:16px">放置経営編</span></h1>
-  <div class="sub">現金1,000万円と棚田から始めるリアル農業経営！<br>「⏭ 次の日へ」で時間が進む。牛は毎日 餌やりと掃除。従業員に指示すれば「放置経営」もOK。<br>🏭東の巨大倉庫に農機・米・精米・加工・事務所を集約。🌉川の橋を渡って西へ行くと丹波の街(役場・銀行・農協・修理屋・セリ市場)。<br>🌿牧草地は不動産屋で購入、牧草の収穫は春(5月)と秋(9月)の年2回。マップの絵アイコンをタップすると説明が出るよ。毎年3月末は決算、現金が尽きたら倒産…🐂📒💰</div>
+  <div class="sub">現金1,000万円と棚田から始めるリアル農業経営！<br>「⏭ 次の日へ」で時間が進む。牛は毎日 餌やりと掃除。従業員に指示すれば「放置経営」もOK。<br>🏭東の巨大倉庫に農機・米・精米・加工・事務所を集約。🌉川の橋(北・中央・南の3本どれでも)を渡って西へ行くと丹波の街(役場・銀行・農協・修理屋・セリ市場)。<br>🌿牧草地は不動産屋で購入、牧草の収穫は春(5月)と秋(9月)の年2回(1回で半年+予備3ヶ月分)。マップの絵アイコンをタップすると説明が出るよ。毎年3月末は決算、現金が尽きたら倒産…🐂📒💰</div>
   <button class="bigbtn" id="newBtn">▶ はじめる</button>
   <button class="bigbtn orange" id="contBtn">💾 続きから</button>
 </div>
@@ -142,6 +142,24 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
 <script>
 /* =====================================================================
+   丹波農商 牧場物語 v23 — 3本の橋どれでも街へ・牧草の在庫繰越を緩和
+   v23: v22の全機能を維持したまま2点改修。セーブはv20キー(tamba_v20_save)を共用。
+   ① 3本の橋(北z14-15/中央z21-22/南z29-30)のどれを渡っても街へ:
+      北橋・南橋の西岸にも石畳の降り場+門+🏘アイコンを新設し、
+      西岸の自動遷移ゾーンを3ヶ所に拡大(farmWestGateZone)。西岸で
+      行き止まりにならず、どの橋からでも渡り切れば街マップへ。
+   ② 牧草の在庫繰越を緩和(餌代が急に3.5万へ戻るのを防ぐ):
+      ・1回の収穫量 = max(基本収量72束[東の牧草地で144束],
+        頭数×(6ヶ月+予備3ヶ月))。毎回収穫すれば半年+予備が必ずまかなえる。
+      ・余剰売却の確保分も「次の収穫月まで+予備3ヶ月」に拡大(自動売却でも
+        バッファ在庫が残る)。
+      ・餌代の段階化: 牧草運用中(作付け済み)に在庫が切れても、不足分は
+        2ヶ月間は当座しのぎ2万/頭(FEED_MID)、3ヶ月目から市販3.5万/頭。
+        牧草地なし/未作付けは従来通り3.5万。帳簿(feed→牛事業)は従来通り整合。
+      ・予告/警告: 収穫月の前月に「もうすぐ収穫時期」、収穫月に入ると
+        「今月は収穫月」、月半ば(15日)に未収穫リマインド、在庫が
+        月消費×2を切ると在庫警告。
+   以下v22の説明:
    丹波農商 牧場物語 v22 — 橋で街へ・机の撤去・倉庫さらに拡大・牧草は春秋の年2回
    v22: v21の全機能を維持したまま4点改修。セーブはv20キー(tamba_v20_save)を共用。
    ① バス廃止→橋で街へ: 農場/街のバス停(小屋・ベンチ)を撤去。川の中央の
@@ -527,6 +545,8 @@ const ECON={
   BARN_RENT:30000,       // 古い牛舎の家賃(月)
   FEED_MARKET:35000,     // 市販飼料の餌代(1頭・月)
   FEED_GRASS:10000,      // 牧草自給できた牛の餌代(1頭・月)
+  FEED_MID:20000,        // v23: 牧草切れ直後の不足分の餌代(1頭・月)。残り干し草+放牧で当座しのぐ
+  FEED_GRACE_MONTHS:2,   // v23: 当座しのぎ(2万/頭)で済む月数。3ヶ月目から市販3.5万に
   RICE_SEED_COST:3000000,// 苗代(4月の作付け費)
   RICE_BAGS:300,         // 10月の一括収穫の袋数
   RICE_BAG_PRICE:30000,  // 米1袋の出荷価格
@@ -549,6 +569,7 @@ const ECON={
   GRASS_SOW_COST:100000, // 牧草の作付け費(1回払えば毎年育つ)
   GRASS_YIELD:12,        // 牧草の生産ベース(束/月換算。v22: 収穫は年2回にまとめて行う)
   GRASS_CUT_MONTHS:6,    // v22: 1回の収穫=6ヶ月分(12束×6=72束。年2回で年144束は従来と同じ)
+  GRASS_BUFFER_MONTHS:3, // v23: 収穫量と余剰売却の確保分に上乗せする予備(月数)。取り逃し1回を緩和
   GRASS_EAT:1,           // 牛1頭の月間牧草消費(束)
   GRASS_PRICE:10000,     // 余剰牧草の売値(1束)
   LAND_PASTURE_PRICE:1000000, // v22: 西の牧草地(基本区画)。開始時は牧草地なし→不動産屋で購入
@@ -619,6 +640,7 @@ function freshState(){return{
   riceBags:0,shipMonth:-1,soldRiceBags:0,
   riceMiss:0,waterMonth:-1, // v16: 水管理(5-9月に月1回)。サボった月数で収量減
   grassSown:false,grassStock:0,grassProdLast:0,grassFedLast:0,
+  grassOutMonths:0, // v23: 牧草の在庫不足が連続している月数(餌代の段階化に使用)
   grassCutMonth:-1, // v22: 直近の収穫を行った月(monthN)。収穫は5月と9月の年2回だけ
   care:{fedDay:-1,cleanDay:-1,dirt:0,health:100}, // v16: 牛の日次世話
   compostShed:false,fertStock:0, // v16: 堆肥舎と肥料在庫
@@ -654,7 +676,16 @@ function grassSowCost(){return ECON.GRASS_SOW_COST-(state.compostShed?ECON.FERT_
 // ---- v22: 牧草は春(5月)と秋(9月)の年2回収穫 ----
 function hasPasture(){return !!(state.land.pasture1||state.land.grass2);}
 function grassHarvestMonth(){return state.month===5||state.month===9;}
-function grassCutYield(){return ECON.GRASS_YIELD*ECON.GRASS_CUT_MONTHS*(state.land.grass2?2:1);} // 1回の収穫量(72束/東の牧草地で144束)
+// v23: 1回の収穫量。基本収量(72束/東の牧草地で144束)を下限に、牛が多い時は
+//      頭数×(6ヶ月+予備3ヶ月)まで増える=毎回収穫すれば次の収穫まで必ずもつ
+function grassCutYield(){
+  const base=ECON.GRASS_YIELD*ECON.GRASS_CUT_MONTHS*(state.land.grass2?2:1);
+  const need=herdCount()*ECON.GRASS_EAT*(ECON.GRASS_CUT_MONTHS+ECON.GRASS_BUFFER_MONTHS);
+  return Math.max(base,need);
+}
+// v23: 牧草が足りない牛1頭あたりの餌代(段階化)。牧草運用中は在庫切れから
+//      FEED_GRACE_MONTHSヶ月は当座しのぎ2万、それ以降と牧草なし運用は市販3.5万
+function feedShortUnit(){return (state.grassSown&&(state.grassOutMonths||0)<ECON.FEED_GRACE_MONTHS)?ECON.FEED_MID:ECON.FEED_MARKET;}
 function monthsToNextGrassHarvest(){for(let d=1;d<=12;d++){const mm=((state.month-1+d)%12)+1;if(mm===5||mm===9)return d;}return 12;} // 次の収穫月まで何ヶ月か(余剰計算用)
 function nextGrassHarvestLabel(){return (((state.month-1+monthsToNextGrassHarvest())%12)+1)+'月';}
 // v20: 牛舎の収容枠(母牛/子牛)。古い牛舎=10+10、南の牧場=+5+5、新築牛舎=1棟につき15+15
@@ -732,6 +763,7 @@ function migrateV20(){
   if(state.ricePlantMonthN===undefined)state.ricePlantMonthN=-1;
   // v22: 牧草地の区画(旧セーブで牧草を運用していた人には基本区画を付与して互換維持)
   if(state.land.pasture1===undefined)state.land.pasture1=!!(state.grassSown||state.grassStock>0||state.land.grass2);
+  if(state.grassOutMonths===undefined)state.grassOutMonths=0; // v23: 餌代の段階化カウンタ
   for(const c of state.cows){if(c.sick===undefined){c.sick=false;c.sickDays=0;}if(c.fat===undefined)c.fat=60;if(c.sickCount===undefined)c.sickCount=0;}
   for(const c of state.calves){if(c.sick===undefined){c.sick=false;c.sickDays=0;}if(c.fat===undefined)c.fat=50;if(c.sickCount===undefined)c.sickCount=0;if(!c.sex)c.sex=Math.random()<0.5?'F':'M';}
 }
@@ -1173,6 +1205,18 @@ function genWorld(){
   // 門(木の柱2本+梁)。橋の出口(z21-22)を挟む
   for(let y=2;y<=4;y++){gset(1,y,19,B.WOOD);gset(1,y,24,B.WOOD);}
   for(let z=19;z<=24;z++)gset(1,5,z,B.PLANK);
+  // --- v23: 北橋(z14-15)・南橋(z29-30)の西岸にも街への降り場(石畳+門)を新設。
+  //     どの橋を渡っても西岸で行き止まりにならず、そのまま街へ遷移できる ---
+  // 北橋の西岸(橋の西端はx=4なのでx0-3を降り場に。川岸の小道x4は触らない)
+  flatten(0,3,13,16,1);
+  for(let x=0;x<=3;x++)for(let z=13;z<=16;z++)gset(x,1,z,B.PAVE);
+  for(let y=2;y<=4;y++){gset(2,y,13,B.WOOD);gset(2,y,16,B.WOOD);}
+  for(let z=13;z<=16;z++)gset(2,5,z,B.PLANK);
+  // 南橋の西岸(橋の西端はx=2なのでx0-1を降り場に。川岸の小道x2は触らない)
+  flatten(0,1,28,31,1);
+  for(let x=0;x<=1;x++)for(let z=28;z<=31;z++)gset(x,1,z,B.PAVE);
+  for(let y=2;y<=4;y++){gset(1,y,28,B.WOOD);gset(1,y,31,B.WOOD);}
+  for(let z=28;z<=31;z++)gset(1,5,z,B.PLANK);
   // --- v16: 荒れ地の木(区画を買うと整地されて消える) ---
   [[55,12],[61,17],[63,14],[58,25],[63,30],[54,40],[60,44],[64,38],[57,37],
    [25,55],[30,60],[22,62],[27,58],[45,55],[55,57],[40,60],[12,55],[8,60],[16,60],[60,60],
@@ -1235,7 +1279,7 @@ function terraformNewBarn(i){
 }
 // ---------- v16: 土地区画(ワールド拡張) ----------
 const PARCELS={
-  pasture1:{n:'西の牧草地(基本)',em:'🌿',price:ECON.LAND_PASTURE_PRICE,desc:'牛舎の東の空き地を柵付きの牧草地に開拓。作付け(10万)すると🌸春(5月)と🍂秋(9月)の年2回、牧草を収穫できる(1回72束)。牧草があれば牛の餌代が3.5万→1万/頭に。'},
+  pasture1:{n:'西の牧草地(基本)',em:'🌿',price:ECON.LAND_PASTURE_PRICE,desc:'牛舎の東の空き地を柵付きの牧草地に開拓。作付け(10万)すると🌸春(5月)と🍂秋(9月)の年2回、牧草を収穫できる(1回72束〜。牛が多い時は頭数×9ヶ月分まで増える)。牧草があれば牛の餌代が3.5万→1万/頭に。'},
   grass2:{n:'東の牧草地(拡張)',em:'🌿',price:ECON.LAND_GRASS_PRICE,desc:'牧草の収穫が2倍(72→144束/回)になる拡張区画。荒れ地を開拓して西の牧草地とつなげる(先に西の牧草地が必要)。'},
   rice2:{n:'東の棚田',em:'🌾',price:ECON.LAND_RICE_PRICE,desc:'米の規模が1.5倍(苗代450万・収穫450袋・年商1,350万円)に。水管理と出荷の作業量も増える。'},
   barn2:{n:'南の牧場+第二牛舎',em:'🏠',price:ECON.LAND_BARN_PRICE,desc:'収容枠が母牛+5頭・子牛+5頭に。南の荒れ地に第二牛舎が建つ(低予算の増頭)。'},
@@ -1533,9 +1577,9 @@ function doGrassCut(who){
   return true;
 }
 function sellGrassSurplus(auto){
-  const reserve=herdCount()*ECON.GRASS_EAT*monthsToNextGrassHarvest(); // v22: 次の収穫月までの消費分は残す
+  const reserve=herdCount()*ECON.GRASS_EAT*(monthsToNextGrassHarvest()+ECON.GRASS_BUFFER_MONTHS); // v23: 次の収穫月まで+予備3ヶ月分は残す(取り逃し1回の緩衝)
   const surplus=state.grassStock-reserve;
-  if(surplus<=0){if(!auto)toast('🌿 余剰牧草はないよ(在庫'+state.grassStock+'束は次の収穫'+nextGrassHarvestLabel()+'までの牛の餌に確保)');return 0;}
+  if(surplus<=0){if(!auto)toast('🌿 余剰牧草はないよ(在庫'+state.grassStock+'束は次の収穫'+nextGrassHarvestLabel()+'まで+予備'+ECON.GRASS_BUFFER_MONTHS+'ヶ月分の牛の餌に確保)');return 0;}
   state.grassStock-=surplus;
   addSale(surplus*ECON.GRASS_PRICE,'grass');
   toast('🌿 余剰牧草'+surplus+'束を売却 +'+fmt(surplus*ECON.GRASS_PRICE));
@@ -1727,13 +1771,24 @@ function updateMachineBadges(){
   if(curMap!=='farm')return;
   for(const k in machineBadges)machineBadges[k].visible=machineBroken(k);
 }
-// v22: バス停は廃止。川の中央の橋(z21-22)を渡った西岸が「街の入口」。
-//      到達すると自動で街へ(アイコンのボタンからも行ける)
+// v22: バス停は廃止。川の橋を渡った西岸が「街の入口」。
+// v23: 北橋・南橋の西岸にも降り場+🏘アイコンを追加(3本の橋どれでも街へ)
 function buildTownGateFarm(){
-  const ic=iconSprite('🏘',1.7);
-  const y=topY(1,21)+1;
-  ic.position.set(1.5,y+3.6,21.5);decoGroup.add(ic);
-  addInfoIcon(ic,{t:'🏘 街の入口(橋の西)',b:'川の橋を渡って西へ進むと🏘丹波の街に着くよ。街には🏛役場(補助金)・🏦銀行・🚜農協(資材/獣医)・🔧修理屋・🐂セリ市場・🏠不動産屋がある。門をくぐると自動で街へ入るよ。',btns:[['🏘 街へ入る',()=>switchMap('town')]]});
+  const info={t:'🏘 街の入口(橋の西)',b:'川の橋(北・中央・南の3本どれでもOK)を渡って西へ進むと🏘丹波の街に着くよ。街には🏛役場(補助金)・🏦銀行・🚜農協(資材/獣医)・🔧修理屋・🐂セリ市場・🏠不動産屋がある。門をくぐると自動で街へ入るよ。',btns:[['🏘 街へ入る',()=>switchMap('town')]]};
+  for(const[gx,gz]of[[1.5,21.5],[1.5,14.5],[0.9,29.5]]){ // 中央/北/南の各降り場
+    const ic=iconSprite('🏘',1.7);
+    const y=topY(Math.floor(gx),Math.floor(gz))+1;
+    ic.position.set(gx,y+3.6,gz);decoGroup.add(ic);
+    addInfoIcon(ic,info);
+  }
+}
+// v23: 3本の橋(北z14-15/中央z21-22/南z29-30)のどれを渡っても、西岸の降り場に
+//      入ったら街へ自動遷移するゾーン判定
+function farmWestGateZone(x,z){
+  if(x<=2.6&&z>=18&&z<=25.5)return true;   // 中央橋の西岸広場(v22)
+  if(x<=3.6&&z>=12.5&&z<=16.5)return true; // 北橋の西岸降り場
+  if(x<=1.6&&z>=27.5&&z<=31.5)return true; // 南橋の西岸降り場
+  return false;
 }
 function buildCompostShed(){
   if(compostShedMesh||curMap!=='farm')return; // v19: 農場マップでだけ表示
@@ -3264,6 +3319,9 @@ function advanceDay(notes,silent){
   subsidyDaily(notes);
   machineDaily(notes);
   sicknessDaily(notes);
+  // v23: 収穫月の月半ばに未収穫リマインド(担当従業員がいない時だけ)
+  if(state.grassSown&&grassHarvestMonth()&&state.grassCutMonth!==state.monthN&&!staffWithJob('grass')&&state.dom===15)
+    notes.push('✂ 今月('+state.month+'月)は牧草の収穫月！月内に収穫しないと'+grassCutYield()+'束を逃すよ(牧草地で✂・🌿担当に指示すれば自動)');
   if(state.dom>=ECON.DAYS_PER_MONTH){
     state.dom=1;
     monthEnd(notes);        // 月次経費・生産・(3月なら)決算＋税金
@@ -3288,13 +3346,21 @@ function monthEnd(notes){
   if(state.grassSown&&grassHarvestMonth()&&state.grassCutMonth!==state.monthN){
     notes.push('⚠ '+state.month+'月の牧草の✂収穫をしそびれた…('+grassCutYield()+'束を逃した。次は'+(state.month===5?'9月':'来年5月')+')');
   }
-  // 2) 餌の消費と餌代(牧草でまかなえた牛=1万/頭、足りない分=3.5万/頭)
+  // 2) 餌の消費と餌代(v23: 段階化。牧草でまかなえた牛=1万/頭。不足分は
+  //    牧草運用中なら在庫切れから2ヶ月間=当座しのぎ2万/頭、3ヶ月目から市販3.5万/頭。
+  //    牧草地なし/未作付けは従来通り3.5万/頭。帳簿はfeed(牛事業)のまま整合)
   const herd=herdCount();
   const fed=Math.min(state.grassStock,herd*ECON.GRASS_EAT);
   state.grassStock-=fed;
   state.grassFedLast=fed;
-  const feedCost=fed*ECON.FEED_GRASS+(herd-fed)*ECON.FEED_MARKET;
+  const feedShort=herd-fed;
+  const shortUnit=feedShortUnit(); // カウンタ加算前に判定(切れて1・2ヶ月目=2万)
+  state.grassOutMonths=(feedShort>0&&state.grassSown)?(state.grassOutMonths||0)+1:0;
+  const feedCost=fed*ECON.FEED_GRASS+feedShort*shortUnit;
   if(feedCost>0)addExpense(feedCost,'feed');
+  if(feedShort>0&&state.grassSown)notes.push(shortUnit===ECON.FEED_MID?
+    ('⚠ 牧草の在庫が足りない！不足'+feedShort+'頭分は残り干し草で当座しのぎ(2万/頭)。次の収穫は'+nextGrassHarvestLabel()):
+    ('⚠ 牧草切れが'+state.grassOutMonths+'ヶ月続き、不足'+feedShort+'頭分は市販飼料(3.5万/頭)に…次の収穫('+nextGrassHarvestLabel()+')を忘れずに'));
   // 3) 固定費(自分の給与30万・従業員30万×人数・牛舎家賃3万)
   addExpense(ECON.OWNER_SALARY,'owner');
   const sc=staffCount();
@@ -3333,6 +3399,13 @@ function monthEnd(notes){
     notes.push('🌾 稲が実った！棚田で「収穫」しよう('+riceBagsYield()+'袋)');
   }
   if(state.month===4&&state.riceField==='none')notes.push('🌱 4月！田植えの季節だよ(苗代'+man(riceSeedCost())+')');
+  // v23: 牧草の収穫予告・在庫警告(取り逃し防止の親切)
+  if(state.grassSown){
+    const nxm=(state.month===12)?1:state.month+1;
+    if(grassHarvestMonth())notes.push('✂ 今月は'+(state.month===5?'🌸春':'🍂秋')+'の牧草の収穫月！月内に収穫しよう(+'+grassCutYield()+'束)'+(staffWithJob('grass')?'(🌿担当がいるので自動収穫)':''));
+    else if(nxm===5||nxm===9)notes.push('🌿 もうすぐ牧草の収穫時期(来月'+nxm+'月)！'+(staffWithJob('grass')?'🌿担当の従業員が自動で収穫するよ':'収穫月に✂を忘れずに(逃すとその回の分は無し)'));
+    if(herd>0&&!grassHarvestMonth()&&state.grassStock<herd*ECON.GRASS_EAT*2)notes.push('⚠ 牧草の在庫が残り'+state.grassStock+'束(牛'+herd+'頭で月'+(herd*ECON.GRASS_EAT)+'束消費)。次の収穫は'+nextGrassHarvestLabel()+'。切れると餌代が上がるよ');
+  }
   // 月次サマリー
   const delta=state.money-preMoney;
   toast('📅 '+state.year+'年目'+state.month+'月になった(月次差引'+(delta>=0?'+':'−')+fmt(Math.abs(delta))+')');
@@ -3340,7 +3413,7 @@ function monthEnd(notes){
   cost.push('自分の給与'+man(ECON.OWNER_SALARY));
   if(sc>0)cost.push('従業員'+man(sc*ECON.EMP_SALARY));
   if(state.barnRented)cost.push('家賃'+man(ECON.BARN_RENT));
-  if(feedCost>0)cost.push('餌代'+man(feedCost)+'('+fed+'頭は牧草1万/他'+(herd-fed)+'頭3.5万)');
+  if(feedCost>0)cost.push('餌代'+man(feedCost)+'('+fed+'頭は牧草1万'+(feedShort>0?('/他'+feedShort+'頭'+(shortUnit===ECON.FEED_MID?'当座2万':'市販3.5万')):'')+')'); // v23: 段階化を反映
   if(herd>0&&!state.compostShed&&!state.dungYard)cost.push('牛糞処分'+man(herd*ECON.MANURE_FEE));
   toast('📉 月次経費: '+cost.join('・'));
   updateHUD();
@@ -3713,7 +3786,7 @@ function ledgerStatusHTML(){
   '<tr><td>自分の給与/生活費</td><td class="amt">'+fmt(ECON.OWNER_SALARY)+'</td></tr>'+
   '<tr><td>従業員給与('+sc+'人×30万)</td><td class="amt">'+fmt(sc*ECON.EMP_SALARY)+'</td></tr>'+
   '<tr><td>牛舎家賃'+(state.barnRented?'':(state.newBarns>0?'(新築牛舎は家賃なし)':'(未賃借)'))+'</td><td class="amt">'+fmt(state.barnRented?ECON.BARN_RENT:0)+'</td></tr>'+
-  '<tr><td>餌代(牛'+herd+'頭・牧草自給分は1万/頭)</td><td class="amt">'+(herd>0?'約'+fmt(Math.min(state.grassStock,herd)*ECON.FEED_GRASS+Math.max(0,herd-state.grassStock)*ECON.FEED_MARKET):'￥0')+'</td></tr>'+
+  '<tr><td>餌代(牛'+herd+'頭・牧草自給分は1万/頭)</td><td class="amt">'+(herd>0?'約'+fmt(Math.min(state.grassStock,herd)*ECON.FEED_GRASS+Math.max(0,herd-state.grassStock)*feedShortUnit()):'￥0')+'</td></tr>'+ // v23: 段階化した不足分単価で見積り
   (herd>0?'<tr><td>牛糞の処分費'+(state.compostShed?'(🏭本格堆肥舎で収益化✨)':(state.dungYard?'(🟤糞置き場で不要✨)':'(1万/頭。🟤糞置き場でゼロに)'))+'</td><td class="amt">'+fmt((state.compostShed||state.dungYard)?0:herd*ECON.MANURE_FEE)+'</td></tr>':'')+
   '</table>'+
   '<p class="sub2" style="font-size:11.5px;color:#8a6a45">🌿 牧草: '+(state.grassSown?('作付け済み(収穫は🌸5月/🍂9月・1回'+grassCutYield()+'束・'+(grassHarvestMonth()?('今月は収穫月！'+(state.grassCutMonth===state.monthN?'収穫済✅':'まだ⬜')):'次は'+nextGrassHarvestLabel())+')'):(state.land.pasture1?'未作付け(牧草地で'+man(grassSowCost())+')':'牧草地なし(🏠不動産屋で購入)'))+' / 牛の消費 月'+grassNeed+'束 / 米: '+(state.riceField==='none'?'未作付け(4月に苗代'+man(riceSeedCost())+')':state.riceField==='planted'?('生育中(10月に'+riceBagsYield()+'袋。水管理'+(isWaterSeason()?(state.waterMonth===state.monthN?'今月済✅':'今月まだ⬜'):'は5〜9月')+')'):'収穫待ち！')+(herdCount()>0?' / 🐂健康'+state.care.health+'・汚れ'+state.care.dirt:'')+'</p>';
@@ -3726,9 +3799,9 @@ function whHTML(){
   let h='<p>収穫した米は倉庫へ。毎月「精米して出荷」で現金化(月1回・最大'+riceShipMax()+'袋)。</p>'+
   '<div class="row"><div class="em">🍚</div><div class="info"><b>米倉庫: '+state.riceBags+'袋</b><small>1袋3万円。'+(polBroken?'<span class="loss">⚠精米機が故障中！🔧街の修理屋で修理を</span>':(state.shipMonth===state.monthN?'今月は出荷済み(⏭で翌月へ)':'今月あと'+shipN+'袋出荷できる('+fmt(shipN*ECON.RICE_BAG_PRICE)+')'))+'</small></div>'+
   '<button class="buy" '+(canShip?'':'disabled')+' onclick="shipRice()">精米して出荷</button></div>';
-  const reserve=herdCount()*ECON.GRASS_EAT*monthsToNextGrassHarvest(); // v22: 次の収穫月まで持たせる
+  const reserve=herdCount()*ECON.GRASS_EAT*(monthsToNextGrassHarvest()+ECON.GRASS_BUFFER_MONTHS); // v23: 次の収穫月まで+予備3ヶ月分は残す
   const surplus=Math.max(0,state.grassStock-reserve);
-  h+='<div class="row"><div class="em">🌿</div><div class="info"><b>牧草在庫: '+state.grassStock+'束</b><small>収穫は🌸5月/🍂9月の年2回。次の収穫('+nextGrassHarvestLabel()+')までの牛の餌'+reserve+'束は確保。余剰'+surplus+'束×1万円='+fmt(surplus*ECON.GRASS_PRICE)+'</small></div>'+
+  h+='<div class="row"><div class="em">🌿</div><div class="info"><b>牧草在庫: '+state.grassStock+'束</b><small>収穫は🌸5月/🍂9月の年2回。次の収穫('+nextGrassHarvestLabel()+')まで+予備'+ECON.GRASS_BUFFER_MONTHS+'ヶ月の餌'+reserve+'束は確保。余剰'+surplus+'束×1万円='+fmt(surplus*ECON.GRASS_PRICE)+'</small></div>'+
   '<button class="buy" '+(surplus>0?'':'disabled')+' onclick="sellGrassSurplus(false)">余剰を売る</button></div>';
   h+='<div class="row"><div class="em">🟤</div><div class="info"><b>堆肥を作る</b><small>牛ふん'+(state.res.manure||0)+'個→堆肥に(畑が2倍育つ/売っても2千円)</small></div>'+
   '<button class="buy" '+((state.res.manure||0)>0?'':'disabled')+' onclick="makeCompost()">作る</button></div>';
@@ -4322,6 +4395,8 @@ function areaName(x,z){
   if(x>=BASE_WS||z>=BASE_WS)return'🌲 未開拓の荒れ地';
   if(x>=35&&x<=49&&z>=8&&z<=21)return state.land.pasture1?'🌿 牧草地':'🧱 空き地(牧草地の予定地・販売中)'; // v22
   if(x<=3&&z>=18&&z<=25)return'🏘 街の入口(橋の西)'; // v22
+  if(x<=4&&z>=13&&z<=16)return'🏘 街の入口(北橋の西)'; // v23
+  if(x<=2&&z>=28&&z<=31)return'🏘 街の入口(南橋の西)'; // v23
   if(x>=22&&x<=31&&z>=10&&z<=18)return state.barnRented?'🏚 古い牛舎(賃借中)':'🏚 古い牛舎';
   if(x>=24&&x<=31&&z>=23&&z<=29)return'🌱 空き地(旧事務所の跡地)'; // v21: 更地化
   if(x>=15&&x<=21&&z>=23&&z<=28)return'🌱 空き地(旧銀行の跡地)';   // v21: 更地化
@@ -4536,7 +4611,7 @@ function animate(ts){
   saveAcc+=dt;if(saveAcc>30){saveAcc=0;saveGame(false);}
   // v22: 橋を渡り切った「街の入口」(農場・西岸)/「農場への道」(街・南端)に到達したら自動でマップ切替
   if(state&&!mapBusy&&!isGameOver){
-    if(curMap==='farm'&&player.x<=2.6&&player.z>=18&&player.z<=25.5)switchMap('town');
+    if(curMap==='farm'&&farmWestGateZone(player.x,player.z))switchMap('town'); // v23: 3本の橋どれでも
     else if(curMap==='town'&&player.z>=62.5&&player.x>=30&&player.x<=35.5)switchMap('farm');
   }
   tickAcc+=dt;
