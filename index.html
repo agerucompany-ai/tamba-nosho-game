@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v18 川の橋と水没修正</title>
+<title>丹波農商 牧場物語 v19 街マップ</title>
 <link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -46,6 +46,8 @@
   #loadSpin{width:52px;height:52px;border:6px solid rgba(90,55,20,.2);border-top-color:#e8743f;border-radius:50%;animation:spin 1s linear infinite;}
   @keyframes spin{to{transform:rotate(360deg);}}
   #loadMsg{font-size:16px;color:#6a4a25;}
+  /* v19: マップ切替(農場⇔街)の暗転演出 */
+  #travel{position:fixed;inset:0;background:#1a1208;z-index:70;display:none;align-items:center;justify-content:center;color:#ffe9c5;font-size:22px;font-weight:bold;opacity:0;transition:opacity .35s;text-align:center;padding:20px;}
   /* v15: 倒産(ゲームオーバー)画面 */
   #gameover{position:fixed;inset:0;background:rgba(30,15,5,.86);z-index:80;display:none;align-items:center;justify-content:center;padding:16px;}
   #gameoverBox{width:min(480px,94vw);max-height:88vh;overflow:auto;padding:20px;text-align:center;-webkit-overflow-scrolling:touch;}
@@ -121,11 +123,12 @@
 <div id="seedPick"><div class="panel" id="seedPickBox"></div></div>
 <div id="title">
   <h1>🌾 丹波農商<br>牧場物語 <span style="font-size:16px">放置経営編</span></h1>
-  <div class="sub">現金1,000万円と棚田だけから始めるリアル農業経営！<br>「⏭ 次の日へ」で1日ずつ時間が進むよ。牛は毎日 餌やりと牛舎掃除！<br>従業員を雇って仕事を指示すれば、自分が動かなくても自動で回る「放置経営」。<br>土地を買って田んぼや牧草地を広げ、堆肥舎で牛糞をお金に変えよう。<br>毎年3月末は決算。牛以外の利益には税金30%！現金が尽きたら倒産だよ🐂📒💰</div>
+  <div class="sub">現金1,000万円と棚田だけから始めるリアル農業経営！<br>「⏭ 次の日へ」で1日ずつ時間が進むよ。牛は毎日 餌やりと牛舎掃除！<br>従業員を雇って仕事を指示すれば、自分が動かなくても自動で回る「放置経営」。<br>土地を買って田んぼや牧草地を広げ、堆肥舎で牛糞をお金に変えよう。<br>🚌バスで「街」へ行くと役場(補助金で半額!)・銀行・農協(獣医)・修理屋・セリ市場があるよ。<br>機械は故障するし牛は病気になる。毎年3月末は決算。牛以外の利益には税金30%！現金が尽きたら倒産だよ🐂📒💰</div>
   <button class="bigbtn" id="newBtn">▶ はじめる</button>
   <button class="bigbtn orange" id="contBtn">💾 続きから</button>
 </div>
 <div id="loading"><div id="loadSpin"></div><div>よみこみちゅう…</div><div id="loadMsg">丹波の里を準備しているよ</div></div>
+<div id="travel">🚌 移動中…</div>
 <div class="ov" id="gameover"><div class="panel" id="gameoverBox"></div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -133,6 +136,27 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
 <script>
 /* =====================================================================
+   丹波農商 牧場物語 v19 — 街(まち)マップ新設・施設集約・補助金・故障・獣医
+   v19: v18の全機能を維持したまま「街マップ」を新設。
+   ① マップ切替: 農場のバス停(🚌)⇔街のバス停で行き来。暗転演出つき。
+      時間・お金・帳簿は共通の経営状態で進む。セーブはv18キー共用+state.map。
+   ② 街に集約: 不動産屋・銀行・セリ市場を街へ移設(農場側は案内板)。
+      新設: 役場(補助金)・農協(資材/獣医)・修理屋。各施設に担当NPC
+      (Meshy製 myakuba/mginko/mseriman/mnokyo/mjuui/mshuriya)＋住民2人。
+      街はボクセルの市街地(大通り・広場・噴水・街灯・並木・住宅)。
+   ③ 役場の補助金: 申請→2日後に承認→90日以内の対象購入が半額(50%補助)。
+      対象=新品の機械(トラクター300万/精米機200万/加工機150万)・
+      新品の牛舎(500万・家賃ゼロ+母牛12頭)・堆肥舎(200万)。
+      承認1件=1回の購入で消費。未申請の購入は定価。中古レンタルは対象外。
+   ④ 機械の故障: 中古は0.8%/日(月あたり約2割)・新品は0.2%/日で故障。
+      トラクター故障=田植え/収穫不可・精米機故障=精米出荷不可・
+      加工機故障=農産物1.5倍加工が停止。街の🔧修理屋で修理代
+      (トラクター15万/精米機8万/加工機8万)を払うと再稼働。
+   ⑤ 農協＋獣医: 牛は0.4%/日/頭で発病(汚れ60以上・健康40未満で+0.6%ずつ)。
+      病気の牛は成長・妊娠が止まり、10日放置後は毎日5%で死亡
+      (母牛死亡時は残与信を現金精算)。街の農協で獣医を呼ぶと往診
+      (往診料3万+治療2万/頭)で全快。呼んだ日は農場に獣医が来ている。
+   以下v18の説明:
    丹波農商 牧場物語 v18 — 川の水没バグ修正(水は進入不可)＋橋の設置
    v18: v17の全機能を維持したまま「主人公が川に半分沈む」見た目バグを修正。
    ① walkY(): 立とうとする床のすぐ上(またはその上)が水なら 1e9=進入不可。
@@ -335,9 +359,48 @@ const CHARS={
     line:'牛糞は処分費が月1万円/頭もかかる…🏭堆肥舎を建てれば肥料にして売れるよ！',
     line2:'僕を雇って「堆肥」を指示すれば、ふん回収も肥料の出荷も自動だよ(事務所で雇用・月給30万円)'},
 };
+// ---------- v19: 街の登場人物(Meshy新住人6役+住民)。model=char_min/m{model}_walk.glb ----------
+const TOWN_CHARS={
+  yakuba:{model:'yakuba',name:'役場の山田さん',role:'役場職員',menu:'yakuba',pos:[30.0,21.2],
+    skin:'#eec096',cheek:'#e8907a',hair:'#2a2118',shirt:'#5a6a7a',pants:'#3a4148',shoe:'#333',
+    line:'補助金の申請はここ役場で！承認されると新品の機械・牛舎・堆肥舎が半額になるよ🏛',
+    line2:'申請→2日で承認→90日以内の購入が半額。申請しないで買うと定価だから気をつけて！'},
+  ginko:{model:'ginko',name:'銀行の丹波さん',role:'銀行員',menu:'bank',pos:[16.5,34.6],
+    skin:'#eec096',cheek:'#e8907a',hair:'#1a1512',shirt:'#2a3a5a',pants:'#22262e',shoe:'#222',
+    line:'丹波銀行です。直近の決算が黒字なら、売上高と同じ額まで無利息で融資しますよ🏦',
+    line2:'赤字だと貸せません…毎年の決算を黒字にするのが信用の第一歩です'},
+  fudosan:{model:'naoto',name:'不動産屋の登さん',role:'不動産屋',menu:'land',pos:[25.5,34.6],
+    skin:'#eac199',cheek:'#e89a7a',hair:'#241a12',glasses:true,shirt:'#6a5a3a',pants:'#3a352a',shoe:'#333',
+    line:'土地をお探しですか？東の牧草地・東の棚田・南の牧場、いい区画が揃ってますよ🏠',
+    line2:'土地を買えば農場の世界が広がる。生産規模の拡大は経営の王道です'},
+  nokyo:{model:'nokyo',name:'農協の米田さん',role:'農協職員',menu:'ja',pos:[40.5,34.6],
+    skin:'#e8b98c',cheek:'#e8907a',hair:'#1c1712',cap:'#2f8a4a',shirt:'#2f8a4a',pants:'#33383f',shoe:'#333',
+    line:'農協です。新品の機械や牛舎はうちの資材窓口へ🚜 役場の補助金を使えば半額ですよ',
+    line2:'牛が病気の時はうちに来て。獣医の先生に往診をお願いできるよ'},
+  juui:{model:'juui',name:'獣医の犬飼先生',role:'獣医',menu:'ja',pos:[43.5,34.6],
+    skin:'#eec8a0',cheek:'#e8907a',hair:'#4a4a4a',shirt:'#f0f0f0',pants:'#3a4148',shoe:'#333',
+    line:'牛が病気になったら農協で呼んでくれ。往診料はかかるが、放っておくと最悪死んでしまうぞ🩺',
+    line2:'牛舎が汚れていると病気になりやすい。毎日の掃除が一番の予防だ'},
+  shuriya:{model:'shuriya',name:'修理屋の鉄男さん',role:'修理屋',menu:'repair',pos:[12.0,28.8],
+    skin:'#e5a97c',cheek:'#e88a6a',hair:'#111',cap:'#c23b22',shirt:'#3a3a3f',pants:'#2a2e33',shoe:'#222',
+    line:'機械が壊れたら俺のところへ！トラクターも精米機も直すぜ🔧',
+    line2:'中古の機械はよく壊れる。農協で新品に買い替えるのも手だぞ(補助金で半額！)'},
+  seriman:{model:'seriman',name:'競り人の勝さん',role:'競り人',menu:'auction',pos:[48.0,44.5],
+    skin:'#e0a577',cheek:'#e88a6a',hair:'#1c1712',cap:'#111',shirt:'#7a3a2a',pants:'#2a2a2a',shoe:'#5a3a1a',
+    line:'セリ市場へようこそ！メス牛は与信100万で買える。子牛は100万、8産後の親牛は50万だ🐂',
+    line2:'健康な牛ほど子牛が高く売れる。毎日の世話と病気の治療を怠るなよ！'},
+  res1:{model:'atsushi',name:'町の人',role:'住民',pos:[12,31.5],wander:{pts:[[7,31.5],[60,31.5]]},
+    skin:'#e8b98c',cheek:'#ff7a5a',hair:'#1c1712',shirt:'#7a4a6a',pants:'#2a2a2a',shoe:'#5a3a1a',
+    line:'この街は丹波の台所。農協の黒豆コロッケがうまいんだ',
+    line2:'農場のがんばり、街のみんなが応援してるよ'},
+  res2:{model:'yusuke',name:'町の人',role:'住民',pos:[32.5,40],wander:{pts:[[32.5,10],[32.5,55]]},
+    skin:'#e5b184',cheek:'#e88a6a',hair:'#6a4526',beard:true,shirt:'#4a6a4a',pants:'#33302a',shoe:'#2a2a2a',
+    line:'広場の噴水は街の自慢さ⛲ 夜は街灯がきれいだよ',
+    line2:'役場の補助金、農家さんはみんな使ってるらしいよ'},
+};
 
 // ---------- ブロック定義 ----------
-const B={GRASS:1,SOIL:2,TILLED:3,STONE:4,WATER:5,WOOD:6,LEAF:7,PLANK:8,PATH:9,HAY:10,COMPOST:11,FENCE:12,CLEAF:13,TILLFERT:14};
+const B={GRASS:1,SOIL:2,TILLED:3,STONE:4,WATER:5,WOOD:6,LEAF:7,PLANK:8,PATH:9,HAY:10,COMPOST:11,FENCE:12,CLEAF:13,TILLFERT:14,BRICK:15,WHITE:16,BROOF:17,PAVE:18,RROOF:19,GROOF:20};
 const BI={
  1:{n:'草ブロック',top:0x6fbe44,side:0x8a6f43,bot:0x6b4a2b,drop:'grass'},
  2:{n:'土',top:0x795038,side:0x6b4a2b,bot:0x6b4a2b,drop:'soil'},
@@ -353,6 +416,12 @@ const BI={
  12:{n:'柵',top:0xb5843f,side:0xa87433,bot:0x9a6b2e,drop:'fence',tool:'hammer'},
  13:{n:'栗の葉',top:0x8fae2e,side:0x7d9c28,bot:0x6b8a24},
  14:{n:'肥えた耕地',top:0x3a2313,side:0x6b4a2b,bot:0x6b4a2b,drop:'soil'},
+ 15:{n:'レンガ',top:0xa5502e,side:0xa5502e,bot:0x8a3f22},   // v19: 街の建物
+ 16:{n:'白壁',top:0xf2ede2,side:0xf2ede2,bot:0xd8d2c2},
+ 17:{n:'青屋根',top:0x3a6fd8,side:0x3560b8,bot:0x2a4a8a},
+ 18:{n:'石畳',top:0xc8c2b4,side:0xa8a294,bot:0x989284},
+ 19:{n:'赤屋根',top:0xc2402e,side:0xa8331f,bot:0x8a2818},
+ 20:{n:'緑屋根',top:0x2f8a4a,side:0x27703c,bot:0x1f5a30},
 };
 
 // ---------- 資源メタ ----------
@@ -410,6 +479,25 @@ const ECON={
   CARE_DIRT_CLEAN:25,    // 掃除1回で減る汚れ
   CARE_DIRT_BAD:60,      // この汚れ以上で毎日健康-3
   WATER_MISS_PENALTY:0.05, // 水管理を1ヶ月サボるごとの収量減(最大25%)
+  // ---- v19: 街・補助金・機械の故障・獣医の前提値 ----
+  MACH_TRACTOR:3000000,  // 新品トラクター(補助で150万)
+  MACH_POLISHER:2000000, // 新品精米機(補助で100万)
+  MACH_PROCESSOR:1500000,// 新品加工機(補助で75万・農産物の売値1.5倍)
+  REP_TRACTOR:150000,    // トラクターの修理代
+  REP_POLISHER:80000,    // 精米機の修理代
+  REP_PROCESSOR:80000,   // 加工機の修理代
+  BREAK_OLD:0.008,       // 中古機械の故障率(1日あたり。月あたり約2割)
+  BREAK_NEW:0.002,       // 新品機械の故障率(1日あたり。月あたり約6%)
+  OWN_BARN:5000000,      // 新品の自前牛舎(補助で250万。家賃ゼロ+母牛12頭)
+  OWN_BARN_CAP:12,       // 自前牛舎の母牛収容数
+  VET_CALL:30000,        // 獣医の往診料(1回)
+  VET_TREAT:20000,       // 治療費(病気の牛1頭あたり)
+  SICK_RATE:0.004,       // 牛の発病率(1頭・1日。汚れ60以上/健康40未満で+0.6%ずつ)
+  SICK_DEATH_DAY:10,     // 発病からこの日数を過ぎると死亡リスク
+  SICK_DEATH_RATE:0.05,  // 死亡リスク発生後の1日あたり死亡率
+  SUB_RATE:0.5,          // 役場の補助率(半額)
+  SUB_DAYS:2,            // 申請から承認までの日数
+  SUB_VALID:90,          // 承認の有効日数(期間内の購入1回が半額)
 };
 function fmt(n){return '￥'+Math.round(n).toLocaleString();}
 function man(n){const v=n/10000;return (v%1===0?v:v.toFixed(1))+'万円';}
@@ -442,6 +530,12 @@ function freshState(){return{
   edits:{},crops:{},treeFruit:{},tuftDay:{},
   planted:0,harvestN:0,soldN:0,
   sound:true,questDone:0,
+  // ---- v19: 街・補助金・機械・獣医 ----
+  map:'farm',
+  machines:{tractor:{lvl:'old',broken:false,cost:0},polisher:{lvl:'old',broken:false,cost:0},processor:{lvl:null,broken:false,cost:0}},
+  subsidy:{machine:null,barn:null,shed:null},
+  ownBarn:false,ownBarnCost:0,shedCost:0,
+  vetVisitDay:-1,ricePlantMonthN:-1,
 };}
 // ---- v16: 規模ヘルパ(土地・堆肥舎の効果) ----
 function riceScale(){return state.land.rice2?ECON.RICE_SCALE2:1;}
@@ -450,8 +544,40 @@ function riceBagsYield(){const base=ECON.RICE_BAGS*riceScale();const miss=Math.m
 function riceShipMax(){return Math.round(ECON.RICE_SHIP_MAX*riceScale());}
 function grassSowCost(){return ECON.GRASS_SOW_COST-(state.compostShed?ECON.FERT_SAVE_GRASS:0);}
 function grassYieldNow(){const y=ECON.GRASS_YIELD*(state.land.grass2?2:1);return state.grassCutMonth===state.monthN?y:Math.floor(y/2);}
-function barnCapNow(){return ECON.BARN_CAP+(state.land.barn2?8:0);}
+function barnCapNow(){return (state.ownBarn?ECON.OWN_BARN_CAP:ECON.BARN_CAP)+(state.land.barn2?8:0);} // v19: 自前牛舎=12頭
 function isWaterSeason(){return state.month>=5&&state.month<=9;}
+// ---------- v19: 牛舎・機械・補助金・病気のヘルパ ----------
+function hasBarn(){return state.barnRented||state.ownBarn;} // 借りた牛舎 or 自前牛舎
+const MACH_META={
+  tractor:{n:'トラクター',em:'🚜',price:ECON.MACH_TRACTOR,repair:ECON.REP_TRACTOR,seg:'rice',desc:'田植え(4月)と収穫(10月)に必要',stop:'田植え・収穫ができない'},
+  polisher:{n:'精米機',em:'🍚',price:ECON.MACH_POLISHER,repair:ECON.REP_POLISHER,seg:'rice',desc:'毎月の精米出荷に必要',stop:'精米出荷ができない'},
+  processor:{n:'加工機',em:'🍱',price:ECON.MACH_PROCESSOR,repair:ECON.REP_PROCESSOR,seg:'other',desc:'農産物(野菜/豆/栗等)の売値が1.5倍になる',stop:'農産物の1.5倍加工が止まる'},
+};
+const SUB_META={
+  machine:{em:'🚜',n:'新品の機械',desc:'トラクター300万/精米機200万/加工機150万 → 半額(農協の資材窓口で購入)'},
+  barn:{em:'🏠',n:'新品の牛舎(自前)',desc:'500万→250万。家賃(月3万)ゼロ＋母牛12頭(農協の資材窓口で建設)'},
+  shed:{em:'🏭',n:'堆肥舎',desc:'200万→100万。農場の🟫堆肥場で建設'},
+};
+function machineOwned(k){return k==='processor'?!!state.machines.processor.lvl:true;} // トラクター/精米機は最初から中古を保有
+function machineBroken(k){return machineOwned(k)&&state.machines[k].broken;}
+function procMult(){return (state.machines.processor.lvl&&!state.machines.processor.broken)?1.5:1;} // 加工機の効果
+function subApproved(c){const s=state.subsidy[c];return !!(s&&s.st==='approved'&&state.absDay<=s.expDay);}
+function consumeSub(c){state.subsidy[c]=null;} // 承認は購入1回で使い切り
+function priceWithSub(base,c){const sub=subApproved(c);return{price:sub?Math.round(base*(1-ECON.SUB_RATE)):base,sub};}
+function shedPriceNow(){return priceWithSub(ECON.SHED_COST,'shed').price;}
+function sickAnimals(){return [...state.cows.filter(c=>c.sick),...state.calves.filter(c=>c.sick)];}
+// v18以前のセーブに新フィールドを追補
+function migrateV19(){
+  if(!state.map)state.map='farm';
+  if(!state.machines)state.machines={tractor:{lvl:'old',broken:false,cost:0},polisher:{lvl:'old',broken:false,cost:0},processor:{lvl:null,broken:false,cost:0}};
+  if(!state.subsidy)state.subsidy={machine:null,barn:null,shed:null};
+  if(state.ownBarn===undefined){state.ownBarn=false;state.ownBarnCost=0;}
+  if(state.shedCost===undefined)state.shedCost=state.compostShed?ECON.SHED_COST:0;
+  if(state.vetVisitDay===undefined)state.vetVisitDay=-1;
+  if(state.ricePlantMonthN===undefined)state.ricePlantMonthN=-1;
+  for(const c of state.cows)if(c.sick===undefined){c.sick=false;c.sickDays=0;}
+  for(const c of state.calves)if(c.sick===undefined){c.sick=false;c.sickDays=0;}
+}
 
 // ---------- v14: 記帳/財務ヘルパ（決算=売上高−経費。与信/銀行借入はP/L外の負債） ----------
 // ---------- v17: 事業セグメント別の複式記帳（米/牧草/牛/堆肥/加工・野菜/共通） ----------
@@ -464,16 +590,17 @@ const SEG_META={
   compost:{n:'堆肥(肥料)',em:'🟫'},other:{n:'加工・野菜',em:'🥬'},common:{n:'共通/本部',em:'🏢'},
 };
 const SALE_SEG={rice:'rice',calf:'cow',mother:'cow',grass:'grass',fert:'compost',proc:'other'};
-const EXP_SEG={owner:'common',emp:'common',rent:'cow',feed:'cow',manure:'cow',seed:'rice',grassSow:'grass',shed:'compost',land:'common',other:'common'};
+const EXP_SEG={owner:'common',emp:'common',rent:'cow',feed:'cow',manure:'cow',seed:'rice',grassSow:'grass',shed:'compost',land:'common',other:'common',
+  machine:'rice',barn:'cow',repair:'rice',vet:'cow',loss:'cow'}; // v19: 機械/牛舎/修理/獣医/死亡損失
 function freshSeg(){const o={};for(const k in SEG_META)o[k]={s:0,e:0,sd:{},ed:{}};return o;}
 function freshFy(){return{sales:0,exp:0,
   sd:{rice:0,calf:0,mother:0,grass:0,proc:0,fert:0},
-  ed:{owner:0,emp:0,rent:0,feed:0,seed:0,grassSow:0,shed:0,land:0,other:0,manure:0},
+  ed:{owner:0,emp:0,rent:0,feed:0,seed:0,grassSow:0,shed:0,land:0,other:0,manure:0,machine:0,barn:0,repair:0,vet:0,loss:0},
   seg:freshSeg()};}
 // v16セーブ(セグメント帳簿なし)の引き継ぎ: 既存fyの勘定別集計からセグメント帳簿を再構成
 function migrateFy(){
   const f=state.fy;if(!f)return;
-  for(const k of['grassSow','shed','land'])if(f.ed[k]===undefined)f.ed[k]=0;
+  for(const k of['grassSow','shed','land','machine','barn','repair','vet','loss'])if(f.ed[k]===undefined)f.ed[k]=0; // v19: 新勘定も追補
   if(!f.seg){
     f.seg=freshSeg();
     for(const c in f.sd){const v=f.sd[c]||0;if(v>0){const g=f.seg[SALE_SEG[c]||'other'];g.s+=v;g.sd[c]=(g.sd[c]||0)+v;}}
@@ -513,7 +640,9 @@ function computeBS(){
     invGrass:state.grassStock*ECON.GRASS_PRICE,
     invFert:state.fertStock*ECON.FERT_PRICE,
     cowsV,calvesV,
-    bldgShed:state.compostShed?ECON.SHED_COST:0,
+    bldgShed:state.compostShed?(state.shedCost||ECON.SHED_COST):0, // v19: 補助購入なら支払額=取得原価
+    bldgBarn:state.ownBarn?state.ownBarnCost:0,                    // v19: 自前牛舎
+    mach:['tractor','polisher','processor'].reduce((s,k)=>s+((state.machines&&state.machines[k]&&state.machines[k].cost)||0),0), // v19: 新品機械
     landGrass:state.land.grass2?ECON.LAND_GRASS_PRICE:0,
     landRice:state.land.rice2?ECON.LAND_RICE_PRICE:0,
     landBarn:state.land.barn2?ECON.LAND_BARN_PRICE:0,
@@ -522,7 +651,7 @@ function computeBS(){
     nCows:state.cows.length,nCalves:state.calves.length,
   };
   b.inventory=b.invRice+b.invGrass+b.invFert;
-  b.fixed=b.cowsV+b.calvesV+b.bldgShed+b.landGrass+b.landRice+b.landBarn;
+  b.fixed=b.cowsV+b.calvesV+b.bldgShed+b.bldgBarn+b.mach+b.landGrass+b.landRice+b.landBarn; // v19: 牛舎・機械を追加
   b.assets=b.cash+b.inventory+b.fixed;
   b.liab=b.bank+b.cowDebt;
   b.equity=b.assets-b.liab;
@@ -659,6 +788,7 @@ function circleBlockedDeco(nx,nz,ox,oz,py){
     if(hitsCircle(nx,nz,ox,oz,m.position.x,m.position.z,m.userData.big?0.8:0.55))return true;
   }
   for(const n of npcs){                 // NPC
+    if(!n.mesh.parent)continue;         // v19: 別マップのNPCは無視
     if(Math.abs(n.mesh.position.y-py)>2)continue;
     if(hitsCircle(nx,nz,ox,oz,n.mesh.position.x,n.mesh.position.z,0.35))return true;
   }
@@ -866,6 +996,9 @@ function genWorld(){
   for(let x=30;x<=35;x++){gset(x,3,45,B.FENCE);gset(x,3,48,B.FENCE);}
   for(let z=45;z<=48;z++){gset(30,3,z,B.FENCE);gset(35,3,z,B.FENCE);}
   gset(32,3,45,0);gset(33,3,45,0); // 出入口(北)
+  // --- v19: バス停の敷地(街への導線) ---
+  flatten(23,26,19,22,2);
+  for(let x=23;x<=26;x++)for(let z=19;z<=22;z++)gset(x,2,z,B.PATH);
   // --- 道 ---
   for(let z=18;z<=23;z++){const y=topY(27,z);if(y>=0)gset(27,y,z,B.PATH);const y2=topY(28,z);if(y2>=0)gset(28,y2,z,B.PATH);}
   for(let x=32;x<=35;x++){const y=topY(x,14);if(y>=0)gset(x,y,14,B.PATH);}
@@ -948,11 +1081,13 @@ function buyLand(k){
   if(state.money<p.price){toast('💸 '+p.n+'は'+man(p.price)+'。現金が足りないよ');return;}
   addExpense(p.price,'land',k==='grass2'?'grass':(k==='rice2'?'rice':'cow')); // v17: 土地は用途の事業へ配賦
   state.land[k]=true;
-  if(k==='grass2')terraformGrass2();
-  else if(k==='rice2')terraformRice2();
-  else terraformBarn2();
-  rebuildAll();
-  if(k==='rice2'&&state.riceField!=='none')buildRiceVisual(0); // 生育中なら新しい田にも稲を表示
+  if(curMap==='farm'){ // v19: 街で購入した時は帰農時にapplyLandParcelsで開拓される
+    if(k==='grass2')terraformGrass2();
+    else if(k==='rice2')terraformRice2();
+    else terraformBarn2();
+    rebuildAll();
+    if(k==='rice2'&&state.riceField!=='none')buildRiceVisual(0); // 生育中なら新しい田にも稲を表示
+  }
   fanfare();
   toast('🗺 '+p.n+'を'+man(p.price)+'で購入！世界が広がった！');
   toast('💡 '+p.desc);
@@ -1021,6 +1156,7 @@ const cropGeo=(()=>{const g=new THREE.BufferGeometry();
 const cropMatCache={};
 function cropMat(hex){if(!cropMatCache[hex])cropMatCache[hex]=new THREE.MeshLambertMaterial({color:hex,side:THREE.DoubleSide});return cropMatCache[hex];}
 function addCropMesh(k,c){
+  if(curMap!=='farm')return; // v19: 作物の見た目は農場だけ(帰農時に再生成)
   const [x,y,z]=k.split(',').map(Number);
   const meta=CROPMETA[c.type];
   const st=cropStage(c);
@@ -1080,10 +1216,12 @@ function clearRiceVisual(){
 function doRicePlant(){
   if(state.riceField!=='none'){toast('🌾 もう作付け済みだよ');return;}
   if(state.month!==4){toast('🌾 田植えは春(4月)だけだよ(今は'+state.month+'月)');return;}
+  if(machineBroken('tractor')){toast('🚜 トラクターが故障中で田植えできない！🔧街の修理屋で直そう('+man(MACH_META.tractor.repair)+')');return;} // v19
   const cost=riceSeedCost();
   if(state.money<cost){toast('💸 苗代'+man(cost)+'が払えない…現金が足りないよ');return;}
   addExpense(cost,'seed');
   state.riceField='planted';
+  state.ricePlantMonthN=state.monthN; // v19: 街滞在中の見た目復元用
   state.riceMiss=0;state.waterMonth=-1; // v16: 水管理カウンタをリセット
   buildRiceVisual(0);
   fanfare();
@@ -1103,6 +1241,7 @@ function doRiceWater(who){
 }
 function doRiceHarvest(){
   if(state.riceField!=='ready'){toast('🌾 まだ収穫できないよ');return;}
+  if(machineBroken('tractor')){toast('🚜 トラクターが故障中で収穫できない！🔧街の修理屋で直そう('+man(MACH_META.tractor.repair)+')');return;} // v19
   state.riceField='none';
   const bags=riceBagsYield();
   state.riceBags+=bags;
@@ -1116,6 +1255,7 @@ function doRiceHarvest(){
 }
 function shipRice(){
   if(state.riceBags<=0){toast('📦 倉庫に米がないよ(4月作付け→10月収穫)');return;}
+  if(machineBroken('polisher')){toast('🍚 精米機が故障中で出荷できない！🔧街の修理屋で直そう('+man(MACH_META.polisher.repair)+')');return;} // v19
   if(state.shipMonth===state.monthN){toast('🍚 精米出荷は月1回。⏭で月を進めてね');return;}
   const n=Math.min(riceShipMax(),state.riceBags);
   state.riceBags-=n;state.soldRiceBags+=n;
@@ -1232,8 +1372,9 @@ function addSign(x,z,emoji,text){
 }
 let barnSign=null;
 function updateBarnSign(){
+  if(curMap!=='farm')return; // v19: 街では看板なし(帰農時にbuildDecorで再生成)
   if(barnSign){decoGroup.remove(barnSign);}
-  barnSign=addSign(25.5,17.5,'🏚',state.barnRented?'古い牛舎(賃借中)':'古い牛舎(借りられる)');
+  barnSign=addSign(25.5,17.5,state.ownBarn?'🏠':'🏚',state.ownBarn?'自前の新牛舎':(state.barnRented?'古い牛舎(賃借中)':'古い牛舎(借りられる)'));
 }
 let tractorMesh=null,polisherMesh=null,processorMesh=null,compostShedMesh=null;
 function buildTractor(){
@@ -1264,10 +1405,36 @@ function machineBox(x,z,color,emoji,text){
   addNearLabel(s,x+0.5,z+0.5,5); // v13: 文字は近づいた時だけ
   return g;
 }
-function buildPolisher(){if(!polisherMesh)polisherMesh=machineBox(21,36,0xdedede,'🍚','精米機');}
+function buildPolisher(){if(!polisherMesh)polisherMesh=machineBox(22,26,0xdedede,'🍚','精米機');} // v19: 銀行跡とHQの間に常設
 function buildProcessor(){if(!processorMesh)processorMesh=machineBox(32,22,0x4a7fb5,'🍱','加工機');}
+// ---------- v19: 機械の故障バッジ(⚠)とバス停 ----------
+let machineBadges={};
+function buildMachineBadges(){
+  machineBadges={};
+  const mk=(x,z,k)=>{const y=topY(Math.floor(x),Math.floor(z))+1;const s=iconSprite('⚠',1.3);s.position.set(x,y+3.6,z);decoGroup.add(s);s.visible=false;machineBadges[k]=s;};
+  mk(33.5,25.5,'tractor');mk(22.5,26.5,'polisher');
+  if(state.machines.processor.lvl)mk(32.5,22.5,'processor');
+  updateMachineBadges();
+}
+function updateMachineBadges(){
+  if(curMap!=='farm')return;
+  for(const k in machineBadges)machineBadges[k].visible=machineBroken(k);
+}
+function buildBusStopFarm(){
+  const y=topY(24,20)+1;
+  const g=new THREE.Group();
+  const pm=new THREE.MeshLambertMaterial({color:0x6a4a25});
+  [[-0.9,-0.9],[0.9,-0.9],[-0.9,0.9],[0.9,0.9]].forEach(p=>{const post=new THREE.Mesh(new THREE.BoxGeometry(0.16,2.3,0.16),pm);post.position.set(p[0],1.15,p[1]);g.add(post);});
+  const roof=new THREE.Mesh(new THREE.BoxGeometry(2.3,0.14,2.2),new THREE.MeshLambertMaterial({color:0xe8743f}));roof.position.set(0,2.35,0);roof.castShadow=true;g.add(roof);
+  const bench=new THREE.Mesh(new THREE.BoxGeometry(1.8,0.32,0.5),new THREE.MeshLambertMaterial({color:0xb5843f}));bench.position.set(0,0.5,-0.6);g.add(bench);
+  g.position.set(24.5,y-1+0.02,20.5);decoGroup.add(g);
+  addDecoCollider(23.6,19.6,0.2,y);addDecoCollider(25.4,19.6,0.2,y);
+  const ic=iconSprite('🚌',1.5);ic.position.set(24.5,y+2.9,20.5);decoGroup.add(ic);
+  const s=labelSprite('街へ行くバス停',2.4);s.position.set(24.5,y+3.8,20.5);decoGroup.add(s);
+  addNearLabel(s,24.5,20.5,7);
+}
 function buildCompostShed(){
-  if(compostShedMesh)return;
+  if(compostShedMesh||curMap!=='farm')return; // v19: 農場マップでだけ表示
   const g=new THREE.Group();
   const pm=new THREE.MeshLambertMaterial({color:0x8a6a3a});
   [[0,0],[3,0],[0,3],[3,3]].forEach(p=>{const post=new THREE.Mesh(new THREE.BoxGeometry(0.25,2.4,0.25),pm);post.position.set(p[0],1.2,p[1]);post.castShadow=true;g.add(post);});
@@ -1335,11 +1502,15 @@ function buildDecor(){
   addSign(42,30.2,'🟫','堆肥場');
   addSign(17,11.8,'🌰','栗園');
   addSign(37,14.5,'🌿','牧草地');
-  addSign(BANK_POS.x,BANK_POS.z,'🏦','銀行');
-  addSign(AUCTION_POS.x,AUCTION_POS.z,'🐂','セリ市場');
-  addSign(21.5,31.5,'🏠','不動産屋'); // v17: 名称変更(旧: 土地販売所)。区画購入=ワールド拡張
+  addSign(BANK_POS.x,BANK_POS.z,'🏦','銀行(街へ移転)');     // v19: 街へ移設。ここは案内所
+  addSign(AUCTION_POS.x,AUCTION_POS.z,'🐂','セリ市場(街へ移転)');
+  addSign(21.5,31.5,'🏠','不動産屋(街へ移転)');
   buildShopStand();buildShipBox();buildTufts();
-  buildTractor(); // かざり（のうかの トラクター）
+  buildTractor(); // 農家のトラクター(v19: 故障する機械)
+  buildPolisher(); // v19: 精米機を常設(故障する機械)
+  if(state.machines.processor.lvl)buildProcessor(); // v19: 加工機は農協で購入すると設置
+  buildBusStopFarm(); // v19: 街へ行くバス停
+  buildMachineBadges(); // v19: 故障中の⚠表示
 }
 
 // ---------- アバター（ボクセル） ----------
@@ -1605,22 +1776,33 @@ function loadNPCGLBs(){
   })();
 }
 
-// ---------- NPC（大人3人＝お手伝い） ----------
+// ---------- NPC（農場のお手伝い3人＋街の住人9人） ----------
+// v19: 全NPCを一度に生成し、placeNPCs()でいまのマップにいる人だけsceneに置く。
+//      GLBはマップをまたいで保持(切替のたびに読み直さない)。
 const npcs=[];
 function initNPCs(){
   const spots={barn:[27.6,17.0],pasture:[39.5,13.5],compost:[41.5,35.5]}; // v13: 牛舎看板と重ならない位置に
-  for(const k in CHARS){
-    const cfg=CHARS[k];
-    const pos=spots[cfg.spot];
+  const mk=(modelKey,cfg,map,pos,wander)=>{
     const g=new THREE.Group();               // ホルダー（ラベル＋キャラ）
     const vox=buildVoxAvatar(cfg); vox.visible=false; g.add(vox); // v15: ボクセルは非表示で待機(GLB失敗時のみ表示)
-    const y=topY(Math.floor(pos[0]),Math.floor(pos[1]))+1;
-    g.position.set(pos[0],y,pos[1]);
-    g.rotation.y=0; // v12: Meshyモデルは+Z正面。南(プレイヤーが来る側)を向いて立つ
     const lb=labelSprite(cfg.name,1.7);lb.position.set(0,2.3,0);g.add(lb);
-    addNearLabel(lb,pos[0],pos[1],6); // v13: 名前は近づいた時だけ(近似位置で判定)
-    scene.add(g);
-    npcs.push({mesh:g,vox,rig:null,key:k,cfg,lastTalk:-999,t:Math.random()*10});
+    npcs.push({mesh:g,vox,rig:null,key:modelKey,cfg,map,homePos:pos,label:lb,wander:wander||null,wi:0,lastTalk:-999,t:Math.random()*10});
+  };
+  for(const k in CHARS)mk(k,CHARS[k],'farm',spots[CHARS[k].spot]);
+  for(const k in TOWN_CHARS){const c=TOWN_CHARS[k];mk(c.model,c,'town',c.pos,c.wander);} // v19: 街の住人
+}
+// v19: いまのマップのNPCだけsceneに配置(獣医は往診日なら農場に来る)
+function placeNPCs(){
+  for(const n of npcs){
+    let pos=n.homePos,show=(n.map===curMap);
+    if(n.key==='juui'&&curMap==='farm'&&state.vetVisitDay===state.absDay){show=true;pos=[30.5,16.5];} // 往診中の獣医
+    if(!show){scene.remove(n.mesh);continue;}
+    scene.add(n.mesh);
+    const y=topY(Math.floor(pos[0]),Math.floor(pos[1]))+1;
+    n.mesh.position.set(pos[0],y,pos[1]);
+    n.mesh.rotation.y=0;
+    if(n.wander){n.wi=0;n.label.visible=true;} // 歩き回る住民は名前を常時表示
+    else addNearLabel(n.label,pos[0],pos[1],6);
   }
 }
 
@@ -1642,6 +1824,7 @@ function cowMesh(wagyu){
 function barnCenter(){return[26,13.5];} // v10: 牛舎は固定位置に完成品が建つ
 // v14: 母牛(大)と子牛(小)を別サイズで表示
 function spawnCowMesh(cow,isCalf){
+  if(curMap!=='farm')return null; // v19: 街では牛メッシュを出さない(帰農時に再生成)
   const g=cowMesh(!isCalf);
   if(isCalf)g.scale.setScalar(0.62);
   const[bx,bz]=barnCenter();
@@ -1656,12 +1839,14 @@ function spawnCowMesh(cow,isCalf){
 function refreshCowMeshes(){
   for(const m of cowMeshes)scene.remove(m);
   cowMeshes.length=0;
+  if(curMap!=='farm')return; // v19: 街では表示しない
   for(const c of state.cows)spawnCowMesh(c,false);
   for(const c of state.calves)spawnCowMesh(c,true);
 }
 // 牛ふん
 const manures=[];
 function dropManure(x,z){
+  if(curMap!=='farm')return; // v19
   if(manures.length>=12)return;
   const g=new THREE.Mesh(new THREE.SphereGeometry(0.2,6,5),new THREE.MeshLambertMaterial({color:0x5a4028}));
   const y=topY(Math.floor(x),Math.floor(z))+1;
@@ -1857,12 +2042,14 @@ function heartBurst(x,y,z){
 // v14: 牛の状態表示（餌やりは月次経費で自動。タップ=なでる+状態確認）
 function cowStatusText(c){
   const debt=c.debt>0?'借金'+man(c.debt):'借金完済✨';
-  if(c.retired)return c.name+'：8産で繁殖終了。🐂セリ市場で50万円で売却できるよ／'+debt;
-  if(c.preg>=0)return c.name+'：妊娠'+c.preg+'/'+ECON.PREG_MONTHS+'ヶ月・出産'+c.births+'回／'+debt;
-  return c.name+'：未妊娠(牛舎メニューで種付け)・出産'+c.births+'回／'+debt;
+  const sick=c.sick?'🤒病気'+(c.sickDays||0)+'日目(獣医を呼ぼう！)・':''; // v19
+  if(c.retired)return sick+c.name+'：8産で繁殖終了。🐂セリ市場で50万円で売却できるよ／'+debt;
+  if(c.preg>=0)return sick+c.name+'：妊娠'+c.preg+'/'+ECON.PREG_MONTHS+'ヶ月・出産'+c.births+'回／'+debt;
+  return sick+c.name+'：未妊娠(牛舎メニューで種付け)・出産'+c.births+'回／'+debt;
 }
 function calfStatusText(c){
-  return '子牛'+c.id+'：月齢'+c.age+'ヶ月'+(c.age>=ECON.CALF_SHIP_AGE?'・出荷できる！(セリで'+man(calfPriceNow())+')':'(8ヶ月で出荷可)');
+  const sick=c.sick?'🤒病気'+(c.sickDays||0)+'日目(獣医を呼ぼう！)・':''; // v19
+  return sick+'子牛'+c.id+'：月齢'+c.age+'ヶ月'+(c.age>=ECON.CALF_SHIP_AGE?'・出荷できる！(セリで'+man(calfPriceNow())+')':'(8ヶ月で出荷可)');
 }
 function actCow(m){
   const u=m.userData;
@@ -1916,16 +2103,21 @@ function updateCareChip(){
   if(!el||!state)return;
   if(herdCount()===0){el.style.display='none';return;}
   const fed=state.care.fedDay===state.absDay,cl=state.care.cleanDay===state.absDay;
+  const sk=sickAnimals().length; // v19: 病気の頭数
   el.style.display='block';
-  el.textContent='🐂 餌'+(fed?'✅':'⬜')+' 掃除'+(cl?'✅':'⬜')+' 健康'+state.care.health+(state.care.dirt>0?' 汚れ'+state.care.dirt:'');
-  el.style.borderColor=(fed&&cl)?'#7aa35a':'#c03030';
+  el.textContent='🐂 餌'+(fed?'✅':'⬜')+' 掃除'+(cl?'✅':'⬜')+' 健康'+state.care.health+(state.care.dirt>0?' 汚れ'+state.care.dirt:'')+(sk>0?' 🤒病気'+sk+'頭':'');
+  el.style.borderColor=(fed&&cl&&sk===0)?'#7aa35a':'#c03030';
 }
 // ---------- v16: 堆肥舎(牛糞の処分費→肥料の収益に変える投資) ----------
 function buildShed(){
   if(state.compostShed){toast('🏭 堆肥舎はもうあるよ');return;}
-  if(state.money<ECON.SHED_COST){toast('💸 堆肥舎の建設に'+man(ECON.SHED_COST)+'必要だよ');return;}
-  addExpense(ECON.SHED_COST,'shed'); // v17: 堆肥事業の経費(BSでは建物=取得原価)
+  const pr=priceWithSub(ECON.SHED_COST,'shed'); // v19: 役場の補助が承認済みなら半額
+  if(state.money<pr.price){toast('💸 堆肥舎の建設に'+man(pr.price)+'必要だよ'+(pr.sub?'(補助済 半額)':'(役場で申請すると半額)'));return;}
+  addExpense(pr.price,'shed'); // v17: 堆肥事業の経費(BSでは建物=取得原価)
   state.compostShed=true;
+  state.shedCost=pr.price;
+  if(pr.sub){consumeSub('shed');toast('🏛 役場の補助金で半額('+man(pr.price)+')で建設できた！');}
+  else toast('🛒 定価'+man(pr.price)+'で建設(役場で申請しておけば半額だったよ…)');
   buildCompostShed();
   fanfare();
   toast('🏭 堆肥舎が完成！牛糞の処分費(月1万/頭)がゼロになったよ');
@@ -1951,19 +2143,44 @@ function nearestAction(wx,wz){
     const d=Math.hypot(x-wx,z-wz);
     if(d<r&&(!best||d<best.d))best={d,tx:x,tz:z,label,fn};
   };
+  // ---- v19: 街マップの対象(施設・NPC・バス停) ----
+  if(curMap==='town'){
+    for(const n of npcs){
+      if(!n.mesh.parent)continue;
+      cand(n.mesh.position.x,n.mesh.position.z,1.8,'💬 '+n.cfg.name+'と話す',()=>{actNPC(n);if(n.cfg.menu){menuTab=n.cfg.menu;openMenu();}});
+    }
+    cand(31.8,21.2,2.6,'🏛 役場(補助金の申請)',()=>{menuTab='yakuba';openMenu();});
+    cand(19.5,34.5,2.4,'🏦 銀行(借入/返済)',()=>{menuTab='bank';openMenu();});
+    cand(27.8,34.5,2.4,'🏠 不動産屋(土地を買う)',()=>{menuTab='land';openMenu();});
+    cand(44.5,34.5,2.6,'🚜 農協(資材・獣医)',()=>{menuTab='ja';openMenu();});
+    cand(13.5,28.6,2.4,'🔧 修理屋(機械の修理)',()=>{menuTab='repair';openMenu();});
+    cand(47.5,44.3,2.6,'🐂 セリ市場',()=>{menuTab='auction';openMenu();});
+    cand(36.2,57.5,2.8,'🚌 農場へ帰る',()=>switchMap('farm'));
+    return best;
+  }
+  // ---- 農場マップの対象 ----
   // 牛
   for(const m of cowMeshes){
     cand(m.position.x,m.position.z,1.6,m.userData.calf?'🐮 子牛の状態':'🐂 牛の状態',()=>actCow(m));
   }
   // NPC
-  for(const n of npcs)cand(n.mesh.position.x,n.mesh.position.z,1.6,'💬 話す',()=>actNPC(n));
+  for(const n of npcs){if(!n.mesh.parent)continue;cand(n.mesh.position.x,n.mesh.position.z,1.6,'💬 話す',()=>actNPC(n));}
+  // v19: バス停(街へ行く)
+  cand(24.5,20.8,2.8,'🚌 街へ行く(バス)',()=>switchMap('town'));
+  // v19: 故障中の機械(修理屋への案内)
+  const mc=(x,z,k)=>{if(machineBroken(k))cand(x,z,2.2,'⚠ '+MACH_META[k].n+'が故障中！',()=>{
+    showConfirm('⚠ '+MACH_META[k].n+'が故障中','🔧街の修理屋で修理('+man(MACH_META[k].repair)+')すると再稼働するよ。'+MACH_META[k].stop+'。<br>バスで街へ行く？',()=>switchMap('town'),'🚌 街へ行く','やめる');});};
+  mc(33.5,25.5,'tractor');mc(22.5,26.5,'polisher');if(state.machines.processor.lvl)mc(32.5,22.5,'processor');
   // v14: 施設（倉庫・購買・事務所・銀行・セリ市場・牛舎・牧草地）
   cand(SHOP_POS.x,SHOP_POS.z,1.9,'🛒 購買(種を買う)',()=>{menuTab='wh';openMenu();});
   cand(SHIP_POS.x,SHIP_POS.z,1.9,'📦 倉庫・出荷',()=>{menuTab='wh';openMenu();});
   cand(OFFICE_POS.x,OFFICE_POS.z,2.3,'🏢 事務所(雇用)',()=>{menuTab='staff';openMenu();});
-  cand(BANK_POS.x,BANK_POS.z,2.3,'🏦 銀行(借入/返済)',()=>{menuTab='bank';openMenu();});
-  cand(AUCTION_POS.x,AUCTION_POS.z,2.3,'🐂 セリ市場',()=>{menuTab='auction';openMenu();});
-  cand(25.5,17.5,2.3,state.barnRented?'🏚 牛舎(牛の管理)':'🏚 古い牛舎を借りる(月3万円)',()=>{if(state.barnRented){menuTab='cows';openMenu();}else rentBarn();});
+  // v19: 銀行/セリ/不動産屋は街へ移設。農場側は案内(バスで街へ)
+  cand(BANK_POS.x,BANK_POS.z,2.3,'🏦 銀行は街へ移転',()=>{
+    showConfirm('🏦 銀行は街に移転したよ','窓口は🏘丹波の街の銀行へ。担当は銀行員の丹波さん。<br>バスで街へ行く？',()=>switchMap('town'),'🚌 街へ行く','やめる');});
+  cand(AUCTION_POS.x,AUCTION_POS.z,2.3,'🐂 セリ市場は街へ移転',()=>{
+    showConfirm('🐂 セリ市場は街に移転したよ','牛の売買は🏘丹波の街のセリ市場へ。担当は競り人の勝さん。<br>バスで街へ行く？',()=>switchMap('town'),'🚌 街へ行く','やめる');});
+  cand(25.5,17.5,2.3,hasBarn()?'🏚 牛舎(牛の管理)':'🏚 古い牛舎を借りる(月3万円)',()=>{if(hasBarn()){menuTab='cows';openMenu();}else rentBarn();});
   // v16: 牛の日次世話(牛舎の中)。従業員に指示していなければ毎日自分でやる
   if(herdCount()>0&&!careDoneToday())cand(26,13.5,3.2,'🍼 牛の世話(餌やり+掃除)',()=>doCowCare(null));
   cand(37,14.5,2.3,state.grassSown?(state.grassCutMonth!==state.monthN?'✂ 牧草を刈り取る(月1回)':'🌿 牧草の状況'):'🌿 牧草を育てる('+man(grassSowCost())+')',()=>{
@@ -1971,12 +2188,13 @@ function nearestAction(wx,wz){
     if(state.grassCutMonth!==state.monthN){doGrassCut(null);return;}
     toast('🌿 牧草: 毎月最大'+ECON.GRASS_YIELD*(state.land.grass2?2:1)+'束生産(刈り取り済み)・在庫'+state.grassStock+'束・牛の消費 月'+herdCount()+'束');
   });
-  // v16: 堆肥場→堆肥舎の建設/肥料の出荷
-  cand(42,32.5,2.6,state.compostShed?('🟫 肥料を出荷する('+state.fertStock+'袋)'):'🏭 堆肥舎を建てる('+man(ECON.SHED_COST)+')',()=>{
+  // v16: 堆肥場→堆肥舎の建設/肥料の出荷 (v19: 役場の補助で半額)
+  cand(42,32.5,2.6,state.compostShed?('🟫 肥料を出荷する('+state.fertStock+'袋)'):'🏭 堆肥舎を建てる('+man(shedPriceNow())+(subApproved('shed')?'・補助済半額':'')+')',()=>{
     if(state.compostShed)sellFert(false);else buildShed();
   });
-  // v17: 不動産屋(旧: 土地販売所。ワールド拡張)
-  cand(21.5,31.5,2.3,'🏠 不動産屋(土地を買う)',()=>{menuTab='land';openMenu();});
+  // v19: 不動産屋は街へ移設。農場側は案内
+  cand(21.5,31.5,2.3,'🏠 不動産屋は街へ移転',()=>{
+    showConfirm('🏠 不動産屋は街に移転したよ','土地(区画)の購入は🏘丹波の街の不動産屋へ。担当は登さん。<br>バスで街へ行く？',()=>switchMap('town'),'🚌 街へ行く','やめる');});
   // 栗の木
   chestnutTrees.forEach((t,i)=>{
     if(state.treeFruit[i])cand(t.x+0.5,t.z+0.5,2.0,'🌰 栗を取る',()=>actTree(i));
@@ -2048,10 +2266,41 @@ function buildBarnBlocks(record){
   }
   flushDirty();
 }
+// v19: 牛舎のブロックを「街に居ても」安全に建てる(state.editsへ記録し、農場なら即反映)
+function ensureBarnBuilt(){
+  const put=(x,y,z,t)=>{state.edits[key(x,y,z)]=t;if(curMap==='farm'){gset(x,y,z,t);markDirty(x,z);}};
+  for(let x=BARN_X0;x<=BARN_X1;x++)for(let z=BARN_Z0;z<=BARN_Z1;z++){
+    const wall=(x===BARN_X0||x===BARN_X1||z===BARN_Z0||z===BARN_Z1);
+    if(wall){
+      const door=(z===BARN_Z1&&(x===25||x===26));
+      if(!door){put(x,BARN_FLOOR+1,z,B.PLANK);put(x,BARN_FLOOR+2,z,B.PLANK);}
+    }
+    put(x,BARN_FLOOR+3,z,B.HAY);
+  }
+  if(curMap==='farm')flushDirty();
+}
+// v19: 新品の自前牛舎(農協の資材窓口)。家賃ゼロ+母牛12頭。補助対象。
+function buyOwnBarn(){
+  if(state.ownBarn){toast('🏠 自前の新牛舎はもう建っているよ');return;}
+  const pr=priceWithSub(ECON.OWN_BARN,'barn');
+  if(state.money<pr.price){toast('💸 新牛舎は'+man(pr.price)+'。現金が足りないよ'+(pr.sub?'(補助済 半額)':'(役場で申請すると半額)'));return;}
+  addExpense(pr.price,'barn','cow');
+  state.ownBarn=true;state.ownBarnCost=pr.price;
+  const wasRent=state.barnRented;
+  state.barnRented=false; // 家賃は不要に
+  ensureBarnBuilt();
+  updateBarnSign();
+  if(pr.sub){consumeSub('barn');toast('🏛 役場の補助金で半額('+man(pr.price)+')で新牛舎を建てた！');}
+  else toast('🛒 定価'+man(pr.price)+'で新牛舎を建てた(役場で申請しておけば半額だったよ…)');
+  fanfare();
+  toast('🏠 家賃(月3万)は不要！母牛は'+barnCapNow()+'頭まで飼えるよ'+(wasRent?'(古い牛舎は返した)':''));
+  updateHUD();renderMenu();
+}
 function rentBarn(){
   if(state.barnRented)return;
+  if(state.ownBarn){toast('🏠 自前の新牛舎があるから借りる必要はないよ');return;}
   state.barnRented=true;
-  buildBarnBlocks(true);
+  ensureBarnBuilt();
   updateBarnSign();
   fanfare();
   toast('🏚 古い牛舎を借りた！(家賃 月3万円・母牛'+barnCapNow()+'頭まで)');
@@ -2061,10 +2310,10 @@ function rentBarn(){
 
 // ---------- v14: セリ市場（与信購入・子牛/親牛の売却） ----------
 function buyCowCredit(){
-  if(!state.barnRented){toast('🏚 まず古い牛舎を借りてね(月3万円)');return;}
+  if(!hasBarn()){toast('🏚 まず牛舎が必要だよ(古い牛舎を借りる 月3万円 / 農協で新牛舎を建てる)');return;} // v19
   if(state.cows.length>=barnCapNow()){toast('🏚 牛舎が満員だよ(母牛'+barnCapNow()+'頭まで'+(state.land.barn2?'':'。🗺南の牧場を買うと16頭に')+')');return;}
   const id=state.cowSeq++;
-  const cow={id,name:'牛'+id,preg:-1,births:0,debt:ECON.COW_PRICE,retired:false,bredMonth:-1};
+  const cow={id,name:'牛'+id,preg:-1,births:0,debt:ECON.COW_PRICE,retired:false,bredMonth:-1,sick:false,sickDays:0}; // v19: 病気フィールド
   state.cows.push(cow);
   spawnCowMesh(cow,false);
   mooSfx();
@@ -2074,6 +2323,7 @@ function buyCowCredit(){
 }
 function breedCow(id){
   const c=state.cows.find(x=>x.id===id);if(!c)return;
+  if(c.sick){toast('🤒 '+c.name+'は病気だよ。🚜街の農協で獣医を呼んで治してから');return;} // v19
   if(c.retired){toast(c.name+'は繁殖終了(8産)だよ');return;}
   if(c.preg>=0){toast(c.name+'は妊娠中('+c.preg+'/'+ECON.PREG_MONTHS+'ヶ月)');return;}
   if(c.bredMonth===state.monthN){toast(c.name+'は今月種付け済み。⏭で翌月に再挑戦');return;}
@@ -2089,6 +2339,7 @@ function breedCow(id){
 function sellCalf(id){
   const i=state.calves.findIndex(x=>x.id===id);if(i<0)return;
   const cf=state.calves[i];
+  if(cf.sick){toast('🤒 病気の子牛は売れないよ。🚜街の農協で獣医を呼んで治してから');return;} // v19
   if(cf.age<ECON.CALF_SHIP_AGE){toast('🐮 子牛はまだ月齢'+cf.age+'ヶ月(8ヶ月で出荷可)');return;}
   state.calves.splice(i,1);
   const price=calfPriceNow(); // v16: 牛の健康で売値が変わる(世話をサボると安くなる)
@@ -2143,6 +2394,118 @@ function bankRepay(amount){
   updateHUD();renderMenu();
 }
 
+// ---------- v19: 補助金(役場)・機械の故障(修理屋)・牛の病気(農協の獣医) ----------
+// 補助金の申請(役場)。申請→SUB_DAYS日で承認→SUB_VALID日以内の対象購入1回が半額。
+function applySub(c){
+  const s=state.subsidy[c];
+  if(s&&s.st==='pending'){toast('🏛 もう申請中だよ(あと'+Math.max(0,s.approveDay-state.absDay)+'日で承認)');return;}
+  if(s&&s.st==='approved'){toast('🏛 もう承認済みだよ(対象の購入が半額)');return;}
+  state.subsidy[c]={st:'pending',approveDay:state.absDay+ECON.SUB_DAYS,expDay:0};
+  sfx(660,.08,'sine',.05);
+  toast('📝 '+SUB_META[c].n+'の購入補助を申請した！'+ECON.SUB_DAYS+'日後(⏭'+ECON.SUB_DAYS+'回)に承認されるよ');
+  if(document.getElementById('menu').style.display==='flex')renderMenu();
+}
+// 日次: 補助金の承認と期限
+function subsidyDaily(notes){
+  for(const c in state.subsidy){
+    const s=state.subsidy[c];if(!s)continue;
+    if(s.st==='pending'&&state.absDay>=s.approveDay){
+      s.st='approved';s.expDay=state.absDay+ECON.SUB_VALID;
+      notes.push('🏛 '+SUB_META[c].n+'の補助金が承認された！'+ECON.SUB_VALID+'日以内の購入が半額だよ');
+    }else if(s.st==='approved'&&state.absDay>s.expDay){
+      state.subsidy[c]=null;
+      notes.push('🏛 '+SUB_META[c].n+'の補助承認が期限切れ…また役場で申請してね');
+    }
+  }
+}
+// 日次: 機械の故障判定(中古0.8%/日・新品0.2%/日)
+function machineDaily(notes){
+  for(const k in MACH_META){
+    const st=state.machines[k];
+    if(!machineOwned(k)||st.broken)continue;
+    const rate=st.lvl==='new'?ECON.BREAK_NEW:ECON.BREAK_OLD;
+    if(Math.random()<rate){
+      st.broken=true;
+      notes.push('⚠ '+MACH_META[k].n+'が故障！'+MACH_META[k].stop+'。🔧街の修理屋で修理('+man(MACH_META[k].repair)+')しよう');
+      updateMachineBadges();
+    }
+  }
+}
+// 修理(街の修理屋)。修理代を払って再稼働。
+function repairMachine(k){
+  const m=MACH_META[k],st=state.machines[k];
+  if(!machineOwned(k)||!st.broken){toast('🔧 その機械は壊れていないよ');return;}
+  if(state.money<m.repair){toast('💸 修理代'+man(m.repair)+'が払えない…');return;}
+  addExpense(m.repair,'repair',m.seg);
+  st.broken=false;
+  sfxSeq([[420,.07],[560,.07],[700,.1]]);
+  toast('🔧 '+m.n+'を修理した！(−'+man(m.repair)+') 作業を再開できるよ');
+  updateMachineBadges();
+  updateHUD();renderMenu();
+}
+// 新品の機械を買う(農協の資材窓口)。補助承認済みなら半額。
+function buyMachine(k){
+  const m=MACH_META[k],st=state.machines[k];
+  if(machineOwned(k)&&st.lvl==='new'&&!st.broken){toast('✨ '+m.n+'はもう新品だよ');return;}
+  const pr=priceWithSub(m.price,'machine');
+  if(state.money<pr.price){toast('💸 新品の'+m.n+'は'+man(pr.price)+'。現金が足りないよ'+(pr.sub?'(補助済 半額)':'(役場で申請すると半額)'));return;}
+  addExpense(pr.price,'machine',m.seg);
+  st.lvl='new';st.broken=false;st.cost=(st.cost||0)+pr.price;
+  if(pr.sub){consumeSub('machine');toast('🏛 役場の補助金で半額('+man(pr.price)+')で購入できた！');}
+  else toast('🛒 定価'+man(pr.price)+'で購入(役場で申請しておけば半額だったよ…)');
+  fanfare();
+  toast('✨ 新品の'+m.n+'を導入！故障率がぐっと下がったよ');
+  if(curMap==='farm'){if(k==='processor')buildProcessor();updateMachineBadges();}
+  updateHUD();renderMenu();
+}
+// 日次: 牛の発病と悪化(病気は成長/妊娠停止。10日放置で毎日5%死亡)
+function sicknessDaily(notes){
+  if(herdCount()===0)return;
+  for(const a of[...state.cows,...state.calves]){
+    if(a.sick){
+      a.sickDays=(a.sickDays||0)+1;
+      if(a.sickDays===3||a.sickDays===7)notes.push('🤒 '+(a.name||('子牛'+a.id))+'の病気が'+a.sickDays+'日も続いている…🚜街の農協で獣医を呼ぼう！');
+      if(a.sickDays>=ECON.SICK_DEATH_DAY&&Math.random()<ECON.SICK_DEATH_RATE){
+        if(a.births!==undefined){ // 母牛の死亡
+          const i=state.cows.indexOf(a);if(i>=0)state.cows.splice(i,1);
+          if(a.debt>0){addExpense(a.debt,'loss');notes.push('💀 '+a.name+'が病死…残っていた与信'+man(a.debt)+'を現金で精算した。獣医を呼んでいれば…');}
+          else notes.push('💀 '+a.name+'が病死…獣医を呼んでいれば助かったのに');
+        }else{ // 子牛の死亡
+          const i=state.calves.indexOf(a);if(i>=0)state.calves.splice(i,1);
+          notes.push('💀 子牛'+a.id+'が病死…(育てば'+man(ECON.CALF_PRICE)+'だったのに)');
+        }
+        refreshCowMeshes();
+      }
+    }else{
+      const rate=ECON.SICK_RATE+(state.care.dirt>=ECON.CARE_DIRT_BAD?0.006:0)+(state.care.health<40?0.006:0);
+      if(Math.random()<rate){
+        a.sick=true;a.sickDays=0;
+        notes.push('🤒 '+(a.name||('子牛'+a.id))+'が病気になった！成長・繁殖が止まるよ。🚜街の農協で獣医を呼ぼう(往診)');
+      }
+    }
+  }
+  updateCareChip();
+}
+// 獣医を呼ぶ(街の農協)。往診料+治療費で病気の牛を全頭治療。
+function callVet(){
+  const sick=sickAnimals();
+  if(!sick.length){toast('🩺 いま病気の牛はいないよ(元気が一番！)');return;}
+  const cost=ECON.VET_CALL+ECON.VET_TREAT*sick.length;
+  if(state.money<cost){toast('💸 往診料+治療費'+man(cost)+'が払えない…');return;}
+  addExpense(cost,'vet','cow');
+  for(const a of sick){a.sick=false;a.sickDays=0;}
+  state.care.health=Math.min(100,state.care.health+5);
+  state.vetVisitDay=state.absDay;
+  fanfare();
+  toast('🩺 獣医の犬飼先生が農場へ往診！'+sick.length+'頭を治療して全快したよ(−'+man(cost)+')');
+  toast('💡 今日は農場に獣医さんが来ているよ(牛舎の前)');
+  if(curMap==='farm'){ // 農場に居ながら呼んだ時も獣医を出す
+    const vn=npcs.find(n=>n.key==='juui');
+    if(vn&&!vn.mesh.parent){scene.add(vn.mesh);vn.mesh.position.set(30.5,topY(30,16)+1,16.5);}
+  }
+  updateHUD();updateCareChip();renderMenu();
+}
+
 // ---------- v16: 雇用と指示（月給30万・担当の仕事を指示して放置自動化） ----------
 function hireStaff(k){
   if(state.staff[k])return;
@@ -2192,8 +2555,9 @@ function staffMonthlyJobs(notes){
   const wk=staffWithJob('cow');
   if(wk){
     const nm=STAFF_META[wk].name;
+    if(sickAnimals().length>0&&state.dom===1)notes.push('🤒 '+nm+': 病気の牛がいる！🚜街の農協で獣医を呼んでください'); // v19
     for(const c of state.cows){
-      if(!c.retired&&c.preg<0&&c.bredMonth!==state.monthN){
+      if(!c.retired&&!c.sick&&c.preg<0&&c.bredMonth!==state.monthN){ // v19: 病気の牛は種付けしない
         c.bredMonth=state.monthN;
         if(Math.random()<ECON.BREED_RATE){c.preg=0;notes.push('🐂 '+nm+': '+c.name+'の種付け成功');}
         else notes.push('🐂 '+nm+': '+c.name+'の種付け失敗(翌月再挑戦)');
@@ -2201,7 +2565,7 @@ function staffMonthlyJobs(notes){
     }
     for(let i=state.calves.length-1;i>=0;i--){
       const cf=state.calves[i];
-      if(cf.age>=ECON.CALF_SHIP_AGE){notes.push('🐂 '+nm+': 子牛をセリで売却('+man(calfPriceNow())+')');sellCalf(cf.id);}
+      if(cf.age>=ECON.CALF_SHIP_AGE&&!cf.sick){notes.push('🐂 '+nm+': 子牛をセリで売却('+man(calfPriceNow())+')');sellCalf(cf.id);} // v19: 病気の子牛は売らない
     }
     for(let i=state.cows.length-1;i>=0;i--){
       const c=state.cows[i];
@@ -2212,12 +2576,17 @@ function staffMonthlyJobs(notes){
   const rk=staffWithJob('rice');
   if(rk){
     const nm=STAFF_META[rk].name;
-    if(state.month===4&&state.riceField==='none'&&state.money>=riceSeedCost()){doRicePlant();notes.push('🌾 '+nm+': 苗代'+man(riceSeedCost())+'で田植えした');}
+    // v19: 機械の故障中は作業できない(修理屋で直すまで生産が止まる)
+    if(machineBroken('tractor')&&((state.month===4&&state.riceField==='none')||state.riceField==='ready'))notes.push('⚠ '+nm+': トラクターが故障中で田植え/収穫ができない！🔧街の修理屋へ');
+    if(state.month===4&&state.riceField==='none'&&!machineBroken('tractor')&&state.money>=riceSeedCost()){doRicePlant();notes.push('🌾 '+nm+': 苗代'+man(riceSeedCost())+'で田植えした');}
     if(state.riceField==='planted'&&isWaterSeason()&&state.waterMonth!==state.monthN){
       if(doRiceWater('staff'))notes.push('🚿 '+nm+': 田んぼの水を管理した(今月分)');
     }
-    if(state.riceField==='ready'){const b=riceBagsYield();doRiceHarvest();notes.push('🌾 '+nm+': 米'+b+'袋を収穫した');}
-    if(state.riceBags>0&&state.shipMonth!==state.monthN){const n=Math.min(riceShipMax(),state.riceBags);shipRice();notes.push('🌾 '+nm+': '+n+'袋を精米出荷した');}
+    if(state.riceField==='ready'&&!machineBroken('tractor')){const b=riceBagsYield();doRiceHarvest();notes.push('🌾 '+nm+': 米'+b+'袋を収穫した');}
+    if(state.riceBags>0&&state.shipMonth!==state.monthN){
+      if(machineBroken('polisher'))notes.push('⚠ '+nm+': 精米機が故障中で出荷できない！🔧街の修理屋へ');
+      else{const n=Math.min(riceShipMax(),state.riceBags);shipRice();notes.push('🌾 '+nm+': '+n+'袋を精米出荷した');}
+    }
   }
   // 🌿 牧草: 作付け・刈り取り(月1)・余剰売却
   const gk=staffWithJob('grass');
@@ -2235,7 +2604,7 @@ function staffMonthlyJobs(notes){
     if(state.compostShed){const n=sellFert(true);if(n>0)notes.push('🟫 '+nm+': 肥料'+n+'袋を出荷('+fmt(n*ECON.FERT_PRICE)+')');}
     let g=0;
     for(const kk of['veg','bean','chestnut','compost']){const n=state.res[kk]||0;if(n>0){g+=n*PRICE[kk];state.res[kk]=0;}}
-    if(g>0){addSale(g,'proc');notes.push('🟫 '+nm+': 農産物を'+fmt(g)+'で売却');}
+    if(g>0){const gp=Math.round(g*procMult());addSale(gp,'proc');notes.push('🟫 '+nm+': 農産物を'+fmt(gp)+'で売却'+(procMult()>1?'(🍱加工機で1.5倍)':''));} // v19: 加工機
   }
 }
 
@@ -2248,17 +2617,18 @@ function progressCows(notes){
   for(const c of state.cows){
     if(c.preg>=0&&!c.retired){
       if(!healthy)continue;
+      if(c.sick)continue; // v19: 病気の牛は妊娠が進まない
       c.preg++;
       if(c.preg>=ECON.PREG_MONTHS){
         c.preg=-1;c.births++;
-        newborn.push({id:state.cowSeq++,age:0,motherId:c.id});
+        newborn.push({id:state.cowSeq++,age:0,motherId:c.id,sick:false,sickDays:0}); // v19: 病気フィールド
         notes.push('🐮 '+c.name+'が子牛を出産！('+c.births+'産目/'+ECON.MAX_BIRTHS+'産)');
         if(c.births>=ECON.MAX_BIRTHS){c.retired=true;notes.push('🐂 '+c.name+'は8産で繁殖終了(50万円で売却できるよ)');}
       }
     }
   }
   let shippable=0;
-  for(const cf of state.calves){cf.age++;if(cf.age===ECON.CALF_SHIP_AGE)shippable++;}
+  for(const cf of state.calves){if(cf.sick)continue;cf.age++;if(cf.age===ECON.CALF_SHIP_AGE)shippable++;} // v19: 病気の子牛は成長しない
   if(shippable>0)notes.push('🐮 子牛'+shippable+'頭が月齢8ヶ月で出荷可能に！(セリで100万円)');
   if(newborn.length){state.calves.push(...newborn);refreshCowMeshes();}
 }
@@ -2367,6 +2737,10 @@ function advanceDay(notes,silent){
   // 4) 日付を進める
   state.absDay++;state.day++;
   regrowChestnuts();updateTufts();
+  // 5) v19: 新しい日付での日次イベント(補助金の承認・機械の故障・牛の発病)
+  subsidyDaily(notes);
+  machineDaily(notes);
+  sicknessDaily(notes);
   if(state.dom>=ECON.DAYS_PER_MONTH){
     state.dom=1;
     monthEnd(notes);        // 月次経費・生産・(3月なら)決算＋税金
@@ -2481,7 +2855,8 @@ function doFiscalClose(){
   if(r.profit>=0)fanfare();
 }
 const SD_LABEL={rice:'米の出荷',calf:'子牛の売却',mother:'親牛の売却',grass:'牧草の売却',fert:'肥料の売却(堆肥舎)',proc:'加工品・農産物'};
-const ED_LABEL={owner:'自分の給与(役員報酬)',emp:'従業員の給与',rent:'牛舎の家賃',feed:'牛の餌代',manure:'牛糞の処分費',seed:'苗代(米の作付け)',grassSow:'牧草の作付け',shed:'堆肥舎の建設',land:'土地の購入',other:'その他(種代等)'};
+const ED_LABEL={owner:'自分の給与(役員報酬)',emp:'従業員の給与',rent:'牛舎の家賃',feed:'牛の餌代',manure:'牛糞の処分費',seed:'苗代(米の作付け)',grassSow:'牧草の作付け',shed:'堆肥舎の建設',land:'土地の購入',other:'その他(種代等)',
+  machine:'機械の購入(新品)',barn:'牛舎の建設(自前)',repair:'機械の修理代',vet:'獣医の往診・治療費',loss:'牛の死亡損失(与信精算)'}; // v19
 function plRows(obj,labels){
   let h='';
   for(const k in labels){
@@ -2524,6 +2899,8 @@ function bsHTML(b){
     if(b.cowsV>0)A+=row('🐂 母牛'+b.nCows+'頭',b.cowsV);
     if(b.calvesV>0)A+=row('🐮 子牛'+b.nCalves+'頭',b.calvesV);
     if(b.bldgShed>0)A+=row('🏭 建物(堆肥舎)',b.bldgShed);
+    if(b.bldgBarn>0)A+=row('🏠 建物(自前牛舎)',b.bldgBarn);
+    if(b.mach>0)A+=row('🚜 機械(新品の取得原価)',b.mach);
     if(b.landGrass+b.landRice+b.landBarn>0)A+=row('🗺 土地(購入区画)',b.landGrass+b.landRice+b.landBarn);
   }
   A+=row('資産合計',b.assets,true);
@@ -2542,7 +2919,7 @@ function bsHTML(b){
     '<table class="fs" style="flex:1;min-width:215px">'+L+'</table></div>'+
     '<p style="font-size:12px;font-weight:bold" class="'+(ok?'prof':'loss')+'">'+(ok?'✅':'⚠')+' 貸借一致: 資産合計'+fmt(b.assets)+' ＝ 負債'+fmt(b.liab)+'＋純資産'+fmt(b.equity)+'</p>';
 }
-const BS_NOTE='<p style="font-size:11.5px;color:#8a6a45">📐 評価ルール: 米=3万/袋・牧草=1万/束・肥料=5千/袋。母牛=取得原価100万(8産終了後は50万)・子牛=いまの売値×月齢/8ヶ月(健康で変動)。建物・土地=取得原価(堆肥舎200万/牧草地150万/棚田250万/牧場+第二牛舎300万)。純資産=資産−負債(元手1,000万+利益の蓄積)。</p>';
+const BS_NOTE='<p style="font-size:11.5px;color:#8a6a45">📐 評価ルール: 米=3万/袋・牧草=1万/束・肥料=5千/袋。母牛=取得原価100万(8産終了後は50万)・子牛=いまの売値×月齢/8ヶ月(健康で変動)。建物・土地・機械=取得原価(補助金で半額購入した物は支払額)。純資産=資産−負債(元手1,000万+利益の蓄積)。</p>';
 // 事業別の利益一覧(Σ事業利益+共通=全社 の整合が見える表)
 function segSummaryHTML(seg,total){
   let h='<table class="fs"><tr class="hd"><td>事業別の利益(売上−経費)</td><td class="amt"></td></tr>';
@@ -2573,10 +2950,11 @@ function segPLHTML(segKey,g){
 // 事業別BS(その事業にひも付く資産・負債)
 function segBSHTML(segKey,b){
   const rows=[];const liabs=[];
-  if(segKey==='rice'){rows.push(['🍚 米在庫('+b.nRice+'袋×3万)',b.invRice],['🌾 東の棚田(取得原価)',b.landRice]);}
+  if(segKey==='rice'){rows.push(['🍚 米在庫('+b.nRice+'袋×3万)',b.invRice],['🌾 東の棚田(取得原価)',b.landRice],['🚜 機械(トラクター/精米機・新品分)',(state.machines.tractor.cost||0)+(state.machines.polisher.cost||0)]);}
   else if(segKey==='grass'){rows.push(['🌿 牧草在庫('+b.nGrass+'束×1万)',b.invGrass],['🗺 東の牧草地(取得原価)',b.landGrass]);}
-  else if(segKey==='cow'){rows.push(['🐂 母牛'+b.nCows+'頭',b.cowsV],['🐮 子牛'+b.nCalves+'頭',b.calvesV],['🏠 南の牧場+第二牛舎(取得原価)',b.landBarn]);liabs.push(['🐂 牛の与信(繁殖ローン)',b.cowDebt]);}
+  else if(segKey==='cow'){rows.push(['🐂 母牛'+b.nCows+'頭',b.cowsV],['🐮 子牛'+b.nCalves+'頭',b.calvesV],['🏠 自前牛舎(取得原価)',b.bldgBarn],['🏠 南の牧場+第二牛舎(取得原価)',b.landBarn]);liabs.push(['🐂 牛の与信(繁殖ローン)',b.cowDebt]);}
   else if(segKey==='compost'){rows.push(['🏭 堆肥舎(取得原価)',b.bldgShed],['🟫 肥料在庫('+b.nFert+'袋×5千)',b.invFert]);}
+  else if(segKey==='other'){rows.push(['🍱 加工機(取得原価)',state.machines.processor.cost||0]);}
   else if(segKey==='common'){rows.push(['💴 現金(全社の資金は本部で管理)',b.cash]);liabs.push(['🏦 銀行借入金',b.bank]);}
   else rows.push(['(この事業の在庫は少額のため計上なし)',0]);
   let at=0,lt=0;
@@ -2640,13 +3018,20 @@ function dayChange(){
 
 // ---------- メニュー（v14: 帳簿/倉庫/牛舎/セリ/銀行/雇用/設定） ----------
 let menuTab='ledger';
-function openMenu(){hidePCGuide();document.getElementById('menu').style.display='flex';renderMenu();}
+function openMenu(){
+  hidePCGuide();
+  // v19: 役場/農協/修理屋のタブは街の施設でだけ開ける(役場を通さないと補助は受けられない)
+  if(['yakuba','ja','repair'].includes(menuTab)&&curMap!=='town')menuTab='ledger';
+  document.getElementById('menu').style.display='flex';renderMenu();
+}
 function closeMenu(){document.getElementById('menu').style.display='none';saveGame(false);}
 function renderMenu(){
   const box=document.getElementById('menuBox');
   const tab=(id,label)=>'<div class="tab '+(menuTab===id?'on':'')+'" onclick="menuTab=\''+id+'\';renderMenu()">'+label+'</div>';
   let html='<h2>🌾 丹波農商 <span style="font-size:13px;color:#8a6a45">'+ymdLabel()+'・'+fmt(state.money)+'</span></h2>'+
-    '<div class="tabs">'+tab('ledger','📒 帳簿')+tab('wh','📦 倉庫')+tab('cows','🏚 牛舎')+tab('auction','🐂 セリ')+tab('bank','🏦 銀行')+tab('staff','🤝 指示')+tab('land','🏠 不動産屋')+tab('set','⚙')+'</div>';
+    '<div class="tabs">'+tab('ledger','📒 帳簿')+tab('wh','📦 倉庫')+tab('cows','🏚 牛舎')+tab('auction','🐂 セリ')+tab('bank','🏦 銀行')+tab('staff','🤝 指示')+tab('land','🏠 不動産屋')+
+    (menuTab==='yakuba'?tab('yakuba','🏛 役場'):'')+(menuTab==='ja'?tab('ja','🚜 農協'):'')+(menuTab==='repair'?tab('repair','🔧 修理屋'):'')+ // v19: 街の施設タブ(現地でだけ開く)
+    tab('set','⚙')+'</div>';
   if(menuTab==='ledger')html+=ledgerHTML();
   else if(menuTab==='wh')html+=whHTML();
   else if(menuTab==='cows')html+=cowsHTML();
@@ -2654,6 +3039,9 @@ function renderMenu(){
   else if(menuTab==='bank')html+=bankHTML();
   else if(menuTab==='staff')html+=staffHTML();
   else if(menuTab==='land')html+=landHTML();
+  else if(menuTab==='yakuba')html+=yakubaHTML();   // v19
+  else if(menuTab==='ja')html+=jaHTML();           // v19
+  else if(menuTab==='repair')html+=repairHTML();   // v19
   else html+=setHTML();
   html+='<div style="display:flex;gap:6px">'+
     '<button class="close" style="flex:1;background:#3a6fd8;border-color:#1f3f8a;box-shadow:0 3px 0 #1f3f8a" onclick="nextDay()">⏭ 次の日へ</button>'+
@@ -2676,6 +3064,67 @@ function landHTML(){
       :'<button class="buy orange" '+(state.money>=p.price?'':'disabled')+' onclick="buyLand(\''+k+'\')">'+man(p.price)+'</button>')+'</div>';
   }
   h+='<p class="sub2" style="font-size:11.5px;color:#8a6a45">💡 東の牧草地=牧草24束/月(余剰売却も倍増)。東の棚田=米の年商900万→1,350万(苗代も450万に)。南の牧場=母牛16頭で繁殖を倍速に。</p>';
+  return h;
+}
+// ---------- v19: 役場(補助金)・農協(資材/獣医)・修理屋のメニュー ----------
+function yakubaHTML(){
+  let h='<p>🏛 丹波の役場。<b>補助金を申請</b>して承認されると、<b>新品の機械・牛舎・堆肥舎が半額(50%補助)</b>で買えるよ。<b>役場を通さず(未申請で)買うと定価</b>！</p>'+
+  '<table class="fs"><tr class="hd"><td>補助金のルール</td><td class="amt"></td></tr>'+
+  '<tr><td>① 申請→<b>'+ECON.SUB_DAYS+'日後に承認</b>(⏭で日を進めよう) ② 承認は<b>'+ECON.SUB_VALID+'日有効・購入1回で使い切り</b> ③ 中古(古い牛舎レンタル)は対象外</td><td></td></tr></table>';
+  for(const c in SUB_META){
+    const s=state.subsidy[c],m=SUB_META[c];
+    let st,btn='';
+    if(s&&s.st==='pending')st='<span style="color:#b5651d;font-weight:bold">📝 申請中(あと'+Math.max(0,s.approveDay-state.absDay)+'日で承認)</span>';
+    else if(s&&s.st==='approved')st='<span class="prof">✅ 承認済み！対象の購入が半額(残り'+Math.max(0,s.expDay-state.absDay)+'日)</span>';
+    else{st='<span style="color:#c03030">未申請(いま買うと定価)</span>';btn='<button class="buy orange" onclick="applySub(\''+c+'\')">申請する</button>';}
+    h+='<div class="row"><div class="em">'+m.em+'</div><div class="info"><b>'+m.n+'の購入補助</b><small>'+m.desc+'<br>'+st+'</small></div>'+btn+'</div>';
+  }
+  h+='<p class="sub2" style="font-size:11.5px;color:#8a6a45">💡 大きな買い物の前にまず役場へ！「役場に行く手間」と「半額の得」— これが経営判断だよ。</p>';
+  return h;
+}
+function jaHTML(){
+  const sick=sickAnimals();
+  let h='<p>🚜 丹波農協。<b>資材(新品の機械・牛舎)の窓口</b>と<b>獣医の手配(往診)</b>をしているよ。</p>';
+  h+='<p><b>🩺 獣医の往診(担当: 犬飼先生)</b></p>';
+  if(herdCount()===0)h+='<p style="color:#8a6a45">牛はまだいないよ(牛を飼うと病気のリスクがある。その時はここで獣医を呼ぼう)。</p>';
+  else if(sick.length===0)h+='<p style="color:#1f7a1f;font-weight:bold">✅ いま牛はみんな元気！(発病したらここで獣医を呼ぼう。放置は悪化→最悪死亡)</p>';
+  else{
+    const cost=ECON.VET_CALL+ECON.VET_TREAT*sick.length;
+    h+='<div class="row"><div class="em">🤒</div><div class="info"><b>病気の牛が'+sick.length+'頭いる！</b><small>病気の牛は成長・繁殖が止まり、放置すると死んでしまう。往診料'+man(ECON.VET_CALL)+'＋治療費'+man(ECON.VET_TREAT)+'×'+sick.length+'頭＝'+man(cost)+'</small></div>'+
+    '<button class="buy orange" '+(state.money>=cost?'':'disabled')+' onclick="callVet()">獣医を呼ぶ('+man(cost)+')</button></div>';
+  }
+  h+='<p style="margin-top:8px"><b>🛒 資材の窓口(新品)</b> '+(subApproved('machine')?'<span class="prof">🏛機械の補助 承認済(半額)</span>':'<span style="color:#c03030">機械の補助 未申請(定価。🏛役場で申請を)</span>')+'</p>';
+  for(const k in MACH_META){
+    const m=MACH_META[k],st=state.machines[k];
+    const owned=machineOwned(k);
+    const pr=priceWithSub(m.price,'machine');
+    const status=owned?((st.lvl==='new'?'新品✅':'中古(故障しやすい)')+(st.broken?' <span class="loss">⚠故障中</span>':'')):'未保有';
+    const canBuy=!owned||st.lvl!=='new';
+    h+='<div class="row"><div class="em">'+m.em+'</div><div class="info"><b>新品の'+m.n+'</b><small>'+m.desc+' / いま: '+status+'<br>'+(pr.sub?'<span class="prof">🏛補助済 半額 '+man(pr.price)+'</span>':'<span style="color:#c03030">未申請 定価 '+man(pr.price)+'</span>')+'</small></div>'+
+      (canBuy?'<button class="buy" '+(state.money>=pr.price?'':'disabled')+' onclick="buyMachine(\''+k+'\')">'+man(pr.price)+'</button>':'')+'</div>';
+  }
+  const bp=priceWithSub(ECON.OWN_BARN,'barn');
+  h+='<div class="row"><div class="em">🏠</div><div class="info"><b>新品の牛舎を建てる</b><small>家賃(月3万)ゼロ＋母牛'+ECON.OWN_BARN_CAP+'頭まで。'+(state.ownBarn?'✅建設済み':(bp.sub?'<span class="prof">🏛補助済 半額 '+man(bp.price)+'</span>':'<span style="color:#c03030">未申請 定価 '+man(bp.price)+'</span>'))+'</small></div>'+
+    (state.ownBarn?'':'<button class="buy" '+(state.money>=bp.price?'':'disabled')+' onclick="buyOwnBarn()">'+man(bp.price)+'</button>')+'</div>';
+  h+='<p class="sub2" style="font-size:11.5px;color:#8a6a45">💡 🏭堆肥舎('+man(ECON.SHED_COST)+'・補助対象)は農場の🟫堆肥場で建設してね。中古の牛舎レンタル(月3万)は補助対象外。</p>';
+  return h;
+}
+function repairHTML(){
+  let h='<p>🔧 鉄男の修理屋。<b>故障した機械を修理代で直す</b>よ。故障中はその機械の作業が止まる(田植え/収穫=トラクター・精米出荷=精米機・1.5倍加工=加工機)！</p>';
+  let anyB=false;
+  for(const k in MACH_META){
+    const m=MACH_META[k],st=state.machines[k];
+    if(!machineOwned(k)){h+='<div class="row"><div class="em">'+m.em+'</div><div class="info"><b>'+m.n+'</b><small>未保有(🚜農協の資材窓口で購入)</small></div></div>';continue;}
+    if(st.broken){
+      anyB=true;
+      h+='<div class="row"><div class="em">'+m.em+'</div><div class="info"><b>'+m.n+' <span class="loss">⚠故障中！</span></b><small>'+(st.lvl==='new'?'新品':'中古')+' / '+m.stop+' / 修理代'+man(m.repair)+'</small></div>'+
+      '<button class="buy orange" '+(state.money>=m.repair?'':'disabled')+' onclick="repairMachine(\''+k+'\')">修理する('+man(m.repair)+')</button></div>';
+    }else{
+      h+='<div class="row"><div class="em">'+m.em+'</div><div class="info"><b>'+m.n+' ✅稼働中</b><small>'+(st.lvl==='new'?'新品(故障率 月あたり約6%)':'中古(故障率 月あたり約2割。農協で新品に買い替えると安心)')+'</small></div></div>';
+    }
+  }
+  if(!anyB)h+='<p style="color:#1f7a1f;font-weight:bold">✅ いま故障している機械はないよ</p>';
+  h+='<p class="sub2" style="font-size:11.5px;color:#8a6a45">💡 修理代: トラクター'+man(ECON.REP_TRACTOR)+'/精米機'+man(ECON.REP_POLISHER)+'/加工機'+man(ECON.REP_PROCESSOR)+'。放置すると生産が止まってもっと損！</p>';
   return h;
 }
 // 帳簿: v17=PL(損益計算書)とBS(貸借対照表)を切替、さらに事業別タブ
@@ -2722,7 +3171,7 @@ function ledgerStatusHTML(){
   '<tr class="hd"><td>毎月の経費(⏭で差引)</td><td class="amt"></td></tr>'+
   '<tr><td>自分の給与/生活費</td><td class="amt">'+fmt(ECON.OWNER_SALARY)+'</td></tr>'+
   '<tr><td>従業員給与('+sc+'人×30万)</td><td class="amt">'+fmt(sc*ECON.EMP_SALARY)+'</td></tr>'+
-  '<tr><td>牛舎家賃'+(state.barnRented?'':'(未賃借)')+'</td><td class="amt">'+fmt(state.barnRented?ECON.BARN_RENT:0)+'</td></tr>'+
+  '<tr><td>牛舎家賃'+(state.barnRented?'':(state.ownBarn?'(自前牛舎で不要✨)':'(未賃借)'))+'</td><td class="amt">'+fmt(state.barnRented?ECON.BARN_RENT:0)+'</td></tr>'+
   '<tr><td>餌代(牛'+herd+'頭・牧草自給分は1万/頭)</td><td class="amt">'+(herd>0?'約'+fmt(Math.min(state.grassStock+(state.grassSown?ECON.GRASS_YIELD:0),herd)*ECON.FEED_GRASS+Math.max(0,herd-(state.grassStock+(state.grassSown?ECON.GRASS_YIELD:0)))*ECON.FEED_MARKET):'￥0')+'</td></tr>'+
   (herd>0?'<tr><td>牛糞の処分費'+(state.compostShed?'(🏭堆肥舎で不要✨)':'(1万/頭。🏭堆肥舎で収益化)')+'</td><td class="amt">'+fmt(state.compostShed?0:herd*ECON.MANURE_FEE)+'</td></tr>':'')+
   '</table>'+
@@ -2730,10 +3179,11 @@ function ledgerStatusHTML(){
 }
 // 倉庫: 米の精米出荷・牧草売却・農産物・種
 function whHTML(){
-  const canShip=state.riceBags>0&&state.shipMonth!==state.monthN;
+  const polBroken=machineBroken('polisher'); // v19
+  const canShip=state.riceBags>0&&state.shipMonth!==state.monthN&&!polBroken;
   const shipN=Math.min(riceShipMax(),state.riceBags);
   let h='<p>収穫した米は倉庫へ。毎月「精米して出荷」で現金化(月1回・最大'+riceShipMax()+'袋)。</p>'+
-  '<div class="row"><div class="em">🍚</div><div class="info"><b>米倉庫: '+state.riceBags+'袋</b><small>1袋3万円。'+(state.shipMonth===state.monthN?'今月は出荷済み(⏭で翌月へ)':'今月あと'+shipN+'袋出荷できる('+fmt(shipN*ECON.RICE_BAG_PRICE)+')')+'</small></div>'+
+  '<div class="row"><div class="em">🍚</div><div class="info"><b>米倉庫: '+state.riceBags+'袋</b><small>1袋3万円。'+(polBroken?'<span class="loss">⚠精米機が故障中！🔧街の修理屋で修理を</span>':(state.shipMonth===state.monthN?'今月は出荷済み(⏭で翌月へ)':'今月あと'+shipN+'袋出荷できる('+fmt(shipN*ECON.RICE_BAG_PRICE)+')'))+'</small></div>'+
   '<button class="buy" '+(canShip?'':'disabled')+' onclick="shipRice()">精米して出荷</button></div>';
   const reserve=herdCount()*ECON.GRASS_EAT;
   const surplus=Math.max(0,state.grassStock-reserve);
@@ -2764,12 +3214,15 @@ function whHTML(){
 }
 // 牛舎: 牛の一覧・種付け
 function cowsHTML(){
-  if(!state.barnRented){
+  if(!hasBarn()){ // v19: 借りた牛舎 or 自前牛舎
     return '<p>牛を飼うには、まず牛舎が必要だよ。</p>'+
-    '<div class="row"><div class="em">🏚</div><div class="info"><b>古い牛舎を借りる</b><small>設備投資なしの低資本スタート。家賃 月3万円・母牛'+ECON.BARN_CAP+'頭まで</small></div>'+
-    '<button class="buy orange" onclick="rentBarn();renderMenu()">借りる</button></div>';
+    '<div class="row"><div class="em">🏚</div><div class="info"><b>古い牛舎を借りる</b><small>設備投資なしの低資本スタート。家賃 月3万円・母牛'+ECON.BARN_CAP+'頭まで(中古なので補助対象外)</small></div>'+
+    '<button class="buy orange" onclick="rentBarn();renderMenu()">借りる</button></div>'+
+    '<p class="sub2" style="font-size:11.5px;color:#8a6a45">💡 🚜街の農協では新品の牛舎('+man(ECON.OWN_BARN)+'・家賃ゼロ+母牛12頭)も建てられる。🏛役場で申請すれば半額！</p>';
   }
-  let h='<p>🏚 牛舎(家賃 月3万円)・母牛 '+state.cows.length+'/'+barnCapNow()+'頭・子牛 '+state.calves.length+'頭'+(state.land.barn2?'(第二牛舎あり)':'')+'</p>';
+  let h='<p>'+(state.ownBarn?'🏠 自前の新牛舎(家賃なし)':'🏚 牛舎(家賃 月3万円)')+'・母牛 '+state.cows.length+'/'+barnCapNow()+'頭・子牛 '+state.calves.length+'頭'+(state.land.barn2?'(第二牛舎あり)':'')+'</p>';
+  const skN=sickAnimals().length; // v19: 病気の警告
+  if(skN>0)h+='<p class="loss" style="font-weight:bold">🤒 病気の牛が'+skN+'頭！🚜街の農協で獣医を呼ぼう(放置すると悪化→最悪死亡)</p>';
   if(herdCount()>0){
     const fed=state.care.fedDay===state.absDay,cl=state.care.cleanDay===state.absDay;
     h+='<div class="row"><div class="em">🍼</div><div class="info"><b>今日の世話: 餌'+(fed?'✅':'⬜')+' 掃除'+(cl?'✅':'⬜')+' / 健康'+state.care.health+' 汚れ'+state.care.dirt+'</b><small>毎日必要！サボると健康低下→子牛の売値ダウン(いま'+man(calfPriceNow())+')・健康40未満は妊娠が進まない。従業員に🐂牛の世話を指示すると自動</small></div>'+
@@ -2791,9 +3244,9 @@ function cowsHTML(){
 }
 // セリ市場: メス牛の与信購入・子牛/親牛の売却
 function auctionHTML(){
-  const canBuy=state.barnRented&&state.cows.length<barnCapNow();
-  let h='<p>🐂 セリ市場。メス牛は「与信(その牛の借金)」で購入=現金は減らないよ。</p>'+
-  '<div class="row"><div class="em">🐂</div><div class="info"><b>メス牛を買う(与信100万円)</b><small>'+(state.barnRented?('牛舎の空き '+(barnCapNow()-state.cows.length)+'頭分。現金は出て行かず、この牛に借金100万円が付く'):'先に🏚古い牛舎を借りてね(月3万円)')+'</small></div>'+
+  const canBuy=hasBarn()&&state.cows.length<barnCapNow(); // v19
+  let h='<p>🐂 セリ市場(街・担当: 競り人の勝さん)。メス牛は「与信(その牛の借金)」で購入=現金は減らないよ。</p>'+
+  '<div class="row"><div class="em">🐂</div><div class="info"><b>メス牛を買う(与信100万円)</b><small>'+(hasBarn()?('牛舎の空き '+(barnCapNow()-state.cows.length)+'頭分。現金は出て行かず、この牛に借金100万円が付く'):'先に🏚古い牛舎を借りるか、🚜農協で新牛舎を建ててね')+'</small></div>'+
   '<button class="buy orange" '+(canBuy?'':'disabled')+' onclick="buyCowCredit()">与信で購入</button></div>';
   const ship=state.calves.filter(c=>c.age>=ECON.CALF_SHIP_AGE);
   h+='<p><b>売る</b></p>';
@@ -2860,9 +3313,10 @@ function makeCompost(){
 function sellProduce(k){
   const n=state.res[k]||0;if(n<=0)return;
   state.res[k]=0;
-  addSale(n*PRICE[k],'proc');
+  const amt=Math.round(n*PRICE[k]*procMult()); // v19: 加工機(稼働中)で1.5倍
+  addSale(amt,'proc');
   sfxSeq([[880,.06],[1100,.08]]);
-  toast('💰 '+(RES[k]?RES[k].n:k)+'×'+n+'を売却 +'+fmt(n*PRICE[k]));
+  toast('💰 '+(RES[k]?RES[k].n:k)+'×'+n+'を売却 +'+fmt(amt)+(procMult()>1?'(🍱加工機で1.5倍)':''));
   updateHUD();renderMenu();
 }
 function buySeed(k){
@@ -2885,10 +3339,208 @@ function resetGame(){
 }
 function toggleSound(){state.sound=!state.sound;renderMenu();}
 
+// ========== v19: 街マップ（生成・装飾・農場⇔街の切替） ==========
+let curMap='farm',mapBusy=false;
+const FARM_SPAWN={x:26.8,z:22.8},TOWN_SPAWN={x:33.0,z:57.5};
+// 街のボクセル生成(大通り・広場・噴水・建物・セリ市場の囲い)
+function genTown(){
+  chestnutTrees.length=0;
+  for(const k in grid)delete grid[k];
+  for(let x=0;x<WS;x++)for(let z=0;z<WS;z++){
+    const edge=Math.min(x,z,WS-1-x,WS-1-z);
+    let h=2;
+    if(edge<4)h=3+(3-edge)*2+Math.round(h2(x,z)*1.5); // 街を囲む丘
+    h=Math.max(2,Math.min(WH-6,h));
+    for(let y=0;y<=h;y++){
+      let t=B.SOIL;
+      if(y===h)t=(edge<4&&h>=6)?B.STONE:B.GRASS;
+      else if(y<h-1)t=B.STONE;
+      gset(x,y,z,t);
+    }
+  }
+  const road=(x0,x1,z0,z1)=>{for(let x=x0;x<=x1;x++)for(let z=z0;z<=z1;z++)gset(x,2,z,B.PATH);};
+  road(5,62,30,33);   // 大通り(東西)
+  road(31,34,5,62);   // 大通り(南北)
+  road(9,31,44,45);   // 南西の路地
+  road(44,56,44,45);  // セリ市場への道
+  // 中央広場(石畳)＋噴水
+  for(let x=21;x<=30;x++)for(let z=21;z<=29;z++)gset(x,2,z,B.PAVE);
+  for(let x=24;x<=27;x++)for(let z=23;z<=26;z++){
+    const rim=(x===24||x===27||z===23||z===26);
+    gset(x,2,z,B.STONE);
+    gset(x,3,z,rim?B.STONE:B.WATER);
+  }
+  // 建物(壁3段+窓+屋根)
+  townBuilding(27,36,13,19,B.WHITE,B.BROOF,[[31,19],[32,19]]); // 役場
+  townBuilding(14,21,36,41,B.BRICK,B.STONE,[[17,36],[18,36]]); // 銀行
+  townBuilding(24,29,36,40,B.PLANK,B.RROOF,[[26,36],[27,36]]); // 不動産屋
+  townBuilding(38,46,36,42,B.WHITE,B.GROOF,[[41,36],[42,36]]); // 農協
+  townBuilding(8,14,22,27,B.STONE,B.PLANK,[[11,27],[12,27]]);  // 修理屋
+  // 民家(街の賑わい)
+  townBuilding(10,15,10,15,B.BRICK,B.RROOF,[[12,15],[13,15]]);
+  townBuilding(18,24,8,13,B.PLANK,B.BROOF,[[21,13]]);
+  townBuilding(40,46,8,14,B.WHITE,B.RROOF,[[43,14]]);
+  townBuilding(50,57,20,26,B.BRICK,B.GROOF,[[53,26]]);
+  townBuilding(9,15,48,54,B.WHITE,B.BROOF,[[12,48]]);
+  townBuilding(20,26,48,54,B.BRICK,B.RROOF,[[23,48]]);
+  // セリ市場(柵の囲い+競り台)
+  for(let x=44;x<=56;x++)for(let z=46;z<=58;z++)gset(x,2,z,B.PATH);
+  for(let x=44;x<=56;x++){gset(x,3,46,B.FENCE);gset(x,3,58,B.FENCE);}
+  for(let z=46;z<=58;z++){gset(44,3,z,B.FENCE);gset(56,3,z,B.FENCE);}
+  gset(49,3,46,0);gset(50,3,46,0); // 出入口(北)
+  for(const p of[[51,53],[55,53],[51,57],[55,57]]){gset(p[0],3,p[1],B.WOOD);gset(p[0],4,p[1],B.WOOD);gset(p[0],5,p[1],B.WOOD);}
+  for(let x=51;x<=55;x++)for(let z=53;z<=57;z++)gset(x,6,z,B.HAY); // 競り台の屋根
+  // 並木
+  [[7,28],[13,28],[19,28],[38,28],[44,28],[50,28],[56,28],[59,35],[7,35],[36,50],[38,58],[16,44],[28,44],[7,41],[60,41]].forEach(p=>normalTree(p[0],p[1]));
+}
+// 建物ヘルパ: 壁3段(y3-5)+窓(y4に水ガラス)+屋根(y6)+石畳の床
+function townBuilding(x0,x1,z0,z1,wallB,roofB,doors){
+  for(let x=x0;x<=x1;x++)for(let z=z0;z<=z1;z++){
+    for(let y=3;y<=WH;y++)gset(x,y,z,0);
+    gset(x,2,z,B.PAVE);
+    const wall=(x===x0||x===x1||z===z0||z===z1);
+    if(wall){
+      for(let y=3;y<=5;y++)gset(x,y,z,wallB);
+      const corner=(x===x0||x===x1)&&(z===z0||z===z1);
+      if(!corner&&(((z===z0||z===z1)&&x%2===0)||((x===x0||x===x1)&&z%2===0)))gset(x,4,z,B.WATER); // 窓
+    }
+    gset(x,6,z,roofB);
+  }
+  for(const[dx,dz]of doors){gset(dx,3,dz,0);gset(dx,4,dz,0);} // 入口
+}
+// 街灯(夜も光って見えるBasicマテリアル)
+function townLamp(x,z){
+  const y=topY(Math.floor(x),Math.floor(z))+1;
+  const g=new THREE.Group();
+  const pole=new THREE.Mesh(new THREE.BoxGeometry(0.14,2.6,0.14),new THREE.MeshLambertMaterial({color:0x3a3a3f}));pole.position.y=1.3;g.add(pole);
+  const lamp=new THREE.Mesh(new THREE.SphereGeometry(0.22,8,7),new THREE.MeshBasicMaterial({color:0xffdf8a}));lamp.position.y=2.7;g.add(lamp);
+  g.position.set(x,y-1+0.02,z);decoGroup.add(g);
+  addDecoCollider(x,z,0.2,y);
+}
+function townBench(x,z,rot){
+  const y=topY(Math.floor(x),Math.floor(z))+1;
+  const g=new THREE.Group();
+  const seat=new THREE.Mesh(new THREE.BoxGeometry(1.6,0.14,0.5),new THREE.MeshLambertMaterial({color:0xb5843f}));seat.position.y=0.45;g.add(seat);
+  const back=new THREE.Mesh(new THREE.BoxGeometry(1.6,0.5,0.1),new THREE.MeshLambertMaterial({color:0xa87433}));back.position.set(0,0.8,-0.22);g.add(back);
+  [[-0.65,0],[0.65,0]].forEach(p=>{const leg=new THREE.Mesh(new THREE.BoxGeometry(0.12,0.45,0.4),new THREE.MeshLambertMaterial({color:0x6a4a25}));leg.position.set(p[0],0.22,p[1]);g.add(leg);});
+  g.rotation.y=rot||0;g.position.set(x,y-1+0.02,z);decoGroup.add(g);
+  addDecoCollider(x,z,0.6,y);
+}
+// 街の装飾(看板・街灯・ベンチ・バス停・展示の牛)
+function buildTownDecor(){
+  scene.add(decoGroup);
+  addSign(31.8,21.2,'🏛','役場(補助金)');
+  addSign(19.5,34.5,'🏦','銀行');
+  addSign(27.8,34.5,'🏠','不動産屋');
+  addSign(44.5,34.5,'🚜','農協(資材・獣医)');
+  addSign(13.5,28.6,'🔧','修理屋');
+  addSign(47.5,44.3,'🐂','セリ市場');
+  addSign(36.2,57.5,'🚌','農場行きバス停');
+  // バス停の小屋
+  (function(){
+    const y=topY(36,57)+1;
+    const g=new THREE.Group();
+    const pm=new THREE.MeshLambertMaterial({color:0x6a4a25});
+    [[-0.9,-0.9],[0.9,-0.9],[-0.9,0.9],[0.9,0.9]].forEach(p=>{const post=new THREE.Mesh(new THREE.BoxGeometry(0.16,2.3,0.16),pm);post.position.set(p[0],1.15,p[1]);g.add(post);});
+    const roof=new THREE.Mesh(new THREE.BoxGeometry(2.3,0.14,2.2),new THREE.MeshLambertMaterial({color:0x3a6fd8}));roof.position.set(0,2.35,0);roof.castShadow=true;g.add(roof);
+    const bench=new THREE.Mesh(new THREE.BoxGeometry(1.8,0.32,0.5),new THREE.MeshLambertMaterial({color:0xb5843f}));bench.position.set(0,0.5,0.6);g.add(bench);
+    g.position.set(36.8,y-1+0.02,57.5);decoGroup.add(g);
+  })();
+  // 街灯(大通り沿い)
+  [[9,29.2],[17,29.2],[25,29.2],[38,29.2],[46,29.2],[54,29.2],[30.2,12],[30.2,20],[30.2,40],[30.2,48],[30.2,56],[35.8,50],[45,43.2],[22,34.8]].forEach(p=>townLamp(p[0],p[1]));
+  // 広場のベンチ
+  townBench(22.5,22.2,0);townBench(29.2,25.5,Math.PI/2);townBench(22.5,27.8,Math.PI);
+  // セリ市場の展示牛(飾り)
+  const c1=cowMesh(true);c1.position.set(47.5,3,52.5);c1.rotation.y=0.7;decoGroup.add(c1);addDecoCollider(47.5,52.5,0.8,3);
+  const c2=cowMesh(false);c2.position.set(46.2,3,55.4);c2.rotation.y=-0.5;decoGroup.add(c2);addDecoCollider(46.2,55.4,0.6,3);
+  hayRoll(53.5,48.5);hayRoll(45.5,49.5);
+}
+// 街のエリア名
+function areaNameTown(x,z){
+  if(x>=27&&x<=36&&z>=13&&z<=19)return'🏛 役場';
+  if(x>=14&&x<=21&&z>=36&&z<=41)return'🏦 銀行';
+  if(x>=24&&x<=29&&z>=36&&z<=40)return'🏠 不動産屋';
+  if(x>=38&&x<=46&&z>=36&&z<=42)return'🚜 農協';
+  if(x>=8&&x<=14&&z>=22&&z<=27)return'🔧 修理屋';
+  if(x>=44&&x<=56&&z>=44&&z<=58)return'🐂 セリ市場';
+  if(x>=21&&x<=30&&z>=21&&z<=29)return'⛲ 中央広場';
+  if(x>=31&&x<=34&&z>=54)return'🚌 バス停通り';
+  if((z>=30&&z<=33)||(x>=31&&x<=34))return'🛣 大通り';
+  return'🏘 丹波の街';
+}
+// マップの後片付け(チャンク・装飾・コライダー・牛・NPCをsceneから外す)
+function teardownMap(){
+  for(const k in chunks){const r=chunks[k];if(r.solid){worldGroup.remove(r.solid);r.solid.geometry.dispose();}if(r.water){worldGroup.remove(r.water);r.water.geometry.dispose();}delete chunks[k];}
+  for(const k in grid)delete grid[k];
+  for(const k in cropMeshes)removeCropMesh(k);
+  while(decoGroup.children.length)decoGroup.remove(decoGroup.children[0]);
+  decoColliders.length=0;nearLabels.length=0;
+  treeFruitMeshes.forEach(m=>{if(m)scene.remove(m);});treeFruitMeshes.length=0;
+  tuftMeshes.forEach(m=>{if(m)scene.remove(m);});tuftMeshes.length=0;
+  for(const m of cowMeshes)scene.remove(m);cowMeshes.length=0;
+  for(const m of manures)scene.remove(m);manures.length=0;
+  chestnutTrees.length=0;
+  tractorMesh=null;polisherMesh=null;processorMesh=null;compostShedMesh=null;barnSign=null;machineBadges={};
+  for(const n of npcs)scene.remove(n.mesh);
+  cancelMoveTarget();pendingAct=null;
+  dirtySet.clear();
+}
+// いまのマップの世界+装飾+NPCを構築(起動時と切替時に共用)
+function buildMapWorld(){
+  if(curMap==='town'){
+    genTown();rebuildAll();buildTownDecor();
+  }else{
+    genWorld();applyLandParcels();applyEdits();rebuildAll();
+    if(state.compostShed)buildCompostShed();
+    for(const k in state.crops)addCropMesh(k,state.crops[k]);
+    ensureRiceVisual();
+    buildDecor();initTreeFruits();updateTufts();refreshCowMeshes();
+  }
+  placeNPCs();
+}
+// 街滞在中に(従業員が)田植えした場合など、稲の見た目を復元する
+function ensureRiceVisual(){
+  if(state.riceField==='none')return;
+  for(const k in state.crops)if(state.crops[k].type==='rice')return; // もう見た目がある
+  const mon=state.riceField==='ready'?6:Math.max(0,Math.min(6,state.monthN-(state.ricePlantMonthN>=0?state.ricePlantMonthN:state.monthN)));
+  buildRiceVisual(mon);
+}
+// 暗転演出つきのマップ切替
+function showTravel(text,mid){
+  const el=document.getElementById('travel');
+  el.textContent=text;el.style.display='flex';
+  requestAnimationFrame(()=>{el.style.opacity='1';});
+  setTimeout(()=>{
+    mid();
+    setTimeout(()=>{el.style.opacity='0';setTimeout(()=>{el.style.display='none';},400);},280);
+  },430);
+}
+function switchMap(target){
+  if(mapBusy||isGameOver||!state||target===curMap)return;
+  mapBusy=true;
+  sfxSeq([[520,.08],[660,.1]]);
+  showTravel(target==='town'?'🚌 街に移動中…':'🚌 農場に帰り中…',()=>{
+    teardownMap();
+    curMap=target;state.map=target;
+    buildMapWorld();
+    const sp=target==='town'?TOWN_SPAWN:FARM_SPAWN;
+    player.x=sp.x;player.z=sp.z;
+    if(walkY(Math.floor(player.x),Math.floor(player.z),WH)>WH){player.x=target==='town'?32.5:27.5;player.z=target==='town'?40.5:34.5;} // 保険
+    player.y=topY(Math.floor(player.x),Math.floor(player.z))+1;player.vy=0;player.onGround=true;
+    camera.position.set(player.x-Math.sin(camYaw)*8,player.y+6,player.z-Math.cos(camYaw)*8);
+    toast(target==='town'?'🏘 丹波の街に着いた！役場・銀行・農協・修理屋・セリ市場・不動産屋があるよ':'🌾 農場に帰ってきた！');
+    updateHUD();updateMachineBadges();saveGame(false);
+    mapBusy=false;
+  });
+}
+window.__v4dbg.switchMap=t=>switchMap(t);
+window.__v4dbg.getMap=()=>curMap;
+
 // ---------- セーブ / ロード ----------
 function saveGame(showToast){
   if(isGameOver)return; // v15: 倒産後は保存しない
   try{
+    state.map=curMap; // v19: いまのマップも保存
     const data={v:16,state,player:{x:player.x,y:player.y,z:player.z}};
     localStorage.setItem(SAVE_KEY,JSON.stringify(data));
     if(showToast)toast('💾 セーブしたよ！');
@@ -3057,6 +3709,7 @@ function maybeRescue(){
 
 // ---------- エリア名 ----------
 function areaName(x,z){
+  if(curMap==='town')return areaNameTown(x,z); // v19: 街のエリア名
   // v16: 拡張区画
   if(x>=50&&x<=66&&z>=8&&z<=21)return state.land.grass2?'🌿 東の牧草地':'🧱 販売中の区画(荒れ地)';
   if(x>=47&&x<=66&&z>=31&&z<=47)return state.land.rice2?'🌾 東の棚田':'🧱 販売中の区画(荒れ地)';
@@ -3188,7 +3841,7 @@ function animate(ts){
   // 牛ふん生成
   manureAcc+=dt;
   if(manureAcc>18){manureAcc=0;
-    if(state.cows.length>0&&cowMeshes.length>0){
+    if(curMap==='farm'&&state.cows.length>0&&cowMeshes.length>0){
       const m=cowMeshes[Math.floor(Math.random()*cowMeshes.length)];
       dropManure(m.position.x+(Math.random()-0.5),m.position.z+(Math.random()-0.5));
     }
@@ -3203,7 +3856,23 @@ function animate(ts){
   }
   // --- NPC ---
   for(const n of npcs){
+    if(!n.mesh.parent)continue; // v19: いまのマップに居ないNPCはスキップ
     n.t+=dt;
+    if(n.wander){ // v19: 街の住民は通りを行き来する
+      const wp=n.wander.pts[n.wi],dxw=wp[0]-n.mesh.position.x,dzw=wp[1]-n.mesh.position.z,dlw=Math.hypot(dxw,dzw);
+      if(dlw<0.6)n.wi=(n.wi+1)%n.wander.pts.length;
+      else{
+        const nx=n.mesh.position.x+dxw/dlw*1.4*dt,nz=n.mesh.position.z+dzw/dlw*1.4*dt;
+        const sy=walkY(Math.floor(nx),Math.floor(nz),n.mesh.position.y);
+        if(sy<=WH){n.mesh.position.x=nx;n.mesh.position.z=nz;n.mesh.position.y=sy;}
+        else n.wi=(n.wi+1)%n.wander.pts.length;
+        let dw=Math.atan2(dxw,dzw)-n.mesh.rotation.y;
+        while(dw>Math.PI)dw-=Math.PI*2;while(dw<-Math.PI)dw+=Math.PI*2;
+        n.mesh.rotation.y+=dw*Math.min(1,dt*8);
+      }
+      if(n.rig){rigPlay(n.rig,'walk',3.2);n.rig.mixer.update(Math.min(0.1,dt));}
+      continue;
+    }
     const ngy=topY(Math.floor(n.mesh.position.x),Math.floor(n.mesh.position.z))+1;
     if(n.rig){n.mesh.position.y=ngy;n.rig.mixer.update(Math.min(0.1,dt));}
     else n.mesh.position.y=ngy+Math.sin(n.t*2)*0.02;
@@ -3294,26 +3963,21 @@ function startGame(saveData){
   document.getElementById('loading').style.display='flex';
   setTimeout(()=>{
     state=saveData?saveData.state:freshState();
-    migrateFy(); // v17: v16セーブに事業セグメント帳簿を追補
+    migrateFy();  // v17: v16セーブに事業セグメント帳簿を追補
+    migrateV19(); // v19: 機械・補助金・病気・マップの新フィールドを追補
+    curMap=state.map||'farm'; // v19: セーブしたマップ(農場/街)で再開
     initThree();
-    genWorld();
-    applyLandParcels(); // v16: 購入済み区画の開拓を再現(セーブ復元)
-    applyEdits();
-    rebuildAll();
-    if(state.compostShed)buildCompostShed(); // v16: 堆肥舎
-    // 作物（v14: 初期作物なし=田んぼだけからスタート。セーブ分のみ復元）
-    for(const k in state.crops)addCropMesh(k,state.crops[k]);
-    buildDecor();
-    initTreeFruits();
-    updateTufts();
+    initNPCs();       // v19: 全NPC(農場+街)を生成
+    buildMapWorld();  // v19: いまのマップの世界・装飾・NPC配置(農場/街 共通処理)
     if(saveData&&saveData.player){player.x=saveData.player.x;player.y=saveData.player.y;player.z=saveData.player.z;}
     else{player.x=27.5;player.z=34.5;}
     // v18: 旧セーブ等で水の中・壁の中に居たら開始地点へ復帰(水没・詰み防止の保険)
-    if(walkY(Math.floor(player.x),Math.floor(player.z),WH)>WH){player.x=27.5;player.z=34.5;}
+    if(walkY(Math.floor(player.x),Math.floor(player.z),WH)>WH){
+      if(curMap==='town'){player.x=TOWN_SPAWN.x;player.z=TOWN_SPAWN.z;}
+      else{player.x=27.5;player.z=34.5;}
+    }
     player.y=topY(Math.floor(player.x),Math.floor(player.z))+1;
     initAvatar();
-    initNPCs();
-    refreshCowMeshes();
     bindControls();
     updateHUD();
     // v15: ここではオーバーレイを外さない。主人公のMeshy GLB読込完了
