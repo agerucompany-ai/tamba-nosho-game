@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v23 3本の橋どれでも街へ・牧草の繰越緩和</title>
+<title>丹波農商 牧場物語 v26 牛舎刷新(中央通路向き・餌箱給餌・仔牛授乳→離乳ペン)</title>
 <link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -72,15 +72,15 @@
   #pcGuide .gl{display:flex;align-items:center;gap:8px;padding:3px 2px;font-size:13.5px;color:#5a3714;font-weight:bold;}
   #pcGuide .gk{flex:0 0 auto;min-width:118px;text-align:center;background:#f0e2cc;border:2px solid #c9a86f;border-radius:8px;padding:2px 8px;font-size:12.5px;color:#6a4a25;}
   #pcGuideClose{margin-top:10px;width:100%;padding:8px;font-size:14px;font-weight:bold;color:#fff;background:#e8743f;border:3px solid #a04515;border-radius:11px;box-shadow:0 3px 0 #a04515;cursor:pointer;}
-  /* v14: 経営シミュレーションUI / v16: 日送り＋月送り */
-  #monthBtnWrap{position:fixed;top:calc(48px + env(safe-area-inset-top));right:8px;z-index:13;display:flex;flex-direction:column;gap:5px;align-items:flex-end;}
-  #dayBtn{background:#3a6fd8;border-color:#1f3f8a;box-shadow:0 4px 0 #1f3f8a;}
-  #dayBtn:active{transform:translateY(2px);box-shadow:0 1px 0 #1f3f8a;}
-  #monthBtn{background:#7a5fd8;border-color:#4a3a8a;box-shadow:0 4px 0 #4a3a8a;font-size:12px;padding:6px 11px;}
-  #monthBtn:active{transform:translateY(2px);box-shadow:0 1px 0 #4a3a8a;}
+  /* v25: 週単位時間送りボタン(日送り・月送りを廃止) */
+  #weekBtnWrap{position:fixed;top:calc(48px + env(safe-area-inset-top));right:8px;z-index:13;display:flex;flex-direction:column;gap:5px;align-items:flex-end;}
+  #weekBtn{background:#3a6fd8;border-color:#1f3f8a;box-shadow:0 4px 0 #1f3f8a;}
+  #weekBtn:active{transform:translateY(2px);box-shadow:0 1px 0 #1f3f8a;}
+  #week4Btn{background:#7a5fd8;border-color:#4a3a8a;box-shadow:0 4px 0 #4a3a8a;font-size:12px;padding:6px 11px;}
+  #week4Btn:active{transform:translateY(2px);box-shadow:0 1px 0 #4a3a8a;}
   #careChip{position:fixed;top:calc(128px + env(safe-area-inset-top));right:8px;z-index:12;padding:5px 10px;font-size:12px;font-weight:bold;color:#5a3714;display:none;background:rgba(255,253,245,.92);border:2px solid #c9a86f;border-radius:10px;pointer-events:none;}
   /* v24: 牛の🚶散歩(放し飼い)⇄🏠戻す(繋留)トグルボタン */
-  #cowModeBtn{position:fixed;top:calc(162px + env(safe-area-inset-top));right:8px;z-index:13;display:none;background:#3a8a3a;border-color:#1f5a1f;box-shadow:0 4px 0 #1f5a1f;font-size:13px;}
+  #cowModeBtn{position:fixed;top:calc(168px + env(safe-area-inset-top));right:8px;z-index:13;display:none;background:#3a8a3a;border-color:#1f5a1f;box-shadow:0 4px 0 #1f5a1f;font-size:13px;}
   #cowModeBtn:active{transform:translateY(2px);box-shadow:0 1px 0 #1f5a1f;}
   #cowModeBtn.walking{background:#e8743f;border-color:#a04515;box-shadow:0 4px 0 #a04515;}
   .fs{width:100%;border-collapse:collapse;margin:6px 0;}
@@ -105,12 +105,12 @@
 <div id="game"></div>
 <div id="top">
   <div class="panel stat" id="money">￥10,000,000</div>
-  <div class="panel stat" id="day">1年目 4月 1日</div>
+  <div class="panel stat" id="day">1年目 第14週</div>
   <div class="panel stat" id="place">丹波の里</div>
 </div>
 <div id="quest">🎯 …</div>
 <div id="menuBtn"><div class="mbtn" id="menuOpenBtn">☰ メニュー</div></div>
-<div id="monthBtnWrap"><div class="mbtn" id="dayBtn">⏭ 次の日へ</div><div class="mbtn" id="monthBtn">⏭⏭ 次の月へ(30日)</div></div>
+<div id="weekBtnWrap"><div class="mbtn" id="weekBtn">⏭ 次の週へ</div></div>
 <div id="careChip">🐂 餌⬜ 掃除⬜</div>
 <div class="mbtn" id="cowModeBtn">🚶 散歩(放し飼い)</div>
 <div id="joy"><div id="joyKnob"></div></div>
@@ -134,7 +134,7 @@
 <div id="seedPick"><div class="panel" id="seedPickBox"></div></div>
 <div id="title">
   <h1>🌾 丹波農商<br>牧場物語 <span style="font-size:16px">放置経営編</span></h1>
-  <div class="sub">現金1,000万円と棚田から始めるリアル農業経営！<br>「⏭ 次の日へ」で時間が進む。牛は毎日 餌やりと掃除。従業員に指示すれば「放置経営」もOK。<br>🐂牛はふだん牛舎の床の定位置に繋がれているよ。右の🚶散歩ボタンで放し飼い⇄🏠戻すで整列。<br>🏭東の巨大倉庫に農機・米・精米・加工・事務所を集約。🌉川の橋(北・中央・南の3本どれでも)を渡って西へ行くと丹波の街(役場・銀行・農協・修理屋・セリ市場)。<br>🌿牧草地は不動産屋で購入、牧草の収穫は春(5月)と秋(9月)の年2回(1回で半年+予備3ヶ月分)。マップの絵アイコンをタップすると説明が出るよ。毎年3月末は決算、現金が尽きたら倒産…🐂📒💰</div>
+  <div class="sub">現金1,000万円と棚田から始めるリアル農業経営！<br>時間は「⏭ 次の週へ」で1週間ずつ進む(週単位)。<br>🐄牛舎は中央に通路、牛は通路を向いて顔を出す。🌾通路の餌箱で餌やり(牧草＋配合飼料)、🧹壁ぎわのフンを掃除。🐂ふだんは定位置に繋留、🚶散歩ボタンで放し飼い⇄🏠戻すで整列。<br>🍼仔牛は生後4週まで母牛のそばでミルク→離乳したら仔牛ペンへ移して別飼育、32週で出荷。<br>🏭東の巨大倉庫に農機・米・精米・加工・事務所。🌉川の橋(北・中央・南)を渡ると丹波の街(役場・銀行・農協・修理屋・セリ市場)。🌿牧草地は不動産屋で購入、収穫は第18週(春)と第36週(秋)。1年=52週で決算。🐂📒💰</div>
   <button class="bigbtn" id="newBtn">▶ はじめる</button>
   <button class="bigbtn orange" id="contBtn">💾 続きから</button>
 </div>
@@ -155,10 +155,10 @@
       走査して屋根の下の床を探す)で常に床レベル(y=3)に接地。さらに移動は
       barnAreas() の「牛舎の内側の床の矩形」にクランプし、壁・屋根に一切
       上がれない(複数牛舎/増築牛舎でも各牛は自分の牛舎の床のみ)。
-   ② 牛舎を大型化:
-      ・古い牛舎: 6×6→10×8ブロック(壁3段+屋根y6・南入口3マス)。
-        母10+子10が床に余裕で整列。旧セーブはロード時に貼り替え(migrate)。
-      ・新築牛舎: 7×6→9×9ブロック(壁3段+屋根y6)。母15+子15が床に並ぶ。
+   ② 牛舎を大型化(v25):
+      ・古い牛舎: 16×12ブロック(v24の約3倍)。東側廊下+採食槽+西側スタンチョン区画。
+        母10+子10が余裕で整列。旧セーブはロード時に貼り替え(migrate)。
+      ・新築牛舎: 12×11ブロック(中央廊下型)。両側スタンチョン+採食槽。母15+子15。
       ・第二牛舎: 6×6→8×8ブロック。開拓地[12,58]は拡大に伴い[10,57]へ。
    ③ 牛は基本つながれている+🚶散歩⇄🏠戻す:
       デフォルトは各牛が牛舎の床の定位置(格子状の繋留スロット)に北向きで
@@ -585,8 +585,9 @@ const ECON={
   CALF_REPAY:500000,     // 子牛売却時に母牛の借金へ充当する額
   MOTHER_PRICE:500000,   // 8産後の親牛のベース売却価格(状態で±)
   BREED_RATE:0.8,        // 種付け成功率
-  PREG_MONTHS:10,        // 妊娠期間(ヶ月)
-  CALF_SHIP_AGE:8,       // 子牛の出荷可能月齢
+  PREG_WEEKS:40,         // 妊娠期間(週) ≈10ヶ月
+  CALF_SHIP_WEEKS:32,    // 子牛の出荷可能週齢(≈8ヶ月)
+  NURSE_WEEKS:4,         // 仔牛の授乳期間(週) ≈1ヶ月
   MAX_BIRTHS:8,          // 母牛の最大産子数
   BARN_CAP:10,           // v20: 古い牛舎(レンタル)の母牛収容数
   BARN_CAP_CALF:10,      // v20: 古い牛舎(レンタル)の子牛収容数
@@ -602,8 +603,15 @@ const ECON={
   GRASS_PRICE:10000,     // 余剰牧草の売値(1束)
   LAND_PASTURE_PRICE:1000000, // v22: 西の牧草地(基本区画)。開始時は牧草地なし→不動産屋で購入
   TAX_RATE:0.3,          // v15: 税率30%(牛の利益は非課税)
+  // ---- v25: 週単位時間の定数 ----
+  WEEKS_PER_YEAR:52,          // 1年=52週
+  GRASS_HARVEST_WEEKS:[18,36],// 牧草収穫週(春:第18週/秋:第36週)
+  RICE_PLANT_WEEK:14,         // 稲の作付け週(第14週=4月相当)
+  RICE_HARVEST_WEEK:40,       // 稲の収穫週(第40週=10月相当)
+  WATER_WEEKS:[18,22,26,30,34],// 水管理が必要な週(夏)
+  FORMULA_FEED_PRICE:8750,    // 配合飼料の週コスト(1頭。月35000円≈週8750円)
+  FORMULA_BULK_PRICE:50000,   // 配合飼料の一括購入価格(10頭分×1週相当)
   // ---- v16: 日次・土地・堆肥舎の前提値 ----
-  DAYS_PER_MONTH:30,     // 1ヶ月=30日
   MANURE_FEE:10000,      // 牛糞の外部処分費(1頭・月) 糞置き場/堆肥舎ができるまで
   DUNG_COST:2000000,     // v20: 糞置き場(簡易)=糞の処理のみ(処分費ゼロ)。牛舎増築の必須条件
   SHED_COST:15000000,    // v20: 本格堆肥舎(補助で750万)。牛糞→肥料の製造販売
@@ -651,26 +659,26 @@ function fmt(n){return '￥'+Math.round(n).toLocaleString();}
 function man(n){const v=n/10000;return (v%1===0?v:v.toFixed(1))+'万円';}
 
 // ---------- ゲーム状態 ----------
-const SAVE_KEY='tamba_v20_save'; // v20: 新キー(大改修のため旧セーブ非互換)
+const SAVE_KEY='tamba_v26_save'; // v26: 牛舎の構造刷新(片側1列/両側中央通路)でブロック編集が非互換のため新キー
 let state=null;
 function freshState(){return{
-  v:20,money:10000000,day:1,time:0.28,
-  year:1,month:4,monthN:0, // 1年目4月開始。monthNは通算の月数
-  dom:1,absDay:0,          // v16: dom=月内の日(1..30) / absDay=通算の経済日
+  v:25,money:10000000,day:1,time:0.28,
+  year:1,week:14,weekN:0,absWeek:0, // v25: 1年目第14週(4月相当)開始。weekN=通算週数
   res:{veg:0,bean:0,chestnut:0,compost:0,manure:0,veg_seed:0,bean_seed:0},
   barnRented:false,
   staff:{atsushi:false,yusuke:false,naoto:false},
   staffJobs:{atsushi:null,yusuke:null,naoto:null}, // v16: 指示した担当(rice/grass/cow/compost)
-  cows:[],   // 母牛 {id,name,preg(-1=未妊娠/0..9=妊娠ヶ月),births,debt,retired,bredMonth}
-  calves:[], // 子牛 {id,age(月齢),motherId}
+  formulaFeed:0, // v25: 配合飼料の在庫(単位:週×頭分)
+  cows:[],   // 母牛 {id,name,preg(-1=未妊娠/0..39=妊娠週数),births,debt,retired,bredWeek}
+  calves:[], // 子牛 {id,ageWeeks(週齢),motherId,bornWeekN,weaned}
   cowSeq:1,
   riceField:'none', // none=未作付け / planted=生育中 / ready=収穫待ち
   riceBags:0,shipMonth:-1,soldRiceBags:0,
-  riceMiss:0,waterMonth:-1, // v16: 水管理(5-9月に月1回)。サボった月数で収量減
+  riceMiss:0,waterWeek:-1, // v25: 水管理(夏の特定週に必要)。サボった回数で収量減
   grassSown:false,grassStock:0,grassProdLast:0,grassFedLast:0,
-  grassOutMonths:0, // v23: 牧草の在庫不足が連続している月数(餌代の段階化に使用)
-  grassCutMonth:-1, // v22: 直近の収穫を行った月(monthN)。収穫は5月と9月の年2回だけ
-  care:{fedDay:-1,cleanDay:-1,dirt:0,health:100}, // v16: 牛の日次世話
+  grassOutWeeks:0, // v25: 牧草の在庫不足が連続している週数(餌代の段階化に使用)
+  grassCutWeek:-1, // v25: 直近の収穫を行った週(weekN)。収穫は第18週(春)と第36週(秋)の年2回
+  care:{fedWeek:-1,cleanWeek:-1,dirt:0,health:100}, // v25: 牛の週次世話
   cowFree:false, // v24: 牛の放し飼い(🚶散歩)状態。falseなら各牛は牛舎の定位置に繋留
   compostShed:false,fertStock:0, // v16: 堆肥舎と肥料在庫
   land:{pasture1:false,grass2:false,rice2:false,barn2:false},   // v16: 購入した区画 / v22: pasture1=西の牧草地(基本。デフォルト無し)
@@ -688,7 +696,7 @@ function freshState(){return{
   dungYard:false,dungCost:0,      // v20: 糞置き場(簡易)=処理のみ・牛舎増築の必須条件
   newBarns:0,newBarnCosts:[],     // v20: 新築牛舎の棟数と取得原価
   ricePlanterBonus:false,         // v20: 田植え機で植えたか(収量+10%)
-  vetVisitDay:-1,ricePlantMonthN:-1,
+  vetVisitDay:-1,ricePlantWeekN:-1,
 };}
 // ---- v16: 規模ヘルパ(土地・堆肥舎の効果) ----
 function riceScale(){return state.land.rice2?ECON.RICE_SCALE2:1;}
@@ -702,25 +710,40 @@ function riceBagsYield(){
 }
 function riceShipMax(){return Math.round(ECON.RICE_SHIP_MAX*riceScale());}
 function grassSowCost(){return ECON.GRASS_SOW_COST-(state.compostShed?ECON.FERT_SAVE_GRASS:0);}
-// ---- v22: 牧草は春(5月)と秋(9月)の年2回収穫 ----
+// ---- v25: 週ベースの季節・作物ヘルパ ----
 function hasPasture(){return !!(state.land.pasture1||state.land.grass2);}
-function grassHarvestMonth(){return state.month===5||state.month===9;}
-// v23: 1回の収穫量。基本収量(72束/東の牧草地で144束)を下限に、牛が多い時は
-//      頭数×(6ヶ月+予備3ヶ月)まで増える=毎回収穫すれば次の収穫まで必ずもつ
+// 週→季節(spring/summer/autumn/winter)
+function weekToSeason(w){
+  if(w>=14&&w<=17)return 'spring';   // 第14-17週(4月上旬)
+  if(w>=18&&w<=35)return 'summer';   // 第18-35週(5-8月)
+  if(w>=36&&w<=44)return 'autumn';   // 第36-44週(9-10月)
+  return 'winter';
+}
+function currentSeason(){return weekToSeason(state.week);}
+function isGrassHarvestWeek(){return state.week===18||state.week===36;}  // 春第18週/秋第36週
+function isRicePlantWeek(){return state.week===ECON.RICE_PLANT_WEEK;}    // 第14週(4月)
+function isRiceHarvestWeek(){return state.week===ECON.RICE_HARVEST_WEEK;}// 第40週(10月)
+function isWaterWeek(){return state.week>=18&&state.week<=35&&state.week%4===2;}  // 夏の偶数(mod4==2)の週
+// v25: 牧草の1回の収穫量(19週分+予備)
 function grassCutYield(){
   const base=ECON.GRASS_YIELD*ECON.GRASS_CUT_MONTHS*(state.land.grass2?2:1);
   const need=herdCount()*ECON.GRASS_EAT*(ECON.GRASS_CUT_MONTHS+ECON.GRASS_BUFFER_MONTHS);
   return Math.max(base,need);
 }
-// v23: 牧草が足りない牛1頭あたりの餌代(段階化)。牧草運用中は在庫切れから
-//      FEED_GRACE_MONTHSヶ月は当座しのぎ2万、それ以降と牧草なし運用は市販3.5万
-function feedShortUnit(){return (state.grassSown&&(state.grassOutMonths||0)<ECON.FEED_GRACE_MONTHS)?ECON.FEED_MID:ECON.FEED_MARKET;}
-function monthsToNextGrassHarvest(){for(let d=1;d<=12;d++){const mm=((state.month-1+d)%12)+1;if(mm===5||mm===9)return d;}return 12;} // 次の収穫月まで何ヶ月か(余剰計算用)
-function nextGrassHarvestLabel(){return (((state.month-1+monthsToNextGrassHarvest())%12)+1)+'月';}
+// v25: 牧草が足りない牛1頭あたりの週次コスト(市販飼料換算)
+function feedShortUnit(){return (state.grassSown&&(state.grassOutWeeks||0)<ECON.FEED_GRACE_MONTHS*4)?ECON.FEED_MID/4:ECON.FEED_MARKET/4;}
+function weeksToNextGrassHarvest(){
+  for(let d=1;d<=ECON.WEEKS_PER_YEAR;d++){
+    const w=((state.week-1+d)%ECON.WEEKS_PER_YEAR)+1;
+    if(w===18||w===36)return d;
+  }
+  return ECON.WEEKS_PER_YEAR;
+}
+function nextGrassHarvestLabel(){const w=((state.week-1+weeksToNextGrassHarvest())%ECON.WEEKS_PER_YEAR)+1;return '第'+w+'週';}
 // v20: 牛舎の収容枠(母牛/子牛)。古い牛舎=10+10、南の牧場=+5+5、新築牛舎=1棟につき15+15
 function barnCapNow(){return (state.barnRented?ECON.BARN_CAP:0)+(state.land.barn2?ECON.BARN2_ADD:0)+state.newBarns*ECON.NEW_BARN_MO;}
 function calfCapNow(){return (state.barnRented?ECON.BARN_CAP_CALF:0)+(state.land.barn2?ECON.BARN2_ADD:0)+state.newBarns*ECON.NEW_BARN_CALF;}
-function isWaterSeason(){return state.month>=5&&state.month<=9;}
+function isWaterSeason(){return state.week>=18&&state.week<=35;}
 // ---------- v19: 牛舎・機械・補助金・病気のヘルパ / v20: 実売価格・糞置き場 ----------
 function hasBarn(){return state.barnRented||state.newBarns>0||state.land.barn2;}
 function dungOk(){return state.dungYard||state.compostShed;} // v20: 糞の処理設備(牛舎増築の必須条件)
@@ -744,7 +767,7 @@ const SUB_META={
 function machineOwned(k){return (k==='tractor'||k==='polisher')?true:!!state.machines[k].lvl;} // トラクター/精米機は最初から中古を保有
 function machineBroken(k){return machineOwned(k)&&state.machines[k].broken;}
 function procMult(){return (state.machines.processor.lvl&&!state.machines.processor.broken)?1.5:1;} // 加工機の効果
-function subApproved(c){const s=state.subsidy[c];return !!(s&&s.st==='approved'&&state.absDay<=s.expDay);}
+function subApproved(c){const s=state.subsidy[c];return !!(s&&s.st==='approved'&&state.absWeek<=s.expWeek);}
 function consumeSub(c){state.subsidy[c]=null;} // 承認は購入1回で使い切り
 function priceWithSub(base,c){const sub=subApproved(c);return{price:sub?Math.round(base*(1-ECON.SUB_RATE)):base,sub};}
 function shedPriceNow(){return priceWithSub(ECON.SHED_COST,'shed').price;}
@@ -775,8 +798,8 @@ function calfBasePrice(cf){return cf.sex==='M'?ECON.CALF_PRICE_M:ECON.CALF_PRICE
 function calfSalePrice(cf){return Math.round(calfBasePrice(cf)*(1+cowCondAdj(cf))/10000)*10000;}
 function motherSalePrice(c){return Math.round(ECON.MOTHER_PRICE*(1+cowCondAdj(c))/10000)*10000;}
 function sexMark(cf){return cf.sex==='M'?'♂オス':'♀メス';}
-// v20: 新規キーだが、万一の旧フィールド欠落に備えた追補(堅牢化)
-function migrateV20(){
+// v25: 新規キーだが、万一の旧フィールド欠落に備えた追補(堅牢化)
+function migrateV25(){
   if(!state.map)state.map='farm';
   if(!state.machines)state.machines={tractor:{lvl:'old',size:'mid',broken:false,cost:0},polisher:{lvl:'old',broken:false,cost:0},processor:{lvl:null,broken:false,cost:0},planter:{lvl:null,broken:false,cost:0},combine:{lvl:null,broken:false,cost:0}};
   if(!state.machines.planter)state.machines.planter={lvl:null,broken:false,cost:0};
@@ -789,16 +812,59 @@ function migrateV20(){
   if(state.ricePlanterBonus===undefined)state.ricePlanterBonus=false;
   if(state.shedCost===undefined)state.shedCost=state.compostShed?ECON.SHED_COST:0;
   if(state.vetVisitDay===undefined)state.vetVisitDay=-1;
-  if(state.ricePlantMonthN===undefined)state.ricePlantMonthN=-1;
-  // v22: 牧草地の区画(旧セーブで牧草を運用していた人には基本区画を付与して互換維持)
+  if(state.ricePlantWeekN===undefined)state.ricePlantWeekN=-1;
+  // v25: 週単位時間に移行。旧月ベースフィールドを週ベースに変換
+  if(state.week===undefined){
+    // 旧月フィールドから変換: month→week(概算:week≈month*4+14-52)
+    const oldMonth=state.month||4;
+    state.week=Math.min(52,Math.max(1,Math.round((oldMonth-1)*4+14)));
+    if(state.week>52)state.week=state.week-52;
+  }
+  if(state.weekN===undefined)state.weekN=state.monthN?state.monthN*4:0;
+  if(state.absWeek===undefined)state.absWeek=state.weekN;
+  // 旧care構造の移行
+  if(state.care&&state.care.fedDay!==undefined&&state.care.fedWeek===undefined){
+    state.care.fedWeek=Math.floor((state.care.fedDay||0)/7);
+    state.care.cleanWeek=Math.floor((state.care.cleanDay||0)/7);
+    delete state.care.fedDay;delete state.care.cleanDay;
+  }
+  if(state.care&&state.care.fedWeek===undefined)state.care.fedWeek=-1;
+  if(state.care&&state.care.cleanWeek===undefined)state.care.cleanWeek=-1;
+  // 旧grassOutMonths→grassOutWeeks
+  if(state.grassOutMonths!==undefined&&state.grassOutWeeks===undefined)state.grassOutWeeks=(state.grassOutMonths||0)*4;
+  if(state.grassOutWeeks===undefined)state.grassOutWeeks=0;
+  if(state.grassCutWeek===undefined)state.grassCutWeek=state.grassCutMonth!==undefined?(state.grassCutMonth*4):-1;
+  // 旧waterMonth→waterWeek
+  if(state.waterWeek===undefined)state.waterWeek=-1;
+  // v25: formulaFeed初期化
+  if(state.formulaFeed===undefined)state.formulaFeed=0;
+  // v25: 牧草地の区画
   if(state.land.pasture1===undefined)state.land.pasture1=!!(state.grassSown||state.grassStock>0||state.land.grass2);
-  if(state.grassOutMonths===undefined)state.grassOutMonths=0; // v23: 餌代の段階化カウンタ
-  for(const c of state.cows){if(c.sick===undefined){c.sick=false;c.sickDays=0;}if(c.fat===undefined)c.fat=60;if(c.sickCount===undefined)c.sickCount=0;}
-  for(const c of state.calves){if(c.sick===undefined){c.sick=false;c.sickDays=0;}if(c.fat===undefined)c.fat=50;if(c.sickCount===undefined)c.sickCount=0;if(!c.sex)c.sex=Math.random()<0.5?'F':'M';}
-  // ---- v24: 牛の繋留/散歩モードと、大きくなった古い牛舎への貼り替え ----
+  // 牛の週ベースフィールド追補
+  for(const c of state.cows){
+    if(c.sick===undefined){c.sick=false;c.sickDays=0;}
+    if(c.fat===undefined)c.fat=60;
+    if(c.sickCount===undefined)c.sickCount=0;
+    // 旧bredMonth→bredWeek
+    if(c.bredMonth!==undefined&&c.bredWeek===undefined)c.bredWeek=c.bredMonth*4;
+    if(c.bredWeek===undefined)c.bredWeek=0;
+    // 旧preg(月数)→preg(週数)
+    if(c.preg>0&&c.preg<=10)c.preg=c.preg*4; // 旧月数は週数に変換
+  }
+  for(const c of state.calves){
+    if(c.sick===undefined){c.sick=false;c.sickDays=0;}
+    if(c.fat===undefined)c.fat=50;
+    if(c.sickCount===undefined)c.sickCount=0;
+    if(!c.sex)c.sex=Math.random()<0.5?'F':'M';
+    // 旧age(月齢)→ageWeeks(週齢)
+    if(c.age!==undefined&&c.ageWeeks===undefined)c.ageWeeks=(c.age||0)*4;
+    if(c.ageWeeks===undefined)c.ageWeeks=0;
+    if(c.bornWeekN===undefined)c.bornWeekN=Math.max(0,state.weekN-(c.ageWeeks||0));
+    if(c.weaned===undefined)c.weaned=(c.ageWeeks||0)>=ECON.NURSE_WEEKS;
+  }
+  // v24: 牛の繋留/散歩モード
   if(state.cowFree===undefined)state.cowFree=false;
-  // 旧v23までの小さい牛舎(23-28×10-15)のブロック編集が残っていると屋根が
-  // 新しい牛舎の床の中に浮くため、賃借中なら大きい牛舎のブロックへ貼り替える(冪等)
+  // v25: 牛舎ブロックを最新寸法に貼り替え(冪等)
   if(state.barnRented)barnEditBlocks((x,y,z,t)=>{state.edits[key(x,y,z)]=t;});
 }
 
@@ -1182,9 +1248,9 @@ function genWorld(){
   //     「西の牧草地」を買うと terraformPasture1() で柵付きの牧草地になる ---
   flatten(35,49,8,21,2);
   for(let x=35;x<=49;x++)for(let z=8;z<=21;z++){gset(x,2,z,B.GRASS);}
-  // --- 牛舎建設よてい地（中央北） ---
-  flatten(22,31,10,18,2);
-  for(let x=22;x<=31;x++)for(let z=10;z<=18;z++)gset(x,2,z,B.GRASS);
+  // --- 牛舎建設よてい地 v26: 片側1列・縦長ホール(x14-30,z8-26)に合わせ整地拡大 ---
+  flatten(14,30,8,26,2);
+  for(let x=14;x<=30;x++)for(let z=8;z<=26;z++)gset(x,2,z,B.GRASS);
   // --- 堆肥場（南東） v22: 大倉庫の拡大(西壁x41)と干渉しないよう西へ移設(x34-40) ---
   flatten(34,40,30,37,2);
   for(let x=34;x<=40;x++)for(let z=30;z<=37;z++)gset(x,2,z,B.SOIL);
@@ -1300,16 +1366,26 @@ function buildWarehouseComplexBlocks(){
 //      干渉しない[10,57]へ微移動。母15+子15が床(内側7×7マス)に並ぶ。
 const NEW_BARN_PLOTS=[[68,12],[10,57],[68,44],[68,58],[40,58],[54,58]]; // v21: [68,26]は巨大倉庫と干渉するため南西の山へ移設
 function terraformNewBarn(i){
+  // v25: 新築牛舎は中央廊下型(N-S中央を廊下、両側にスタンチョン+採食槽)
   const p=NEW_BARN_PLOTS[i];if(!p)return;
   const[px,pz]=p;
-  flatten(px-1,px+9,pz-1,pz+9,2);
-  for(let x=px-1;x<=px+9;x++)for(let z=pz-1;z<=pz+9;z++)if(inWorld(x,z))gset(x,2,z,B.GRASS);
-  for(let x=px;x<=px+8;x++)for(let z=pz;z<=pz+8;z++){
+  flatten(px-1,px+12,pz-1,pz+11,2);
+  for(let x=px-1;x<=px+12;x++)for(let z=pz-1;z<=pz+11;z++)if(inWorld(x,z))gset(x,2,z,B.GRASS);
+  for(let x=px;x<=px+11;x++)for(let z=pz;z<=pz+10;z++){
     if(!inWorld(x,z))continue;
-    const wall=(x===px||x===px+8||z===pz||z===pz+8);
+    const wall=(x===px||x===px+11||z===pz||z===pz+10);
     if(wall){
-      const door=(z===pz+8&&x>=px+3&&x<=px+5); // 南入口3マス
+      const door=(z===pz+10&&x>=px+4&&x<=px+7); // 南入口4マス
       if(!door){gset(x,3,z,B.PLANK);gset(x,4,z,B.PLANK);gset(x,5,z,B.PLANK);}
+    } else {
+      // 中央廊下(x=px+5,px+6): PATH床
+      if(x===px+5||x===px+6)gset(x,2,z,B.PATH);
+      // 西側採食槽(x=px+4): HAYブロック
+      if(x===px+4&&z>=pz+1&&z<=pz+9)gset(x,3,z,B.HAY);
+      // 東側採食槽(x=px+7): HAYブロック
+      if(x===px+7&&z>=pz+1&&z<=pz+9)gset(x,3,z,B.HAY);
+      // 仕切り壁(3マスごと)
+      if((z===pz+3||z===pz+7)&&(x<=px+3||x>=px+8))gset(x,3,z,B.FENCE);
     }
     gset(x,6,z,B.HAY);
   }
@@ -1509,7 +1585,7 @@ function clearRiceVisual(){
 }
 function doRicePlant(){
   if(state.riceField!=='none'){toast('🌾 もう作付け済みだよ');return;}
-  if(state.month!==4){toast('🌾 田植えは春(4月)だけだよ(今は'+state.month+'月)');return;}
+  if(!isRicePlantWeek()){toast('🌾 田植えは第'+ECON.RICE_PLANT_WEEK+'週(春)だけだよ(今は第'+state.week+'週)');return;}
   if(machineBroken('tractor')){toast('🚜 トラクターが故障中で田植えできない！🔧街の修理屋で直そう('+man(machRepairCost('tractor'))+')');return;} // v19
   // v20: 小型トラクター(新品)は東の棚田(規模1.5倍)に非対応
   if(riceScale()>1&&state.machines.tractor.lvl==='new'&&state.machines.tractor.size==='small'){
@@ -1519,22 +1595,23 @@ function doRicePlant(){
   if(state.money<cost){toast('💸 苗代'+man(cost)+'が払えない…現金が足りないよ');return;}
   addExpense(cost,'seed');
   state.riceField='planted';
-  state.ricePlantMonthN=state.monthN; // v19: 街滞在中の見た目復元用
+  state.ricePlantWeekN=state.weekN; // v25: 街滞在中の見た目復元用
   state.ricePlanterBonus=!!(state.machines.planter.lvl&&!state.machines.planter.broken); // v20: 田植え機で+10%
-  state.riceMiss=0;state.waterMonth=-1; // v16: 水管理カウンタをリセット
+  state.riceMiss=0;state.waterWeek=-1; // v25: 水管理カウンタをリセット
   buildRiceVisual(0);
   fanfare();
-  toast('🌾 苗代'+man(cost)+'を払って田植えした！(10月に'+riceBagsYield()+'袋収穫見込み)'+(state.compostShed?'(堆肥舎の肥料で−50万)':''));
+  toast('🌾 苗代'+man(cost)+'を払って田植えした！(第'+ECON.RICE_HARVEST_WEEK+'週に'+riceBagsYield()+'袋収穫見込み)'+(state.compostShed?'(堆肥舎の肥料で−50万)':''));
   if(state.ricePlanterBonus)toast('🌱 田植え機で機械化！今年の収量+10%');
-  toast('🚿 5〜9月は毎月1回「水の管理」！サボると収量が5%ずつ減るよ');
+  toast('🚿 夏(第18〜35週)は数週間に1回「水の管理」！サボると収量が5%ずつ減るよ');
   updateHUD();
 }
 // v16: 水管理(5〜9月に月1回)。自分で棚田に行くか、米担当の従業員が自動でやる
 function doRiceWater(who){
   if(state.riceField!=='planted'){toast('🌾 いまは水管理の必要はないよ');return false;}
-  if(!isWaterSeason()){toast('🚿 水管理は5〜9月だけだよ');return false;}
-  if(state.waterMonth===state.monthN){toast('🚿 今月の水管理は済んでいるよ');return false;}
-  state.waterMonth=state.monthN;
+  if(!isWaterSeason()){toast('🚿 水管理は夏(第18〜35週)だけだよ');return false;}
+  if(!isWaterWeek()){toast('🚿 今週は水管理の必要はないよ(次の水管理週まで待とう)');return false;}
+  if(state.waterWeek===state.weekN){toast('🚿 今週の水管理は済んでいるよ');return false;}
+  state.waterWeek=state.weekN;
   if(!who){toast('🚿 田んぼの水を管理した！(今月分OK)');sfx(500,.07,'sine',.05);}
   updateHUD();
   return true;
@@ -1559,10 +1636,10 @@ function doRiceHarvest(){
 function shipRice(){
   if(state.riceBags<=0){toast('📦 大倉庫に米がないよ(4月作付け→10月収穫)');return;}
   if(machineBroken('polisher')){toast('🍚 精米機が故障中で出荷できない！🔧街の修理屋で直そう('+man(machRepairCost('polisher'))+')');return;} // v19
-  if(state.shipMonth===state.monthN){toast('🍚 精米出荷は月1回。⏭で月を進めてね');return;}
+  if(state.shipMonth===state.weekN){toast('🍚 精米出荷は週1回。⏭で次の週へ進めてね');return;}
   const n=Math.min(riceShipMax(),state.riceBags);
   state.riceBags-=n;state.soldRiceBags+=n;
-  state.shipMonth=state.monthN;
+  state.shipMonth=state.weekN;
   addSale(n*ECON.RICE_BAG_PRICE,'rice');
   updateRiceSacks(); // v20: 大倉庫の米袋の見た目を更新
   sfxSeq([[880,.06],[1100,.08]]);
@@ -1572,20 +1649,20 @@ function shipRice(){
 function riceFieldLabel(){
   if(state.riceField==='ready')return'🌾 米を収穫する('+riceBagsYield()+'袋)';
   if(state.riceField==='planted'){
-    if(isWaterSeason()&&state.waterMonth!==state.monthN)return'🚿 水の管理をする(今月まだ)';
-    return'🌾 生育中(10月に収穫)';
+    if(isWaterSeason()&&isWaterWeek()&&state.waterWeek!==state.weekN)return'🚿 水の管理をする(今週まだ)';
+    return'🌾 生育中(第'+ECON.RICE_HARVEST_WEEK+'週に収穫)';
   }
-  return state.month===4?'🌾 田植えする(苗代'+man(riceSeedCost())+')':'🌾 棚田(田植えは4月)';
+  return isRicePlantWeek()?'🌾 田植えする(苗代'+man(riceSeedCost())+')':'🌾 棚田(田植えは第'+ECON.RICE_PLANT_WEEK+'週)'; // v25: 週単位
 }
 function riceFieldAction(){
   if(state.riceField==='ready'){doRiceHarvest();return;}
   if(state.riceField==='planted'){
-    if(isWaterSeason()&&state.waterMonth!==state.monthN){doRiceWater(null);return;}
-    toast('🌾 生育中… ⏭で日を進めて10月に収穫しよう'+(isWaterSeason()?'(今月の水管理は済み)':''));
+    if(isWaterSeason()&&isWaterWeek()&&state.waterWeek!==state.weekN){doRiceWater(null);return;} // v25: 週ベース
+    toast('🌾 生育中… ⏭で週を進めて第'+ECON.RICE_HARVEST_WEEK+'週に収穫しよう'+(isWaterSeason()?'(今週の水管理は済み)':''));
     return;
   }
-  if(state.month===4)doRicePlant();
-  else toast('🌾 田植えは4月だよ(今は'+state.month+'月。⏭で春を待とう)');
+  if(isRicePlantWeek())doRicePlant(); // v25: 週ベース
+  else toast('🌾 田植えは第'+ECON.RICE_PLANT_WEEK+'週だよ(今は第'+state.week+'週。⏭で春を待とう)');
 }
 // ---------- v22: 牧草（作付けで育成開始→収穫は🌸春5月と🍂秋9月の年2回。餌代3.5万→1万に。余剰は売却） ----------
 function sowGrass(){
@@ -1603,20 +1680,20 @@ function sowGrass(){
 // v22: 収穫は5月と9月の年2回だけ。1回で6ヶ月分(72束・東の牧草地で144束)。担当従業員は自動
 function doGrassCut(who){
   if(!state.grassSown){toast('🌿 まだ牧草を作付けしていないよ');return false;}
-  if(!grassHarvestMonth()){if(!who)toast('🌿 牧草は育成中。収穫は🌸5月と🍂9月の年2回だよ(いまは'+state.month+'月・次は'+nextGrassHarvestLabel()+')');return false;}
-  if(state.grassCutMonth===state.monthN){if(!who)toast('✂ 今シーズンの収穫は済んでいるよ(次は'+nextGrassHarvestLabel()+')');return false;}
-  state.grassCutMonth=state.monthN;
+  if(!isGrassHarvestWeek()){if(!who)toast('🌿 牧草は育成中。収穫は🌸第18週(春)と🍂第36週(秋)の年2回だよ(今は第'+state.week+'週・次は'+nextGrassHarvestLabel()+')');return false;}
+  if(state.grassCutWeek===state.weekN){if(!who)toast('✂ 今シーズンの収穫は済んでいるよ(次は'+nextGrassHarvestLabel()+')');return false;}
+  state.grassCutWeek=state.weekN;
   const y=grassCutYield();
   state.grassStock+=y;
   state.grassProdLast=y;
-  if(!who){toast('✂ '+(state.month===5?'🌸春':'🍂秋')+'の牧草を収穫した！+'+y+'束(在庫'+state.grassStock+'束)');sfx(420,.07);}
+  if(!who){toast('✂ '+(state.week===18?'🌸春(第18週)':'🍂秋(第36週)')+'の牧草を収穫した！+'+y+'束(在庫'+state.grassStock+'束)');sfx(420,.07);}
   updateHUD();
   return true;
 }
 function sellGrassSurplus(auto){
-  const reserve=herdCount()*ECON.GRASS_EAT*(monthsToNextGrassHarvest()+ECON.GRASS_BUFFER_MONTHS); // v23: 次の収穫月まで+予備3ヶ月分は残す(取り逃し1回の緩衝)
+  const reserve=herdCount()*ECON.GRASS_EAT*(Math.ceil(weeksToNextGrassHarvest()/4)+ECON.GRASS_BUFFER_MONTHS); // v25: 次の収穫週まで+予備分は残す
   const surplus=state.grassStock-reserve;
-  if(surplus<=0){if(!auto)toast('🌿 余剰牧草はないよ(在庫'+state.grassStock+'束は次の収穫'+nextGrassHarvestLabel()+'まで+予備'+ECON.GRASS_BUFFER_MONTHS+'ヶ月分の牛の餌に確保)');return 0;}
+  if(surplus<=0){if(!auto)toast('🌿 余剰牧草はないよ(在庫'+state.grassStock+'束は次の収穫'+nextGrassHarvestLabel()+'まで+予備分の牛の餌に確保)');return 0;}
   state.grassStock-=surplus;
   addSale(surplus*ECON.GRASS_PRICE,'grass');
   toast('🌿 余剰牧草'+surplus+'束を売却 +'+fmt(surplus*ECON.GRASS_PRICE));
@@ -1722,7 +1799,7 @@ let barnSign=null;
 function updateBarnSign(){
   if(curMap!=='farm')return; // v19: 街では看板なし(帰農時にbuildDecorで再生成)
   if(barnSign){removeSignInfo(barnSign);decoGroup.remove(barnSign);}
-  barnSign=addSign(24.0,18.6,'🏚',{t:'🏚 古い牛舎',
+  barnSign=addSign(26.0,21.6,'🏚',{t:'🏚 古い牛舎', // v25: 3倍大型化後の南入口前
     b:()=>state.barnRented
       ?('賃借中(家賃 月3万円)。収容枠: 母牛'+state.cows.length+'/'+barnCapNow()+'頭・子牛'+state.calves.length+'/'+calfCapNow()+'頭。<br>牛は毎日🍼餌やり＋🧹掃除！種付け・売却・世話は牛舎メニューで。')
       :'家賃 月3万円で借りられる古い牛舎(母牛10頭+子牛10頭)。設備投資なしの低資本で牛を飼い始められるよ。牛は🐂街のセリ市場で与信購入(現金は減らない)。',
@@ -2006,14 +2083,15 @@ function buildPastureDecor(){
   }
   hayRoll(38.5,11.5);hayRoll(41,17.2);hayRoll(45.5,10.3);hayRoll(44,19.5);
   addSign(37,14.5,'🌿',{t:'🌿 牧草地',
-    b:()=>'牧草を作付け('+man(grassSowCost())+')すると育成が始まり、🌸春(5月)と🍂秋(9月)の年2回✂収穫できる(1回'+grassCutYield()+'束)。牛1頭は月1束消費、余りは1束1万円で売れる(餌代が3.5万→1万/頭に)。<br>いま: '+(state.grassSown?('作付け済み・在庫'+state.grassStock+'束・'+(grassHarvestMonth()?(state.grassCutMonth===state.monthN?'今シーズンの収穫✅済':'✂収穫できる月！'):'育成中(次の収穫は'+nextGrassHarvestLabel()+')')):'未作付け'),
-    btns:()=>state.grassSown?(grassHarvestMonth()&&state.grassCutMonth!==state.monthN?[['✂ 牧草を収穫する(春・秋の年2回)',()=>doGrassCut(null)]]:[]):[['🌿 牧草を育てる('+man(grassSowCost())+')',()=>sowGrass()]]});
+    b:()=>'牧草を作付け('+man(grassSowCost())+')すると育成が始まり、🌸春(第18週)と🍂秋(第36週)の年2回✂収穫できる(1回'+grassCutYield()+'束)。牛1頭は週1束消費、余りは1束1万円で売れる(餌代が3.5万→1万/頭に)。<br>いま: '+(state.grassSown?('作付け済み・在庫'+state.grassStock+'束・'+(isGrassHarvestWeek()?(state.grassCutWeek===state.weekN?'今シーズンの収穫✅済':'✂収穫できる週！'):'育成中(次の収穫は'+nextGrassHarvestLabel()+')')):'未作付け'), // v25: 週ベース
+    btns:()=>state.grassSown?(isGrassHarvestWeek()&&state.grassCutWeek!==state.weekN?[['✂ 牧草を収穫する(春・秋の年2回)',()=>doGrassCut(null)]]:[]):[['🌿 牧草を育てる('+man(grassSowCost())+')',()=>sowGrass()]]});
   buildTufts();updateTufts();
 }
 // v21: 新牛舎の看板(アイコン+クリック説明)
 function addNewBarnSign(i){
   const p=NEW_BARN_PLOTS[i];
-  addSign(p[0]+4.5,p[1]-0.8,'🐂',{t:'🐂 新牛舎'+(i+1)+'号棟',b:'⛰山を切り開いて建てた新築牛舎(母牛+'+ECON.NEW_BARN_MO+'頭・子牛+'+ECON.NEW_BARN_CALF+'頭・家賃なし)。牛の世話・種付け・売却は牛舎メニューで。',btns:[['🐂 牛舎メニュー',()=>{menuTab='cows';openMenu();}]]});
+  // v25: 中央廊下型(12×11)
+  addSign(p[0]+5.5,p[1]-0.8,'🐂',{t:'🐂 新牛舎'+(i+1)+'号棟',b:'⛰山を切り開いて建てた新築牛舎(母牛+'+ECON.NEW_BARN_MO+'頭・子牛+'+ECON.NEW_BARN_CALF+'頭・家賃なし)。牛の世話・種付け・売却は牛舎メニューで。',btns:[['🐂 牛舎メニュー',()=>{menuTab='cows';openMenu();}]]});
 }
 
 // ---------- アバター（ボクセル） ----------
@@ -2059,8 +2137,8 @@ window.__v4dbg.getState=()=>state; // v14: 検証用
 window.__v4dbg.icons=infoIcons;   // v21: 検証用(クリック可能なアイコン一覧)
 window.__v4dbg.pickIconAt=(x,y)=>pickIconAt(x,y); // v21: 検証用
 // v16: 検証用（日送り/月送り/購入をコードから叩ける）
-window.__v4dbg.nextDay=()=>nextDay();
-window.__v4dbg.nextMonth=()=>nextMonthBatch();
+window.__v4dbg.nextDay=()=>nextDay(); // v25: =nextWeek()
+window.__v4dbg.nextMonth=()=>nextMonthBatch(); // v25: =next4Weeks()
 window.__v4dbg.buyLand=k=>buyLand(k);
 let gltfLoaderInst=null;
 function getLoader(){
@@ -2320,7 +2398,7 @@ function initNPCs(){
 function placeNPCs(){
   for(const n of npcs){
     let pos=n.homePos,show=(n.map===curMap);
-    if(n.key==='juui'&&curMap==='farm'&&state.vetVisitDay===state.absDay){show=true;pos=[33.0,18.5];} // 往診中の獣医 v24: 拡大した牛舎の前へ
+    if(n.key==='juui'&&curMap==='farm'&&state.vetVisitDay===state.absWeek){show=true;pos=[33.0,18.5];} // 往診中の獣医 v24: 拡大した牛舎の前へ
     if(!show){scene.remove(n.mesh);continue;}
     scene.add(n.mesh);
     const y=topY(Math.floor(pos[0]),Math.floor(pos[1]))+1;
@@ -2345,15 +2423,20 @@ function cowMesh(wagyu){
   if(wagyu){g.scale.setScalar(1.25);}else{g.scale.setScalar(0.8);}
   return g;
 }
-function barnCenter(){return[27,13.5];} // v10: 古い牛舎の中心(v24: 拡大後)
+function barnCenter(){return[18,17];} // v26: 古い牛舎の通路中央(x14-30,z8-26)
 // v24: 全牛舎(古い牛舎+第二牛舎+新築牛舎)の「内側の床の矩形」。牛のスポーン・
 //      繋留スロット・散歩(徘徊)はすべてこの矩形にクランプされるので、
 //      牛が壁や屋根の上に乗ることは構造的にできない(①屋根バグの根本修正)。
 function barnAreas(){
-  const list=[{cx:27,cz:14,x0:23.4,x1:30.6,z0:11.4,z1:16.4}]; // 古い牛舎(10×8)の床
-  if(state.land.barn2)list.push({cx:27,cz:57,x0:24.4,x1:29.6,z0:54.4,z1:59.4}); // 第二牛舎(8×8)
+  // v26: type='oneside'(片側1列)/'central'(両側・中央通路)。
+  //   rowsX=母牛の列x座標(oneside=1列/central=2列)、faceMid=中央通路のx、calf=離乳仔牛ペン矩形。
+  const list=[{type:'oneside',cx:15.5,cz:16,x0:14.6,x1:16.4,z0:8.7,z1:25.3,   // 古い牛舎: 母牛列(x15)+採食槽(x16)
+    rowsX:[15], faceMid:18, calf:{x0:19.7,x1:23.3,z0:13.7,z1:20.3}}];
+  if(state.land.barn2)list.push({type:'central',cx:27,cz:57,x0:24.4,x1:29.6,z0:54.4,z1:59.4,
+    rowsX:[25.2,28.8], faceMid:27, calf:{x0:25,x1:29,z0:58.4,z1:59.2}}); // 第二牛舎(両側)
   for(let i=0;i<state.newBarns;i++){const p=NEW_BARN_PLOTS[i];if(!p)continue;
-    list.push({cx:p[0]+4.5,cz:p[1]+4.5,x0:p[0]+1.4,x1:p[0]+7.6,z0:p[1]+1.4,z1:p[1]+7.4});} // 新築牛舎(9×9)
+    list.push({type:'central',cx:p[0]+5.5,cz:p[1]+5,x0:p[0]+1.4,x1:p[0]+10.6,z0:p[1]+1.4,z1:p[1]+9.6,
+      rowsX:[p[0]+3,p[0]+8], faceMid:p[0]+5.5, calf:{x0:p[0]+1.6,x1:p[0]+10.4,z0:p[1]+8.5,z1:p[1]+9.4}});} // 新築(両側・中央通路)
   return list;
 }
 function barnCenters(){return barnAreas().map(a=>[a.cx,a.cz]);} // v20互換
@@ -2389,35 +2472,62 @@ function cowBarnIndex(){ // id→牛舎番号(m=母牛 c=子牛)
   alloc(state.cows,0,'m');alloc(state.calves,1,'c');
   return map;
 }
-// v24: 繋留スロット=牛舎の床に格子状の定位置を割り当てる(母牛が北側・子牛が南側。
-//      北向きに整列するので餌やり・なでる等のアクションがやりやすい)
+// v26: 繋留時の顔の向き=通路(faceMid)側へ。faceMidより西の牛=東向き(rot0)、東の牛=西向き(rotπ)
+function barnFaceRot(area,cowX){return cowX<area.faceMid?0:Math.PI;}
+// v26: 定位置の割当。母牛=通路を向く列に整列(顔が見える)。仔牛は授乳中(生後4週未満)は母の隣、
+//      離乳後は仔牛ペンへ。牛は毎日ミルク/餌の対象になる。
+function isNursing(cf){return cf&&!cf.weaned&&(state.weekN-(cf.bornWeekN||0))<ECON.NURSE_WEEKS;}
 function assignCowSlots(){
   const areas=barnAreas();if(!areas.length||!cowMeshes.length)return;
   const bmap=cowBarnIndex();
-  const groups=areas.map(()=>[]);
+  const perBarn=areas.map(()=>({mothers:[],weaned:[]}));
+  const motherMeshById={};
   for(const m of cowMeshes){
     const u=m.userData;
-    const k2=u.calf?('c'+u.calf.id):('m'+(u.cow?u.cow.id:0));
-    u.bi=Math.min(bmap[k2]!==undefined?bmap[k2]:0,areas.length-1);
-    groups[u.bi].push(m);
+    if(u.big){
+      const bi=Math.min(bmap['m'+(u.cow?u.cow.id:0)]??0,areas.length-1);
+      u.bi=bi;perBarn[bi].mothers.push(m);motherMeshById[u.cow?u.cow.id:-1]=m;
+    }
   }
-  groups.forEach((g,bi)=>{
-    const a=areas[bi],w=a.x1-a.x0,d=a.z1-a.z0;
-    g.sort((p,q2)=>((q2.userData.big?1:0)-(p.userData.big?1:0))||(((p.userData.cow||p.userData.calf).id)-((q2.userData.cow||q2.userData.calf).id)));
-    const cols=Math.max(1,Math.floor(w/1.55)+1);
+  // 母牛: 各牛舎の列(oneside=1列/central=2列)に、通路を向いて縦に整列
+  areas.forEach((a,bi)=>{
+    const g=perBarn[bi].mothers;
+    g.sort((p,q2)=>((p.userData.cow?.id||0)-(q2.userData.cow?.id||0)));
+    const rows=a.rowsX||[a.cx],per=Math.max(1,Math.ceil(g.length/rows.length));
+    const zTop=a.z0+0.5,zBot=a.z1-0.5;
+    g.forEach((m,i)=>{
+      const r=Math.min(Math.floor(i/per),rows.length-1),col=rows[r];
+      const j=i%per,n=Math.min(per,g.length-r*per);
+      const pz=n>1?zTop+(zBot-zTop)*j/(n-1):(zTop+zBot)/2;
+      m.userData.slot={x:col,z:pz};
+      m.userData.roam={x0:col-0.35,x1:col+0.35,z0:zTop,z1:zBot};
+      if(!m.userData.placed){m.position.set(col,cowFloorY(col,pz),pz);m.rotation.y=barnFaceRot(a,col);m.userData.placed=true;}
+    });
+  });
+  // 仔牛: 授乳中は母の隣(通路寄り)、離乳後はペンへ
+  for(const m of cowMeshes){
+    const u=m.userData;if(u.big)continue;
+    const cf=u.calf;const bi=Math.min(bmap['c'+(cf?cf.id:0)]??0,areas.length-1);u.bi=bi;
+    const a=areas[bi],mm=cf?motherMeshById[cf.motherId]:null;
+    if(isNursing(cf)&&mm){
+      const s=mm.userData.slot||{x:mm.position.x,z:mm.position.z};
+      const side=(s.x<a.faceMid)?0.55:-0.55; // 母の通路側に寄り添う
+      const cx=s.x+side,cz=s.z+0.35;
+      u.slot={x:cx,z:cz};u.roam={x0:cx-0.3,x1:cx+0.3,z0:cz-0.3,z1:cz+0.3};u.nursing=true;
+      if(!u.placed){m.position.set(cx,cowFloorY(cx,cz),cz);m.rotation.y=mm.rotation.y;u.placed=true;}
+    }else{u.nursing=false;perBarn[bi].weaned.push(m);}
+  }
+  // 離乳仔牛を仔牛ペンにグリッド配置
+  areas.forEach((a,bi)=>{
+    const g=perBarn[bi].weaned,pen=a.calf;if(!g.length||!pen)return;
+    const pw=pen.x1-pen.x0,pd=pen.z1-pen.z0,cols=Math.max(1,Math.floor(pw/1.05)+1);
     const rows=Math.max(1,Math.ceil(g.length/cols));
-    const sx=cols>1?w/(cols-1):0,sz=rows>1?Math.min(1.9,d/(rows-1)):0;
     g.forEach((m,i)=>{
       const col=i%cols,row=Math.floor(i/cols);
-      const ox=(row%2===1&&cols>1)?sx*0.5:0; // 千鳥配置(前後の列で頭をずらす)
-      const px=Math.max(a.x0,Math.min(a.x1,a.x0+(cols>1?col*sx+ox:w/2)));
-      const pz=a.z0+(rows>1?row*sz:d/2);
-      m.userData.slot={x:px,z:pz};
-      if(!m.userData.placed){ // 生成直後は即その場へ(以降は歩いて移動)
-        m.position.set(px,cowFloorY(px,pz),pz);
-        m.rotation.y=Math.PI/2; // 北向き
-        m.userData.placed=true;
-      }
+      const px=pen.x0+(cols>1?pw*col/(cols-1):pw/2);
+      const pz=pen.z0+(rows>1?pd*row/(rows-1):pd/2);
+      m.userData.slot={x:px,z:pz};m.userData.roam={x0:pen.x0,x1:pen.x1,z0:pen.z0,z1:pen.z1};
+      if(!m.userData.placed){m.position.set(px,cowFloorY(px,pz),pz);m.rotation.y=Math.PI;m.userData.placed=true;}
     });
   });
 }
@@ -2496,7 +2606,7 @@ function timeLabel(){
   const t=state.time;
   if(t<0.17)return'朝';if(t<0.34)return'昼';if(t<0.5)return'夕方';return'夜';
 }
-function ymLabel(){return state.year+'年目 '+state.month+'月';}
+function ymLabel(){return ymdLabel();} // v25: 週単位表示に統一
 function updateHUD(){
   const m=document.getElementById('money');
   m.textContent=fmt(state.money);
@@ -2513,7 +2623,7 @@ const QUESTS=[
  {s:'🍚 精米して出荷',t:'📦大倉庫の🍚精米機で「精米して出荷」しよう(1袋3万円・月1回)。精米機のアイコンからも出荷できるよ',c:()=>state.soldRiceBags>0},
  {s:'📒 決算を見よう',t:'3月末まで進めて決算を見よう(黒字を目指せ！)。帳簿はメニューか🏢事務所のアイコンから',c:()=>!!state.lastResult},
  {s:'🐂 牛を飼おう',t:'🏚牛舎を借りて(月3万円)、🌉川の橋を渡って街へ行き🐂セリでメス牛を買おう(与信100万円=現金は減らない)',c:()=>state.cows.length>0||state.calves.length>0},
- {s:'🍼 牛の世話をしよう',t:'牛は毎日🍼餌やり＋🧹掃除！よく食べた牛は太って高く売れる(+30%まで)。サボると健康低下で安くなるよ',c:()=>state.care.fedDay>=0},
+ {s:'🍼 牛の世話をしよう',t:'牛は週1回🍼餌やり＋🧹掃除！よく食べた牛は太って高く売れる(+30%まで)。サボると健康低下で安くなるよ',c:()=>state.care.fedWeek>=0},
  {s:'🤝 従業員に指示',t:'🏭大倉庫の🏢事務所で従業員を雇い「🐂牛の世話」を指示して自動化しよう(放置経営！)',c:()=>!!staffWithJob('cow')},
  {s:'🟤 糞置き場を作ろう',t:'🟫堆肥場に🟤糞置き場(200万)を作ろう(糞の処分費ゼロ＋⛰牛舎増築の必須条件)',c:()=>state.dungYard||state.compostShed},
  {s:'🏭 堆肥舎を建てよう',t:'🏭本格堆肥舎(1500万・🏛役場の補助で750万)を建てて肥料事業を始めよう(牛糞→肥料の製造販売)',c:()=>state.compostShed},
@@ -2653,13 +2763,19 @@ function cowStatusText(c){
   const sick=c.sick?'🤒病気'+(c.sickDays||0)+'日目(獣医を呼ぼう！)・':''; // v19
   const fat='肥育'+Math.round(c.fat!==undefined?c.fat:50); // v20
   if(c.retired)return sick+c.name+'：8産で繁殖終了。🐂セリで'+man(motherSalePrice(c))+'で売却できるよ('+fat+')／'+debt;
-  if(c.preg>=0)return sick+c.name+'：妊娠'+c.preg+'/'+ECON.PREG_MONTHS+'ヶ月・出産'+c.births+'回・'+fat+'／'+debt;
+  if(c.preg>=0)return sick+c.name+'：妊娠'+c.preg+'/'+ECON.PREG_WEEKS+'週・出産'+c.births+'回・'+fat+'／'+debt;
   return sick+c.name+'：未妊娠(牛舎メニューで種付け)・出産'+c.births+'回・'+fat+'／'+debt;
 }
 function calfStatusText(c){
   const sick=c.sick?'🤒病気'+(c.sickDays||0)+'日目(獣医を呼ぼう！)・':''; // v19
   const fat='肥育'+Math.round(c.fat!==undefined?c.fat:50); // v20
-  return sick+sexMark(c)+'の子牛'+c.id+'：月齢'+c.age+'ヶ月・'+fat+(c.age>=ECON.CALF_SHIP_AGE?'・出荷できる！(セリで'+man(calfSalePrice(c))+')':'(8ヶ月で出荷可)');
+  // v25: 授乳期間(生後4週)と週齢で表示
+  const nursing=!c.weaned&&(state.weekN-(c.bornWeekN||0))<ECON.NURSE_WEEKS;
+  const nurseWk=nursing?(ECON.NURSE_WEEKS-(state.weekN-(c.bornWeekN||0))):0;
+  const nurseTxt=nursing?'🍼授乳中(あと'+nurseWk+'週で離乳)':(c.weaned?'離乳済':'');
+  const shipable=(c.ageWeeks||0)>=ECON.CALF_SHIP_WEEKS;
+  const ageTxt='週齢'+(c.ageWeeks||0)+'週';
+  return sick+sexMark(c)+'の子牛'+c.id+'：'+ageTxt+'・'+nurseTxt+'・'+fat+(shipable?'・出荷できる！(セリで'+man(calfSalePrice(c))+')'  :'('+ECON.CALF_SHIP_WEEKS+'週で出荷可)');
 }
 function actCow(m){
   const u=m.userData;
@@ -2676,14 +2792,14 @@ function actNPC(n){
   sfx(600,.05,'sine',.04);
 }
 
-// ---------- v16: 牛の日次世話(餌やり＋牛舎掃除) ----------
-// 牛がいる日は毎日必要。担当従業員がいれば自動。サボると健康低下・汚れ蓄積。
-function careDoneToday(){return state.care.fedDay===state.absDay&&state.care.cleanDay===state.absDay;}
+// ---------- v25: 牛の週次世話(餌やり＋牛舎掃除。週1回で充分) ----------
+// 牛がいる週は毎週必要。担当従業員がいれば自動。サボると健康低下・汚れ蓄積。
+function careDoneThisWeek(){return state.care.fedWeek===state.weekN&&state.care.cleanWeek===state.weekN;}
 function doCowCare(who){
   if(herdCount()===0){if(!who)toast('🐂 牛はまだいないよ');return false;}
-  if(careDoneToday()){if(!who)toast('🍼 今日の世話(餌やり+掃除)は済んでいるよ');return false;}
-  state.care.fedDay=state.absDay;
-  state.care.cleanDay=state.absDay;
+  if(careDoneThisWeek()){if(!who)toast('🍼 今週の世話(餌やり+掃除)は済んでいるよ');return false;}
+  state.care.fedWeek=state.weekN;
+  state.care.cleanWeek=state.weekN;
   state.care.dirt=Math.max(0,state.care.dirt-ECON.CARE_DIRT_CLEAN);
   if(!who){
     toast('🍼 餌やり＆🧹牛舎掃除をした！(汚れ'+state.care.dirt+'・健康'+state.care.health+')');
@@ -2693,32 +2809,71 @@ function doCowCare(who){
   updateCareChip();
   return true;
 }
-// 1日の終わり(日送り時)に世話をサボっていないか判定
-function evalCowCareDay(notes){
+// v26: 餌やり(通路の餌箱=牧草＋配合飼料)。授乳中の仔牛には母のミルクも。
+function doFeed(who){
+  if(herdCount()===0){if(!who)toast('🐂 牛はまだいないよ');return false;}
+  if(state.care.fedWeek===state.weekN){if(!who)toast('🌾 今週の餌やりはもう済んでいるよ(⏭次の週で また必要)');return false;}
+  state.care.fedWeek=state.weekN;
+  const n=herdCount();
+  const parts=[];
+  if(state.grassSown&&state.grassStock>0)parts.push('🌿牧草'+Math.min(state.grassStock,n)+'束');
+  if((state.formulaFeed||0)>0)parts.push('🌾配合飼料(在庫'+state.formulaFeed+'週分)');
+  if(!parts.length)parts.push('🛒市販飼料(🌿牧草地の購入や🌾配合飼料の備蓄で餌代が安くなる)');
+  const what=parts.join('＋');
+  const nurse=state.calves.filter(c=>isNursing(c)).length;
+  if(!who){
+    toast('🌾 通路の餌箱から餌をやった！('+what+')。よく食べた牛は太って高く売れるよ');
+    if(nurse>0)toast('🍼 授乳中の仔牛'+nurse+'頭に、母牛のミルクを飲ませた(生後'+ECON.NURSE_WEEKS+'週まで毎週)');
+    sfx(520,.07,'sine',.05);
+    if(cowMeshes.length)heartBurst(cowMeshes[0].position.x,cowMeshes[0].position.y,cowMeshes[0].position.z);
+  }
+  updateCareChip();
+  return true;
+}
+// v26: 掃除(壁ぎわのフンを片付け+汚れを下げる)
+function doClean(who){
+  if(herdCount()===0){if(!who)toast('🐂 牛はまだいないよ');return false;}
+  if(state.care.cleanWeek===state.weekN){if(!who)toast('🧹 今週の掃除はもう済んでいるよ');return false;}
+  state.care.cleanWeek=state.weekN;
+  state.care.dirt=Math.max(0,state.care.dirt-ECON.CARE_DIRT_CLEAN);
+  let removed=0;for(let i=manures.length-1;i>=0;i--){const m=manures[i];scene.remove(m);manures.splice(i,1);removed++;addRes('manure',1);}
+  if(!who){
+    toast('🧹 牛舎の壁ぎわを掃除！フン'+removed+'個を片付けた(堆肥の原料に。汚れ'+state.care.dirt+')');
+    sfx(300,.06,'sine',.05);
+  }
+  updateCareChip();
+  return true;
+}
+// 週末に世話をサボっていないか判定(advanceWeek内で呼ぶ)
+function evalCowCareWeek(notes){
   if(herdCount()===0)return;
   const c=state.care;
   let bad=false;
-  if(c.fedDay!==state.absDay){c.health=Math.max(0,c.health-ECON.CARE_HUNGRY);bad=true;notes.push('⚠ 餌やりを忘れて牛が腹ぺこ…健康-'+ECON.CARE_HUNGRY+'(いま'+c.health+')');}
-  if(c.cleanDay!==state.absDay){c.dirt=Math.min(100,c.dirt+ECON.CARE_DIRT_ADD);bad=true;}
-  if(c.dirt>=ECON.CARE_DIRT_BAD){c.health=Math.max(0,c.health-3);notes.push('⚠ 牛舎が汚れすぎ(汚れ'+c.dirt+')！牛の健康がさらに低下(いま'+c.health+')');}
-  if(!bad)c.health=Math.min(100,c.health+ECON.CARE_RECOVER);
-  // v20: 肥育度(太り具合)の日次変化。餌をやると太り(〜80強で頭打ち)、サボる/病気だと痩せる
-  const fedToday=c.fedDay===state.absDay;
+  if(c.fedWeek!==state.weekN){c.health=Math.max(0,c.health-ECON.CARE_HUNGRY*2);bad=true;notes.push('⚠ 餌やりを忘れて牛が腹ぺこ…健康-'+(ECON.CARE_HUNGRY*2)+'(いま'+c.health+')');}
+  if(c.cleanWeek!==state.weekN){c.dirt=Math.min(100,c.dirt+ECON.CARE_DIRT_ADD*2);bad=true;}
+  if(c.dirt>=ECON.CARE_DIRT_BAD){c.health=Math.max(0,c.health-5);notes.push('⚠ 牛舎が汚れすぎ(汚れ'+c.dirt+')！牛の健康がさらに低下(いま'+c.health+')');}
+  if(!bad)c.health=Math.min(100,c.health+ECON.CARE_RECOVER*2);
+  // 肥育度(太り具合)の週次変化
+  const fedThisWeek=c.fedWeek===state.weekN;
   for(const a of[...state.cows,...state.calves]){
     if(a.fat===undefined)a.fat=50;
-    if(a.sick)a.fat=Math.max(0,a.fat-1.5);
-    else if(fedToday)a.fat=Math.min(100,a.fat+(75-a.fat)*0.05+0.3);
-    else a.fat=Math.max(0,a.fat-3);
+    if(a.sick)a.fat=Math.max(0,a.fat-5);
+    else if(fedThisWeek)a.fat=Math.min(100,a.fat+(75-a.fat)*0.12+1);
+    else a.fat=Math.max(0,a.fat-8);
   }
 }
+// 後方互換用エイリアス(既存コードが呼ぶ場合)
+function careDoneToday(){return careDoneThisWeek();}
+function evalCowCareDay(notes){evalCowCareWeek(notes);}
 function updateCareChip(){
   const el=document.getElementById('careChip');
   if(!el||!state)return;
   if(herdCount()===0){el.style.display='none';return;}
-  const fed=state.care.fedDay===state.absDay,cl=state.care.cleanDay===state.absDay;
+  const fed=state.care.fedWeek===state.weekN,cl=state.care.cleanWeek===state.weekN;
   const sk=sickAnimals().length; // v19: 病気の頭数
   el.style.display='block';
-  el.textContent='🐂 餌'+(fed?'✅':'⬜')+' 掃除'+(cl?'✅':'⬜')+' 健康'+state.care.health+(state.care.dirt>0?' 汚れ'+state.care.dirt:'')+(sk>0?' 🤒病気'+sk+'頭':'');
+  const nurse=(state.calves||[]).filter(c=>isNursing(c)).length; // v26: 授乳中の仔牛
+  el.textContent='🐂 餌'+(fed?'✅':'⬜')+' 掃除'+(cl?'✅':'⬜')+(nurse>0?' 🍼授乳'+nurse+'頭'+(fed?'✅':'⬜'):'')+' 健康'+state.care.health+(state.care.dirt>0?' 汚れ'+state.care.dirt:'')+(sk>0?' 🤒病気'+sk+'頭':'');
   el.style.borderColor=(fed&&cl&&sk===0)?'#7aa35a':'#c03030';
   updateCowModeBtn(); // v24: 散歩/戻すボタンの表示も更新
 }
@@ -2837,13 +2992,16 @@ function nearestAction(wx,wz){
     if(state.machines.combine.lvl)names.push('🌾コンバイン'+(state.machines.combine.broken?'(⚠故障)':''));
     toast('🚜 農機庫: '+names.join('・')+'。新しい機械は🚜街の農協で(補助で半額)');
   });
-  cand(24.0,18.6,2.3,hasBarn()?'🏚 牛舎(牛の管理)':'🏚 古い牛舎を借りる(月3万円)',()=>{if(hasBarn()){menuTab='cows';openMenu();}else rentBarn();}); // v24: 拡大した牛舎の入口前
-  // v16: 牛の日次世話(牛舎の中)。従業員に指示していなければ毎日自分でやる
-  if(herdCount()>0&&!careDoneToday())cand(27,15.8,3.6,'🍼 牛の世話(餌やり+掃除)',()=>doCowCare(null));
-  if(state.land.pasture1)cand(37,14.5,2.3,state.grassSown?(grassHarvestMonth()&&state.grassCutMonth!==state.monthN?'✂ 牧草を収穫する(春秋の年2回)':'🌿 牧草の状況'):'🌿 牧草を育てる('+man(grassSowCost())+')',()=>{
+  cand(18.5,27,3.0,hasBarn()?'🏚 牛舎(牛の管理)':'🏚 古い牛舎を借りる(月3万円)',()=>{if(hasBarn()){menuTab='cows';openMenu();}else rentBarn();}); // v26: 南入口(通路x17-20,z26)の前
+  // v26: 牛の世話は「餌やり(通路)」と「掃除(壁ぎわ)」に分離。従業員に指示していなければ自分でやる
+  if(herdCount()>0){
+    if(state.care.fedWeek!==state.weekN)cand(18,16,9,'🌾 餌をやる(通路の餌箱・牧草＋配合飼料)',()=>doFeed(null));   // 中央通路で給餌
+    if(state.care.cleanWeek!==state.weekN)cand(14.6,16,9,'🧹 牛舎を掃除する(壁ぎわのフン)',()=>doClean(null)); // 壁側で掃除
+  }
+  if(state.land.pasture1)cand(37,14.5,2.3,state.grassSown?(isGrassHarvestWeek()&&state.grassCutWeek!==state.weekN?'✂ 牧草を収穫する(春秋の年2回)':'🌿 牧草の状況'):'🌿 牧草を育てる('+man(grassSowCost())+')',()=>{ // v25: 週ベース
     if(!state.grassSown){sowGrass();return;}
-    if(grassHarvestMonth()&&state.grassCutMonth!==state.monthN){doGrassCut(null);return;}
-    toast('🌿 牧草: 収穫は🌸5月と🍂9月(1回'+grassCutYield()+'束)・在庫'+state.grassStock+'束・牛の消費 月'+herdCount()+'束・次の収穫は'+nextGrassHarvestLabel());
+    if(isGrassHarvestWeek()&&state.grassCutWeek!==state.weekN){doGrassCut(null);return;}
+    toast('🌿 牧草: 収穫は🌸第18週と🍂第36週(1回'+grassCutYield()+'束)・在庫'+state.grassStock+'束・牛の消費 週'+herdCount()+'束・次の収穫は'+nextGrassHarvestLabel());
   });
   // v20: 堆肥場は2段階。🟤糞置き場(処理のみ・牛舎増築の必須条件)と🏭本格堆肥舎(肥料事業)
   if(!state.compostShed)cand(36.5,36.2,2.4,state.dungYard?'🟤 糞置き場(糞の処理のみ)':'🟤 糞置き場を作る('+man(ECON.DUNG_COST)+')',()=>{
@@ -2910,17 +3068,31 @@ function updateActHint(){
 // ---------- v10: 牛舎はショップで買うと完成状態で出現 ----------
 // v24: 古い牛舎を6×6→10×8ブロックへ拡大(壁3段+屋根y6・南入口3マス)。
 //      母10頭+子10頭が床(内側8×6マス)に余裕をもって整列できる広さ。
-const BARN_X0=22,BARN_X1=31,BARN_Z0=10,BARN_Z1=17,BARN_FLOOR=2;
+const BARN_X0=14,BARN_X1=30,BARN_Z0=8,BARN_Z1=26,BARN_FLOOR=2; // v26: 片側1列・縦長ホール(x14-30,z8-26=17×19)
 // v24: 牛舎ブロックの配置(共通)。先に領域を更地化するので、旧v23の小さい
 //      牛舎(壁・屋根)の編集が残っていても消えてから建て直される(冪等)
 function barnEditBlocks(put){
+  // v26: 古い牛舎=片側1列・通路(中央)向き。西→東の並び:
+  //   x14 西壁(牛の後ろ=フン側) / x15 母牛列(東=通路を向いて顔を出す) /
+  //   x16 採食槽(HAY・牛が顔を出して食べる) / x17 スタンチョン柵 / x18 通路(PATH・ここで餌やり) /
+  //   x19-24 仔牛ペン(離乳後) / x25-29 干し草置き場 / x30 東壁
   for(let x=BARN_X0;x<=BARN_X1;x++)for(let z=BARN_Z0;z<=BARN_Z1;z++){
-    for(let y=3;y<=6;y++)put(x,y,z,0); // 旧牛舎の壁・屋根や木の枝を撤去
+    for(let y=3;y<=6;y++)put(x,y,z,0); // 旧ブロック撤去
     const wall=(x===BARN_X0||x===BARN_X1||z===BARN_Z0||z===BARN_Z1);
     if(wall){
-      // 南がわに入口（3マス。前の小道x27-28へつながる）
-      const door=(z===BARN_Z1&&(x===26||x===27||x===28));
+      // 南入口: 通路(x17-20)を開けて前の小道につなぐ
+      const door=(z===BARN_Z1&&x>=17&&x<=20);
       if(!door){put(x,3,z,B.PLANK);put(x,4,z,B.PLANK);put(x,5,z,B.PLANK);}
+    } else {
+      if(x===16&&z>=BARN_Z0+1&&z<=BARN_Z1-1)put(x,3,z,B.HAY);   // 採食槽(母牛が東=通路側へ顔を出して食べる)
+      if(x===17&&z>=BARN_Z0+1&&z<=BARN_Z1-1)put(x,3,z,B.FENCE); // スタンチョン柵(牛と通路の境)
+      if(x===18)put(x,2,z,B.PATH);                              // 中央通路(ここで餌やり)
+      // 仔牛ペン(x19-24, z13-21)の囲い柵。西側(x19)のz16-17は通路からの出入口
+      if(x===24&&z>=13&&z<=21)put(x,3,z,B.FENCE);
+      if((z===13||z===21)&&x>=19&&x<=24)put(x,3,z,B.FENCE);
+      if(x===19&&z>=13&&z<=21&&(z<16||z>17))put(x,3,z,B.FENCE);
+      // 干し草置き場: 俵をいくつか
+      if((x===26||x===28)&&(z===10||z===13||z===16))put(x,3,z,B.HAY);
     }
     put(x,6,z,B.HAY); // 屋根
   }
@@ -2984,15 +3156,15 @@ function breedCow(id){
   const c=state.cows.find(x=>x.id===id);if(!c)return;
   if(c.sick){toast('🤒 '+c.name+'は病気だよ。🚜街の農協で獣医を呼んで治してから');return;} // v19
   if(c.retired){toast(c.name+'は繁殖終了(8産)だよ');return;}
-  if(c.preg>=0){toast(c.name+'は妊娠中('+c.preg+'/'+ECON.PREG_MONTHS+'ヶ月)');return;}
+  if(c.preg>=0){toast(c.name+'は妊娠中('+c.preg+'/'+ECON.PREG_WEEKS+'週)');return;}
   if(state.calves.length>=calfCapNow()){toast('🐮 子牛の枠が満員('+calfCapNow()+'頭)で種付けできないよ。子牛を出荷するか⛰新築牛舎で増築しよう');return;} // v20
-  if(c.bredMonth===state.monthN){toast(c.name+'は今月種付け済み。⏭で翌月に再挑戦');return;}
-  c.bredMonth=state.monthN;
+  if(c.bredWeek===state.weekN){toast(c.name+'は今週種付け済み。⏭で翌週に再挑戦');return;}
+  c.bredWeek=state.weekN;
   if(Math.random()<ECON.BREED_RATE){
     c.preg=0;
-    toast('💉 '+c.name+'の種付けに成功！10ヶ月後に出産だよ');sfx(700,.1,'sine',.05);
+    toast('💉 '+c.name+'の種付けに成功！40週後に出産だよ');sfx(700,.1,'sine',.05);
   }else{
-    toast('💉 '+c.name+'の種付けは失敗…(成功率80%)。翌月また挑戦しよう');
+    toast('💉 '+c.name+'の種付けは失敗…(成功率80%)。来週また挑戦しよう');
   }
   renderMenu();updateHUD();
 }
@@ -3000,7 +3172,7 @@ function sellCalf(id){
   const i=state.calves.findIndex(x=>x.id===id);if(i<0)return;
   const cf=state.calves[i];
   if(cf.sick){toast('🤒 病気の子牛は売れないよ。🚜街の農協で獣医を呼んで治してから');return;} // v19
-  if(cf.age<ECON.CALF_SHIP_AGE){toast('🐮 子牛はまだ月齢'+cf.age+'ヶ月(8ヶ月で出荷可)');return;}
+  if((cf.ageWeeks||0)<ECON.CALF_SHIP_WEEKS){toast('🐮 子牛はまだ週齢'+(cf.ageWeeks||0)+'週('+ECON.CALF_SHIP_WEEKS+'週で出荷可)');return;}
   state.calves.splice(i,1);
   const price=calfSalePrice(cf); // v20: 雌雄ベース(メス100万/オス120万)×状態補正
   const adj=Math.round(cowCondAdj(cf)*100);
@@ -3074,24 +3246,24 @@ function bankRepay(amount){
 }
 
 // ---------- v19: 補助金(役場)・機械の故障(修理屋)・牛の病気(農協の獣医) ----------
-// 補助金の申請(役場)。申請→SUB_DAYS日で承認→SUB_VALID日以内の対象購入1回が半額。
+// v25: 補助金の申請(役場)。申請→2週で承認→13週以内の対象購入1回が半額(旧90日≈13週)。
 function applySub(c){
   const s=state.subsidy[c];
-  if(s&&s.st==='pending'){toast('🏛 もう申請中だよ(あと'+Math.max(0,s.approveDay-state.absDay)+'日で承認)');return;}
+  if(s&&s.st==='pending'){toast('🏛 もう申請中だよ(あと'+Math.max(0,s.approveWeek-state.absWeek)+'週で承認)');return;}
   if(s&&s.st==='approved'){toast('🏛 もう承認済みだよ(対象の購入が半額)');return;}
-  state.subsidy[c]={st:'pending',approveDay:state.absDay+ECON.SUB_DAYS,expDay:0};
+  state.subsidy[c]={st:'pending',approveWeek:state.absWeek+2,expWeek:0};
   sfx(660,.08,'sine',.05);
-  toast('📝 '+SUB_META[c].n+'の購入補助を申請した！'+ECON.SUB_DAYS+'日後(⏭'+ECON.SUB_DAYS+'回)に承認されるよ');
+  toast('📝 '+SUB_META[c].n+'の購入補助を申請した！2週後(⏭2回)に承認されるよ');
   if(document.getElementById('menu').style.display==='flex')renderMenu();
 }
-// 日次: 補助金の承認と期限
+// 週次: 補助金の承認と期限
 function subsidyDaily(notes){
   for(const c in state.subsidy){
     const s=state.subsidy[c];if(!s)continue;
-    if(s.st==='pending'&&state.absDay>=s.approveDay){
-      s.st='approved';s.expDay=state.absDay+ECON.SUB_VALID;
-      notes.push('🏛 '+SUB_META[c].n+'の補助金が承認された！'+ECON.SUB_VALID+'日以内の購入が半額だよ');
-    }else if(s.st==='approved'&&state.absDay>s.expDay){
+    if(s.st==='pending'&&state.absWeek>=(s.approveWeek||s.approveDay/7||0)){
+      s.st='approved';s.expWeek=state.absWeek+13;
+      notes.push('🏛 '+SUB_META[c].n+'の補助金が承認された！13週以内の購入が半額だよ');
+    }else if(s.st==='approved'&&state.absWeek>(s.expWeek||s.expDay/7||0)){
       state.subsidy[c]=null;
       notes.push('🏛 '+SUB_META[c].n+'の補助承認が期限切れ…また役場で申請してね');
     }
@@ -3184,7 +3356,7 @@ function callVet(){
   addExpense(cost,'vet','cow');
   for(const a of sick){a.sick=false;a.sickDays=0;}
   state.care.health=Math.min(100,state.care.health+5);
-  state.vetVisitDay=state.absDay;
+  state.vetVisitDay=state.absWeek; // v25: 週ベース(旧absDay互換)
   fanfare();
   toast('🩺 獣医の犬飼先生が農場へ往診！'+sick.length+'頭を治療して全快したよ(−'+man(cost)+')');
   toast('💡 今日は農場に獣医さんが来ているよ(牛舎の前)');
@@ -3226,7 +3398,7 @@ function staffDaily(notes){
   const wk=staffWithJob('cow');
   if(wk&&herdCount()>0&&!careDoneToday()){
     doCowCare('staff');
-    if(state.dom===1)notes.push('🐂 '+STAFF_META[wk].name+': 毎日の餌やり＋牛舎掃除を担当中(自動)');
+    if(state.weekN%4===0)notes.push('🐂 '+STAFF_META[wk].name+': 毎週の餌やり＋牛舎掃除を担当中(自動)'); // v25: 週ベース(4週ごとに通知)
   }
   // 🟫 堆肥(毎日): 落ちている牛ふんを回収
   const ck=staffWithJob('compost');
@@ -3244,18 +3416,18 @@ function staffMonthlyJobs(notes){
   const wk=staffWithJob('cow');
   if(wk){
     const nm=STAFF_META[wk].name;
-    if(sickAnimals().length>0&&state.dom===1)notes.push('🤒 '+nm+': 病気の牛がいる！🚜街の農協で獣医を呼んでください'); // v19
+    if(sickAnimals().length>0)notes.push('🤒 '+nm+': 病気の牛がいる！🚜街の農協で獣医を呼んでください'); // v19/v25
     for(const c of state.cows){
-      if(!c.retired&&!c.sick&&c.preg<0&&c.bredMonth!==state.monthN){ // v19: 病気の牛は種付けしない
-        if(state.calves.length>=calfCapNow()){if(state.dom===1)notes.push('⚠ '+nm+': 子牛の枠が満員で種付けを見送り(⛰増築か出荷を)');break;} // v20: 収容枠
-        c.bredMonth=state.monthN;
+      if(!c.retired&&!c.sick&&c.preg<0&&c.bredWeek!==state.weekN){ // v19: 病気の牛は種付けしない
+        if(state.calves.length>=calfCapNow()){notes.push('⚠ '+nm+': 子牛の枠が満員で種付けを見送り(⛰増築か出荷を)');break;} // v20: 収容枠
+        c.bredWeek=state.weekN;
         if(Math.random()<ECON.BREED_RATE){c.preg=0;notes.push('🐂 '+nm+': '+c.name+'の種付け成功');}
-        else notes.push('🐂 '+nm+': '+c.name+'の種付け失敗(翌月再挑戦)');
+        else notes.push('🐂 '+nm+': '+c.name+'の種付け失敗(来週再挑戦)');
       }
     }
     for(let i=state.calves.length-1;i>=0;i--){
       const cf=state.calves[i];
-      if(cf.age>=ECON.CALF_SHIP_AGE&&!cf.sick){ // v19: 病気の子牛は売らない
+      if((cf.ageWeeks||0)>=ECON.CALF_SHIP_WEEKS&&!cf.sick){ // v19: 病気の子牛は売らない
         // v20: ♀メスは母牛の枠が空いていれば母牛候補として自動昇格(次世代の親牛)。♂オスは売却
         if(cf.sex==='F'&&state.cows.length<barnCapNow()){
           notes.push('🐂 '+nm+': ♀メス子牛'+cf.id+'を母牛として残した(自家育成・与信なし)');
@@ -3276,26 +3448,26 @@ function staffMonthlyJobs(notes){
   if(rk){
     const nm=STAFF_META[rk].name;
     // v19: 機械の故障中は作業できない(修理屋で直すまで生産が止まる)
-    if(machineBroken('tractor')&&((state.month===4&&state.riceField==='none')||state.riceField==='ready'))notes.push('⚠ '+nm+': トラクターが故障中で田植え/収穫ができない！🔧街の修理屋へ');
+    if(machineBroken('tractor')&&(isRicePlantWeek()&&state.riceField==='none'||state.riceField==='ready'))notes.push('⚠ '+nm+': トラクターが故障中で田植え/収穫ができない！🔧街の修理屋へ');
     const smallNG=riceScale()>1&&state.machines.tractor.lvl==='new'&&state.machines.tractor.size==='small'; // v20: 小型は拡張棚田に非対応
-    if(smallNG&&state.month===4&&state.riceField==='none')notes.push('⚠ '+nm+': 小型トラクターでは東の棚田まで田植えできない！中型(500万)が必要');
-    if(state.month===4&&state.riceField==='none'&&!machineBroken('tractor')&&!smallNG&&state.money>=riceSeedCost()){doRicePlant();notes.push('🌾 '+nm+': 苗代'+man(riceSeedCost())+'で田植えした'+(state.ricePlanterBonus?'(🌱田植え機+10%)':''));}
-    if(state.riceField==='planted'&&isWaterSeason()&&state.waterMonth!==state.monthN){
-      if(doRiceWater('staff'))notes.push('🚿 '+nm+': 田んぼの水を管理した(今月分)');
+    if(smallNG&&isRicePlantWeek()&&state.riceField==='none')notes.push('⚠ '+nm+': 小型トラクターでは東の棚田まで田植えできない！中型(500万)が必要');
+    if(isRicePlantWeek()&&state.riceField==='none'&&!machineBroken('tractor')&&!smallNG&&state.money>=riceSeedCost()){doRicePlant();notes.push('🌾 '+nm+': 苗代'+man(riceSeedCost())+'で田植えした'+(state.ricePlanterBonus?'(🌱田植え機+10%)':''));}
+    if(state.riceField==='planted'&&isWaterSeason()&&isWaterWeek()&&state.waterWeek!==state.weekN){
+      if(doRiceWater('staff'))notes.push('🚿 '+nm+': 田んぼの水を管理した(今週分)');
     }
     if(state.riceField==='ready'&&!machineBroken('tractor')){const b=riceBagsYield();doRiceHarvest();notes.push('🌾 '+nm+': 米'+b+'袋を収穫した');}
-    if(state.riceBags>0&&state.shipMonth!==state.monthN){
+    if(state.riceBags>0&&state.shipMonth!==state.weekN){
       if(machineBroken('polisher'))notes.push('⚠ '+nm+': 精米機が故障中で出荷できない！🔧街の修理屋へ');
       else{const n=Math.min(riceShipMax(),state.riceBags);shipRice();notes.push('🌾 '+nm+': '+n+'袋を精米出荷した');}
     }
   }
-  // 🌿 牧草: 作付け・収穫(🌸5月/🍂9月の年2回)・余剰売却 ※v22: 牧草地の区画が必要
+  // 🌿 牧草: 作付け・収穫(🌸第18週/🍂第36週の年2回)・余剰売却 ※v22: 牧草地の区画が必要
   const gk=staffWithJob('grass');
   if(gk){
     const nm=STAFF_META[gk].name;
     if(!state.land.pasture1)notes.push('🌿 '+nm+': 牧草地がない！🏘街の🏠不動産屋で「西の牧草地」を買おう');
     if(!state.grassSown&&state.land.pasture1&&state.money>=grassSowCost()&&herdCount()>0){sowGrass();notes.push('🌿 '+nm+': 牧草を作付けした');}
-    if(state.grassSown&&grassHarvestMonth()&&doGrassCut('staff'))notes.push('🌿 '+nm+': '+(state.month===5?'🌸春':'🍂秋')+'の牧草を収穫した(+'+state.grassProdLast+'束)');
+    if(state.grassSown&&isGrassHarvestWeek()&&doGrassCut('staff'))notes.push('🌿 '+nm+': '+(state.week===18?'🌸春(第18週)':'🍂秋(第36週)')+'の牧草を収穫した(+'+state.grassProdLast+'束)');
     if(state.grassSown){const s=sellGrassSurplus(true);if(s>0)notes.push('🌿 '+nm+': 余剰牧草'+s+'束を売却');}
   }
   // 🟫 堆肥: 堆肥化・肥料出荷・農産物売却
@@ -3310,29 +3482,39 @@ function staffMonthlyJobs(notes){
   }
 }
 
-// ---------- v14: 牛の月次進行（妊娠+1／出産／子牛の月齢+1） ----------
+// ---------- v25: 牛の週次進行（妊娠週数+1／出産／子牛の週齢+1／離乳） ----------
 function progressCows(notes){
-  const newborn=[]; // 生まれたばかりの子牛は当月の月齢+1の対象外(月齢0で誕生)
+  const newborn=[]; // 生まれたばかりの子牛は今週の週齢+1の対象外
   // v16: 世話をサボって健康40未満だと妊娠が進まない(放置ペナルティ)
   const healthy=state.care.health>=40;
-  if(!healthy&&state.cows.some(c=>c.preg>=0))notes.push('⚠ 牛の健康が'+state.care.health+'で妊娠が進まなかった…毎日世話しよう');
+  if(!healthy&&state.cows.some(c=>c.preg>=0))notes.push('⚠ 牛の健康が'+state.care.health+'で妊娠が進まなかった…週次の世話を忘れずに');
   for(const c of state.cows){
     if(c.preg>=0&&!c.retired){
       if(!healthy)continue;
       if(c.sick)continue; // v19: 病気の牛は妊娠が進まない
       c.preg++;
-      if(c.preg>=ECON.PREG_MONTHS){
+      if(c.preg>=ECON.PREG_WEEKS){
         c.preg=-1;c.births++;
         const sex=Math.random()<0.5?'F':'M'; // v20: 性別はほぼ半々
-        newborn.push({id:state.cowSeq++,age:0,motherId:c.id,sick:false,sickDays:0,sex,fat:50,sickCount:0});
-        notes.push('🐮 '+c.name+'が'+(sex==='M'?'♂オス':'♀メス')+'の子牛を出産！('+c.births+'産目/'+ECON.MAX_BIRTHS+'産。ベース'+(sex==='M'?'120万':'100万・母牛にも残せる')+')');
+        // v25: 出産時にbornWeekNを記録・weaned=false(授乳期開始)
+        newborn.push({id:state.cowSeq++,ageWeeks:0,motherId:c.id,sick:false,sickDays:0,sex,fat:50,sickCount:0,bornWeekN:state.weekN,weaned:false});
+        notes.push('🐮 '+c.name+'が'+(sex==='M'?'♂オス':'♀メス')+'の子牛を出産！('+c.births+'産目/'+ECON.MAX_BIRTHS+'産。生後'+ECON.NURSE_WEEKS+'週は授乳期)');
         if(c.births>=ECON.MAX_BIRTHS){c.retired=true;notes.push('🐂 '+c.name+'は8産で繁殖終了(ベース50万円+状態補正で売却できるよ)');}
       }
     }
   }
-  let shippable=0;
-  for(const cf of state.calves){if(cf.sick)continue;cf.age++;if(cf.age===ECON.CALF_SHIP_AGE)shippable++;} // v19: 病気の子牛は成長しない
-  if(shippable>0)notes.push('🐮 子牛'+shippable+'頭が月齢8ヶ月で出荷可能に！(♀メス100万/♂オス120万+状態補正)');
+  let shippable=0,weaned=0;
+  for(const cf of state.calves){
+    if(cf.sick)continue;
+    cf.ageWeeks=(cf.ageWeeks||0)+1;
+    // v25: 離乳チェック(生後4週で離乳)
+    if(!cf.weaned&&(state.weekN-(cf.bornWeekN||0))>=ECON.NURSE_WEEKS){
+      cf.weaned=true;weaned++;
+    }
+    if(cf.ageWeeks===ECON.CALF_SHIP_WEEKS)shippable++;
+  }
+  if(weaned>0)notes.push('🍼 仔牛'+weaned+'頭が離乳しました(生後'+ECON.NURSE_WEEKS+'週)');
+  if(shippable>0)notes.push('🐮 子牛'+shippable+'頭が週齢'+ECON.CALF_SHIP_WEEKS+'週で出荷可能に！(♀メス100万/♂オス120万+状態補正)');
   if(state.calves.length+newborn.length>calfCapNow())notes.push('⚠ 子牛の枠('+calfCapNow()+'頭)を超えそう！出荷するか⛰新築牛舎で増築しよう');
   if(newborn.length){state.calves.push(...newborn);refreshCowMeshes();}
 }
@@ -3368,58 +3550,62 @@ function restartGame(){
   location.reload();
 }
 
-// ---------- v16: 時間(日次＋月次＋年次) ----------
-// 「⏭ 次の日へ」=1日。従業員の日次作業→世話のサボり判定→作物成長→日付+1。
-// 30日で月末: 月次経費差引・牧草生産・牛糞処分費/肥料・牛の妊娠進行、
-// 3月末は決算＋税金(v15の計算式)。翌月1日に従業員の月初仕事(田植え/出荷/種付け等)。
+// ---------- v25: 時間(週単位。「⏭ 次の週へ」=1週間) ----------
+// 週末処理: 従業員の週次作業→世話のサボり判定→牛の進行→日付+1週。
+// 第52週末=年度末→決算＋税金。翌週初に季節イベント(田植え/収穫/牧草刈り)を実行。
 let dayBusy=false;
-function ymdLabel(){return state.year+'年目 '+state.month+'月 '+state.dom+'日';}
-// 作物の日次成長(30日=1ヶ月。堆肥入りは2倍速。稲は等速=v15と同じ)
-function growCropsDaily(){
+function ymdLabel(){return state.year+'年目 第'+state.week+'週';}
+// 作物の週次成長(1週=7日分。堆肥入りは2倍速)
+function growCropsWeekly(){
   for(const k in state.crops){
     const c=state.crops[k];
     if(cropMature(c))continue;
     const p=k.split(',').map(Number);
     const fert=getB(p[0],p[1]-1,p[2])===B.TILLFERT||(getB(p[0],p[1]-1,p[2])===B.WATER&&getB(p[0],p[1]-2,p[2])===B.TILLFERT);
-    c.d=(c.d||0)+(c.type==='rice'?1:(fert?2:1));
-    if(c.d>=ECON.DAYS_PER_MONTH){c.d-=ECON.DAYS_PER_MONTH;c.mon++;refreshCropMesh(k);}
+    c.d=(c.d||0)+(c.type==='rice'?7:(fert?14:7));
+    const dpm=210; // 30日換算(月1回の成長を週7日ベースに換算)
+    if(c.d>=dpm){c.d-=dpm;c.mon++;refreshCropMesh(k);}
   }
 }
-function nextDay(){
+// 後方互換用エイリアス
+function growCropsDaily(){growCropsWeekly();}
+function nextDay(){nextWeek();}  // 旧コード互換
+function nextMonthBatch(){next4Weeks();} // 旧コード互換
+function nextMonth(){next4Weeks();} // 旧コード互換
+function nextWeek(){
   if(!state||dayBusy||isGameOver)return;
-  // 4月末に田植えしないまま月を越える時だけ確認(米担当がいれば不要)
-  if(state.dom===ECON.DAYS_PER_MONTH&&state.month===4&&state.riceField==='none'&&state.money>=riceSeedCost()&&!staffWithJob('rice')){
-    showConfirm('🌾 まだ田植えしていないよ','4月に苗代'+man(riceSeedCost())+'で田植えしないと、今年は米(年商'+man(ECON.RICE_BAGS*riceScale()*ECON.RICE_BAG_PRICE)+')を収穫できないよ。<br>それでも5月へ進む？',
-      ()=>{dayBusy=true;const notes=[];advanceDay(notes,false);flashNotes(notes);finishAdvance();},'田植えせず進む','やめる');
+  // 種まき週に田植えしないまま過ぎる時だけ確認(米担当がいれば不要)
+  if(state.week===ECON.RICE_PLANT_WEEK&&state.riceField==='none'&&state.money>=riceSeedCost()&&!staffWithJob('rice')){
+    showConfirm('🌾 まだ田植えしていないよ','第'+ECON.RICE_PLANT_WEEK+'週(春)に苗代'+man(riceSeedCost())+'で田植えしないと今年は米を収穫できないよ。<br>それでも次の週へ進む？',
+      ()=>{dayBusy=true;const notes=[];advanceWeek(notes,false);flashNotes(notes);finishAdvance();},'田植えせず進む','やめる');
     return;
   }
   dayBusy=true;
-  hidePCGuide(); // 操作を始めたらガイドは閉じる
+  hidePCGuide();
   const notes=[];
-  advanceDay(notes,false);
+  advanceWeek(notes,false);
   flashNotes(notes);
   finishAdvance();
 }
-function nextMonthBatch(){
+function next4Weeks(){
   if(!state||dayBusy||isGameOver)return;
-  if(state.month===4&&state.riceField==='none'&&state.money>=riceSeedCost()&&!staffWithJob('rice')){
-    showConfirm('🌾 まだ田植えしていないよ','4月に苗代'+man(riceSeedCost())+'で田植えしないと、今年は米(年商'+man(ECON.RICE_BAGS*riceScale()*ECON.RICE_BAG_PRICE)+')を収穫できないよ。<br>自分で田植えするか、従業員に🌾米を指示してから進むのがおすすめ。それでも30日進む？',
-      ()=>{doMonthBatch();},'田植えせず進む','やめる');
+  if(state.week===ECON.RICE_PLANT_WEEK&&state.riceField==='none'&&state.money>=riceSeedCost()&&!staffWithJob('rice')){
+    showConfirm('🌾 まだ田植えしていないよ','第'+ECON.RICE_PLANT_WEEK+'週に田植えしないと今年は米を収穫できないよ。<br>自分で田植えするか、従業員に🌾米を指示してから進もう。それでも4週進む？',
+      ()=>{do4WeekBatch();},'田植えせず進む','やめる');
     return;
   }
-  doMonthBatch();
+  do4WeekBatch();
 }
-function doMonthBatch(){
+function do4WeekBatch(){
   dayBusy=true;
   hidePCGuide();
   const notes=[];
   const preMoney=state.money;
-  let n=0;
-  do{advanceDay(notes,true);n++;}while(state.dom!==1&&n<32&&!isGameOver);
+  for(let i=0;i<4&&!isGameOver;i++)advanceWeek(notes,true);
   if(!isGameOver){
     const delta=state.money-preMoney;
-    toast('⏭⏭ 30日おまかせで進めて'+ymdLabel()+'(現金'+(delta>=0?'+':'−')+fmt(Math.abs(delta))+')');
-    flashNotes(notes.slice(-8)); // 直近の出来事だけ表示(スパム防止)
+    toast('⏭×4 4週おまかせで進めて'+ymdLabel()+'(現金'+(delta>=0?'+':'−')+fmt(Math.abs(delta))+')');
+    flashNotes(notes.slice(-8));
   }
   finishAdvance();
 }
@@ -3430,72 +3616,87 @@ function finishAdvance(){
   if(document.getElementById('menu').style.display==='flex'&&!isGameOver)renderMenu();
   setTimeout(()=>{dayBusy=false;},150);
 }
-function advanceDay(notes,silent){
+function advanceWeek(notes,silent){
   if(isGameOver)return;
-  // 1) 従業員の日次自動作業(今日の分の世話・水管理・ふん回収)
+  // 1) 従業員の日次自動作業(今週分をまとめて処理)
   staffDaily(notes);
   // 2) 牛の世話のサボり判定(健康/汚れ)
-  evalCowCareDay(notes);
-  // 3) 作物の日次成長
-  growCropsDaily();
-  // 4) 日付を進める
-  state.absDay++;state.day++;
-  regrowChestnuts();updateTufts();
-  // 5) v19: 新しい日付での日次イベント(補助金の承認・機械の故障・牛の発病)
+  evalCowCareWeek(notes);
+  // 3) 作物の週次成長
+  growCropsWeekly();
+  // 4) 週次イベント(補助金の承認・機械の故障・牛の発病)
   subsidyDaily(notes);
   machineDaily(notes);
   sicknessDaily(notes);
-  // v23: 収穫月の月半ばに未収穫リマインド(担当従業員がいない時だけ)
-  if(state.grassSown&&grassHarvestMonth()&&state.grassCutMonth!==state.monthN&&!staffWithJob('grass')&&state.dom===15)
-    notes.push('✂ 今月('+state.month+'月)は牧草の収穫月！月内に収穫しないと'+grassCutYield()+'束を逃すよ(牧草地で✂・🌿担当に指示すれば自動)');
-  if(state.dom>=ECON.DAYS_PER_MONTH){
-    state.dom=1;
-    monthEnd(notes);        // 月次経費・生産・(3月なら)決算＋税金
-    if(isGameOver)return;
-    staffMonthlyJobs(notes);// 月初の仕事(田植え/収穫/出荷/種付け/肥料出荷…)を月替わりに即実行
-  }else{
-    state.dom++;
-    if(!silent)toast('⏭ '+ymdLabel());
+  // 5) 季節の作業タイミング通知
+  if(state.grassSown&&isGrassHarvestWeek()&&state.grassCutWeek!==state.weekN&&!staffWithJob('grass'))
+    notes.push('✂ 第'+state.week+'週は牧草の収穫週！今週中に収穫しないと'+grassCutYield()+'束を逃すよ(牧草地で✂か🌿担当に指示)');
+  // 6) 週末処理(経費・生産・牛の進行など)
+  weekEnd(notes);
+  if(isGameOver)return;
+  // 7) 週番号を進める
+  state.weekN++;state.absWeek++;state.day++;
+  regrowChestnuts();updateTufts();
+  // 週を進める(52週で年度末→翌年第1週に)
+  const prevWeek=state.week;
+  state.week=(state.week%ECON.WEEKS_PER_YEAR)+1;
+  if(prevWeek===ECON.WEEKS_PER_YEAR){state.year++;} // 年が変わった
+  // 8) 収穫タイミング通知
+  if(state.week===ECON.RICE_HARVEST_WEEK&&state.riceField==='planted'){
+    state.riceField='ready';
+    notes.push('🌾 稲が実った！棚田で「収穫」しよう('+riceBagsYield()+'袋)');
   }
+  if(state.week===ECON.RICE_PLANT_WEEK&&state.riceField==='none')notes.push('🌱 第'+state.week+'週(春)！田植えの季節だよ(苗代'+man(riceSeedCost())+')');
+  if(state.grassSown){
+    if(isGrassHarvestWeek())notes.push('✂ 第'+state.week+'週は'+(state.week===18?'🌸春':'🍂秋')+'の牧草の収穫週！今週中に収穫しよう(+'+grassCutYield()+'束)'+(staffWithJob('grass')?'(🌿担当が自動収穫)':''));
+    const herd=herdCount();
+    if(herd>0&&!isGrassHarvestWeek()&&state.grassStock<herd*ECON.GRASS_EAT*4)notes.push('⚠ 牧草の在庫が残り'+state.grassStock+'束(牛'+herd+'頭で週'+herd*ECON.GRASS_EAT+'束消費)。次の収穫は'+nextGrassHarvestLabel()+'。切れると餌代が上がるよ');
+  }
+  // 9) 週次の従業員仕事(種まき/収穫/出荷/種付け等)
+  staffMonthlyJobs(notes);
+  if(!silent)toast('⏭ '+ymdLabel());
   if(!silent){updateHUD();updateCareChip();}
 }
-// ---------- v16: 月末処理（v15のdoNextMonthの月次部分を継承） ----------
-function monthEnd(notes){
+// ---------- v25: 週末処理（月末処理を週単位に変換） ----------
+function weekEnd(notes){
   const preMoney=state.money;
-  // 0) 水管理のサボり判定(5〜9月・生育中)
-  if(state.riceField==='planted'&&isWaterSeason()&&state.waterMonth!==state.monthN){
+  // 0) 水管理のサボり判定(夏の特定週)
+  if(state.riceField==='planted'&&isWaterSeason()&&isWaterWeek()&&state.waterWeek!==state.weekN){
     state.riceMiss=(state.riceMiss||0)+1;
-    notes.push('⚠ 今月は水管理をサボった…収穫が5%減るよ(累計'+Math.min(5,state.riceMiss)+'回)');
+    notes.push('⚠ 第'+state.week+'週の水管理をサボった…収穫が5%減るよ(累計'+Math.min(5,state.riceMiss)+'回)');
   }
-  // 1) v22: 牧草の生産は月次では行わない(春5月・秋9月の✂収穫時に在庫へ加算)。
-  //    収穫月に収穫しそびれた場合はその回の分を逃す(担当従業員がいれば自動収穫済み)
-  if(state.grassSown&&grassHarvestMonth()&&state.grassCutMonth!==state.monthN){
-    notes.push('⚠ '+state.month+'月の牧草の✂収穫をしそびれた…('+grassCutYield()+'束を逃した。次は'+(state.month===5?'9月':'来年5月')+')');
+  // 1) 牧草の収穫しそびれチェック(収穫週だが今週収穫してない)
+  if(state.grassSown&&isGrassHarvestWeek()&&state.grassCutWeek!==state.weekN){
+    notes.push('⚠ 第'+state.week+'週の牧草の✂収穫をしそびれた…('+grassCutYield()+'束を逃した。次は'+nextGrassHarvestLabel()+')');
   }
-  // 2) 餌の消費と餌代(v23: 段階化。牧草でまかなえた牛=1万/頭。不足分は
-  //    牧草運用中なら在庫切れから2ヶ月間=当座しのぎ2万/頭、3ヶ月目から市販3.5万/頭。
-  //    牧草地なし/未作付けは従来通り3.5万/頭。帳簿はfeed(牛事業)のまま整合)
+  // 2) 餌の消費と週次餌代
   const herd=herdCount();
   const fed=Math.min(state.grassStock,herd*ECON.GRASS_EAT);
   state.grassStock-=fed;
   state.grassFedLast=fed;
   const feedShort=herd-fed;
-  const shortUnit=feedShortUnit(); // カウンタ加算前に判定(切れて1・2ヶ月目=2万)
-  state.grassOutMonths=(feedShort>0&&state.grassSown)?(state.grassOutMonths||0)+1:0;
-  const feedCost=fed*ECON.FEED_GRASS+feedShort*shortUnit;
+  const shortUnit=feedShortUnit();
+  state.grassOutWeeks=(feedShort>0&&state.grassSown)?(state.grassOutWeeks||0)+1:0;
+  // v25: 配合飼料を在庫から使う(牧草不足分をまずfedFormulaで補填)
+  let formulaUsed=0;
+  if(feedShort>0&&state.formulaFeed>0){
+    formulaUsed=Math.min(feedShort,state.formulaFeed);
+    state.formulaFeed-=formulaUsed;
+  }
+  const stillShort=feedShort-formulaUsed;
+  const feedCost=fed*ECON.FEED_GRASS/4 + formulaUsed*ECON.FORMULA_FEED_PRICE + stillShort*shortUnit;
   if(feedCost>0)addExpense(feedCost,'feed');
-  if(feedShort>0&&state.grassSown)notes.push(shortUnit===ECON.FEED_MID?
-    ('⚠ 牧草の在庫が足りない！不足'+feedShort+'頭分は残り干し草で当座しのぎ(2万/頭)。次の収穫は'+nextGrassHarvestLabel()):
-    ('⚠ 牧草切れが'+state.grassOutMonths+'ヶ月続き、不足'+feedShort+'頭分は市販飼料(3.5万/頭)に…次の収穫('+nextGrassHarvestLabel()+')を忘れずに'));
-  // 3) 固定費(自分の給与30万・従業員30万×人数・牛舎家賃3万)
-  addExpense(ECON.OWNER_SALARY,'owner');
-  const sc=staffCount();
-  // v17: 従業員給与はその従業員の担当事業に帰属(指示なし=共通/本部)
-  for(const k in state.staff)if(state.staff[k])addExpense(ECON.EMP_SALARY,'emp',state.staffJobs[k]||'common');
-  if(state.barnRented)addExpense(ECON.BARN_RENT,'rent');
-  // 4) v16: 牛糞。堆肥舎なし=処分費(負担)/あり=肥料生産(収益源)
-  if(herd>0){
-    if(state.compostShed){ // v20: 本格堆肥舎=肥料の製造販売(肥料事業)
+  if(feedShort>0)notes.push(formulaUsed>0?
+    '🍽 牧草不足'+feedShort+'頭分を配合飼料'+formulaUsed+'週分でカバー'+(stillShort>0?'('+stillShort+'頭分は市販3.5万/頭相当)':''):
+    (state.grassSown?'⚠ 牧草切れ！不足'+feedShort+'頭は市販飼料。配合飼料を購入するか次の収穫('+nextGrassHarvestLabel()+')まで待とう':
+    '⚠ 牧草地なし: 全'+herd+'頭が市販飼料(週'+fmt(herd*ECON.FEED_MARKET/4)+')'));
+  // 3) 固定費(4週ごとに月額給与を徴収: 週1/4ずつ)
+  addExpense(ECON.OWNER_SALARY/4,'owner');
+  for(const k in state.staff)if(state.staff[k])addExpense(ECON.EMP_SALARY/4,'emp',state.staffJobs[k]||'common');
+  if(state.barnRented)addExpense(ECON.BARN_RENT/4,'rent');
+  // 4) 牛糞処分(4週ごとに月額費用を徴収)
+  if(herd>0&&state.weekN%4===3){
+    if(state.compostShed){ // v20: 本格堆肥舎=肥料の製造販売
       const nfert=herd*ECON.FERT_PER_COW;
       state.fertStock+=nfert;
       notes.push('🏭 本格堆肥舎で肥料'+nfert+'袋ができた(在庫'+state.fertStock+'袋・1袋'+fmt(ECON.FERT_PRICE)+'で出荷できる)');
@@ -3507,48 +3708,29 @@ function monthEnd(notes){
       notes.push('🚛 牛糞の処分費 −'+fmt(fee)+'(牛'+herd+'頭×1万円。🟤糞置き場(200万)でゼロにできる)');
     }
   }
-  // 5) 牛の進行(妊娠/出産/月齢。健康40未満は妊娠が進まない)
+  // 5) 牛の週次進行(妊娠/出産/週齢。健康40未満は妊娠が進まない)
   progressCows(notes);
-  // 6) 月を進める(3月末=年度末→決算＋税金)
-  const closing=(state.month===3);
-  state.monthN++;
-  if(closing){
-    state.month=4;
+  // 6) 年度末決算(第52週末)
+  if(state.week===ECON.WEEKS_PER_YEAR){
     doFiscalClose();
-    state.year++;
-  }else{
-    state.month=(state.month===12)?1:state.month+1;
+    if(isGameOver)return;
   }
-  // 7) 収穫期(10月)
-  if(state.riceField==='planted'&&state.month===10){
-    state.riceField='ready';
-    notes.push('🌾 稲が実った！棚田で「収穫」しよう('+riceBagsYield()+'袋)');
-  }
-  if(state.month===4&&state.riceField==='none')notes.push('🌱 4月！田植えの季節だよ(苗代'+man(riceSeedCost())+')');
-  // v23: 牧草の収穫予告・在庫警告(取り逃し防止の親切)
-  if(state.grassSown){
-    const nxm=(state.month===12)?1:state.month+1;
-    if(grassHarvestMonth())notes.push('✂ 今月は'+(state.month===5?'🌸春':'🍂秋')+'の牧草の収穫月！月内に収穫しよう(+'+grassCutYield()+'束)'+(staffWithJob('grass')?'(🌿担当がいるので自動収穫)':''));
-    else if(nxm===5||nxm===9)notes.push('🌿 もうすぐ牧草の収穫時期(来月'+nxm+'月)！'+(staffWithJob('grass')?'🌿担当の従業員が自動で収穫するよ':'収穫月に✂を忘れずに(逃すとその回の分は無し)'));
-    if(herd>0&&!grassHarvestMonth()&&state.grassStock<herd*ECON.GRASS_EAT*2)notes.push('⚠ 牧草の在庫が残り'+state.grassStock+'束(牛'+herd+'頭で月'+(herd*ECON.GRASS_EAT)+'束消費)。次の収穫は'+nextGrassHarvestLabel()+'。切れると餌代が上がるよ');
-  }
-  // 月次サマリー
+  // 7) 週次サマリー(経費の内訳)
+  const sc=staffCount();
   const delta=state.money-preMoney;
-  toast('📅 '+state.year+'年目'+state.month+'月になった(月次差引'+(delta>=0?'+':'−')+fmt(Math.abs(delta))+')');
-  const cost=[];
-  cost.push('自分の給与'+man(ECON.OWNER_SALARY));
-  if(sc>0)cost.push('従業員'+man(sc*ECON.EMP_SALARY));
-  if(state.barnRented)cost.push('家賃'+man(ECON.BARN_RENT));
-  if(feedCost>0)cost.push('餌代'+man(feedCost)+'('+fed+'頭は牧草1万'+(feedShort>0?('/他'+feedShort+'頭'+(shortUnit===ECON.FEED_MID?'当座2万':'市販3.5万')):'')+')'); // v23: 段階化を反映
-  if(herd>0&&!state.compostShed&&!state.dungYard)cost.push('牛糞処分'+man(herd*ECON.MANURE_FEE));
-  toast('📉 月次経費: '+cost.join('・'));
+  if(Math.abs(delta)>0){
+    const cost=[];
+    cost.push('自分給与'+man(ECON.OWNER_SALARY/4));
+    if(sc>0)cost.push('従業員'+man(sc*ECON.EMP_SALARY/4));
+    if(state.barnRented)cost.push('家賃'+man(ECON.BARN_RENT/4));
+    if(feedCost>0)cost.push('餌代'+man(feedCost));
+    notes.push('📉 週次経費 '+(delta>=0?'+':'−')+man(Math.abs(delta))+' ('+cost.join('・')+')');
+  }
   updateHUD();
-  // v15: 資金ショート判定（月次経費・決算の税金差引後）。0未満で倒産。
+  // v15: 資金ショート判定(0未満で倒産)
   if(state.money<0){gameOver();return;}
-  if(state.money<1000000)toast('⚠ 現金が残り'+man(state.money)+'！経費が払えず0円を切ると倒産だよ');
+  if(state.money<500000)toast('⚠ 現金が残り'+man(state.money)+'！週次経費が払えなくなると倒産だよ');
 }
-// 旧v14の月送り(メニューの互換のため残置。実体は30日一括)
-function nextMonth(){nextMonthBatch();}
 
 // ---------- v14: 決算（損益計算書） ----------
 function doFiscalClose(){
@@ -3765,9 +3947,7 @@ function renderMenu(){
   else if(menuTab==='ja')html+=jaHTML();           // v19
   else if(menuTab==='repair')html+=repairHTML();   // v19
   else html+=setHTML();
-  html+='<div style="display:flex;gap:6px">'+
-    '<button class="close" style="flex:1;background:#3a6fd8;border-color:#1f3f8a;box-shadow:0 3px 0 #1f3f8a" onclick="nextDay()">⏭ 次の日へ</button>'+
-    '<button class="close" style="flex:1;background:#7a5fd8;border-color:#4a3a8a;box-shadow:0 3px 0 #4a3a8a" onclick="nextMonthBatch()">⏭⏭ 次の月へ(30日)</button></div>';
+  html+='<button class="close" style="background:#3a6fd8;border-color:#1f3f8a;box-shadow:0 3px 0 #1f3f8a" onclick="nextWeek()">⏭ 次の週へ(1週間進む)</button>';
   html+='<button class="close" onclick="closeMenu()">閉じる</button>';
   box.innerHTML=html;
 }
@@ -3795,12 +3975,12 @@ function landHTML(){
 function yakubaHTML(){
   let h='<p>🏛 丹波の役場。<b>補助金を申請</b>して承認されると、<b>新品の機械・牛舎・堆肥舎が半額(50%補助)</b>で買えるよ。<b>役場を通さず(未申請で)買うと定価</b>！</p>'+
   '<table class="fs"><tr class="hd"><td>補助金のルール</td><td class="amt"></td></tr>'+
-  '<tr><td>① 申請→<b>'+ECON.SUB_DAYS+'日後に承認</b>(⏭で日を進めよう) ② 承認は<b>'+ECON.SUB_VALID+'日有効・購入1回で使い切り</b> ③ 中古(古い牛舎レンタル)は対象外</td><td></td></tr></table>';
+  '<tr><td>① 申請→<b>2週後に承認</b>(⏭2回) ② 承認は<b>13週有効・購入1回で使い切り</b> ③ 中古(古い牛舎レンタル)は対象外</td><td></td></tr></table>';
   for(const c in SUB_META){
     const s=state.subsidy[c],m=SUB_META[c];
     let st,btn='';
-    if(s&&s.st==='pending')st='<span style="color:#b5651d;font-weight:bold">📝 申請中(あと'+Math.max(0,s.approveDay-state.absDay)+'日で承認)</span>';
-    else if(s&&s.st==='approved')st='<span class="prof">✅ 承認済み！対象の購入が半額(残り'+Math.max(0,s.expDay-state.absDay)+'日)</span>';
+    if(s&&s.st==='pending')st='<span style="color:#b5651d;font-weight:bold">📝 申請中(あと'+Math.max(0,(s.approveWeek||0)-state.absWeek)+'週で承認)</span>';
+    else if(s&&s.st==='approved')st='<span class="prof">✅ 承認済み！対象の購入が半額(残り'+Math.max(0,(s.expWeek||0)-state.absWeek)+'週)</span>';
     else{st='<span style="color:#c03030">未申請(いま買うと定価)</span>';btn='<button class="buy orange" onclick="applySub(\''+c+'\')">申請する</button>';}
     h+='<div class="row"><div class="em">'+m.em+'</div><div class="info"><b>'+m.n+'の購入補助</b><small>'+m.desc+'<br>'+st+'</small></div>'+btn+'</div>';
   }
@@ -3908,26 +4088,26 @@ function ledgerStatusHTML(){
   const grassNeed=herd*ECON.GRASS_EAT;
   const sc=staffCount();
   return '<table class="fs">'+
-  '<tr class="hd"><td>毎月の経費(⏭で差引)</td><td class="amt"></td></tr>'+
-  '<tr><td>自分の給与/生活費</td><td class="amt">'+fmt(ECON.OWNER_SALARY)+'</td></tr>'+
-  '<tr><td>従業員給与('+sc+'人×30万)</td><td class="amt">'+fmt(sc*ECON.EMP_SALARY)+'</td></tr>'+
-  '<tr><td>牛舎家賃'+(state.barnRented?'':(state.newBarns>0?'(新築牛舎は家賃なし)':'(未賃借)'))+'</td><td class="amt">'+fmt(state.barnRented?ECON.BARN_RENT:0)+'</td></tr>'+
-  '<tr><td>餌代(牛'+herd+'頭・牧草自給分は1万/頭)</td><td class="amt">'+(herd>0?'約'+fmt(Math.min(state.grassStock,herd)*ECON.FEED_GRASS+Math.max(0,herd-state.grassStock)*feedShortUnit()):'￥0')+'</td></tr>'+ // v23: 段階化した不足分単価で見積り
-  (herd>0?'<tr><td>牛糞の処分費'+(state.compostShed?'(🏭本格堆肥舎で収益化✨)':(state.dungYard?'(🟤糞置き場で不要✨)':'(1万/頭。🟤糞置き場でゼロに)'))+'</td><td class="amt">'+fmt((state.compostShed||state.dungYard)?0:herd*ECON.MANURE_FEE)+'</td></tr>':'')+
+  '<tr class="hd"><td>週次経費(⏭次の週へで差引)</td><td class="amt"></td></tr>'+
+  '<tr><td>自分の給与/生活費(週あたり)</td><td class="amt">'+fmt(ECON.OWNER_SALARY/4)+'</td></tr>'+
+  '<tr><td>従業員給与('+sc+'人×週'+man(ECON.EMP_SALARY/4)+')</td><td class="amt">'+fmt(sc*ECON.EMP_SALARY/4)+'</td></tr>'+
+  '<tr><td>牛舎家賃'+(state.barnRented?'(週あたり)':(state.newBarns>0?'(新築牛舎は家賃なし)':'(未賃借)'))+'</td><td class="amt">'+fmt(state.barnRented?ECON.BARN_RENT/4:0)+'</td></tr>'+
+  '<tr><td>餌代(牛'+herd+'頭・週あたり)</td><td class="amt">'+(herd>0?'約'+fmt(Math.min(state.grassStock,herd)*ECON.FEED_GRASS/4+Math.max(0,herd-state.grassStock)*feedShortUnit()):'￥0')+'</td></tr>'+
+  (herd>0?'<tr><td>牛糞の処分費'+(state.compostShed?'(🏭本格堆肥舎で収益化✨)':(state.dungYard?'(🟤糞置き場で不要✨)':'(4週ごとに月額。🟤糞置き場でゼロに)'))+'</td><td class="amt">'+fmt((state.compostShed||state.dungYard)?0:herd*ECON.MANURE_FEE/4)+'</td></tr>':'')+
   '</table>'+
-  '<p class="sub2" style="font-size:11.5px;color:#8a6a45">🌿 牧草: '+(state.grassSown?('作付け済み(収穫は🌸5月/🍂9月・1回'+grassCutYield()+'束・'+(grassHarvestMonth()?('今月は収穫月！'+(state.grassCutMonth===state.monthN?'収穫済✅':'まだ⬜')):'次は'+nextGrassHarvestLabel())+')'):(state.land.pasture1?'未作付け(牧草地で'+man(grassSowCost())+')':'牧草地なし(🏠不動産屋で購入)'))+' / 牛の消費 月'+grassNeed+'束 / 米: '+(state.riceField==='none'?'未作付け(4月に苗代'+man(riceSeedCost())+')':state.riceField==='planted'?('生育中(10月に'+riceBagsYield()+'袋。水管理'+(isWaterSeason()?(state.waterMonth===state.monthN?'今月済✅':'今月まだ⬜'):'は5〜9月')+')'):'収穫待ち！')+(herdCount()>0?' / 🐂健康'+state.care.health+'・汚れ'+state.care.dirt:'')+'</p>';
+  '<p class="sub2" style="font-size:11.5px;color:#8a6a45">🌿 牧草: '+(state.grassSown?('作付け済み(収穫は🌸第18週/🍂第36週・1回'+grassCutYield()+'束・'+(isGrassHarvestWeek()?('今週は収穫週！'+(state.grassCutWeek===state.weekN?'収穫済✅':'まだ⬜')):'次は'+nextGrassHarvestLabel())+')'):(state.land.pasture1?'未作付け(牧草地で'+man(grassSowCost())+')':'牧草地なし(🏠不動産屋で購入)'))+' / 牛の消費 週'+grassNeed+'束 / 米: '+(state.riceField==='none'?'未作付け(第14週に苗代'+man(riceSeedCost())+')':state.riceField==='planted'?('生育中(第40週に'+riceBagsYield()+'袋。水管理'+(isWaterSeason()?(isWaterWeek()&&state.waterWeek!==state.weekN?'今週まだ⬜':'済✅'):'は夏のみ')+')'):'収穫待ち！')+(herdCount()>0?' / 🐂健康'+state.care.health+'・汚れ'+state.care.dirt:'')+'</p>';
 }
 // 倉庫: 米の精米出荷・牧草売却・農産物・種
 function whHTML(){
   const polBroken=machineBroken('polisher'); // v19
-  const canShip=state.riceBags>0&&state.shipMonth!==state.monthN&&!polBroken;
+  const canShip=state.riceBags>0&&state.shipMonth!==state.weekN&&!polBroken;
   const shipN=Math.min(riceShipMax(),state.riceBags);
-  let h='<p>収穫した米は倉庫へ。毎月「精米して出荷」で現金化(月1回・最大'+riceShipMax()+'袋)。</p>'+
-  '<div class="row"><div class="em">🍚</div><div class="info"><b>米倉庫: '+state.riceBags+'袋</b><small>1袋3万円。'+(polBroken?'<span class="loss">⚠精米機が故障中！🔧街の修理屋で修理を</span>':(state.shipMonth===state.monthN?'今月は出荷済み(⏭で翌月へ)':'今月あと'+shipN+'袋出荷できる('+fmt(shipN*ECON.RICE_BAG_PRICE)+')'))+'</small></div>'+
+  let h='<p>収穫した米は倉庫へ。週1回「精米して出荷」で現金化(最大'+riceShipMax()+'袋/週)。</p>'+
+  '<div class="row"><div class="em">🍚</div><div class="info"><b>米倉庫: '+state.riceBags+'袋</b><small>1袋3万円。'+(polBroken?'<span class="loss">⚠精米機が故障中！🔧街の修理屋で修理を</span>':(state.shipMonth===state.weekN?'今週は出荷済み(⏭で翌週へ)':'今週あと'+shipN+'袋出荷できる('+fmt(shipN*ECON.RICE_BAG_PRICE)+')'))+'</small></div>'+
   '<button class="buy" '+(canShip?'':'disabled')+' onclick="shipRice()">精米して出荷</button></div>';
-  const reserve=herdCount()*ECON.GRASS_EAT*(monthsToNextGrassHarvest()+ECON.GRASS_BUFFER_MONTHS); // v23: 次の収穫月まで+予備3ヶ月分は残す
+  const reserve=herdCount()*ECON.GRASS_EAT*(Math.ceil(weeksToNextGrassHarvest()/4)+ECON.GRASS_BUFFER_MONTHS);
   const surplus=Math.max(0,state.grassStock-reserve);
-  h+='<div class="row"><div class="em">🌿</div><div class="info"><b>牧草在庫: '+state.grassStock+'束</b><small>収穫は🌸5月/🍂9月の年2回。次の収穫('+nextGrassHarvestLabel()+')まで+予備'+ECON.GRASS_BUFFER_MONTHS+'ヶ月の餌'+reserve+'束は確保。余剰'+surplus+'束×1万円='+fmt(surplus*ECON.GRASS_PRICE)+'</small></div>'+
+  h+='<div class="row"><div class="em">🌿</div><div class="info"><b>牧草在庫: '+state.grassStock+'束</b><small>収穫は🌸第18週/🍂第36週の年2回。次の収穫('+nextGrassHarvestLabel()+')まで+予備の餌'+reserve+'束は確保。余剰'+surplus+'束×1万円='+fmt(surplus*ECON.GRASS_PRICE)+'</small></div>'+
   '<button class="buy" '+(surplus>0?'':'disabled')+' onclick="sellGrassSurplus(false)">余剰を売る</button></div>';
   h+='<div class="row"><div class="em">🟤</div><div class="info"><b>堆肥を作る</b><small>牛ふん'+(state.res.manure||0)+'個→堆肥に(畑が2倍育つ/売っても2千円)</small></div>'+
   '<button class="buy" '+((state.res.manure||0)>0?'':'disabled')+' onclick="makeCompost()">作る</button></div>';
@@ -3966,8 +4146,14 @@ function cowsHTML(){
   const skN=sickAnimals().length; // v19: 病気の警告
   if(skN>0)h+='<p class="loss" style="font-weight:bold">🤒 病気の牛が'+skN+'頭！🚜街の農協で獣医を呼ぼう(放置すると悪化→最悪死亡)</p>';
   if(herdCount()>0){
-    const fed=state.care.fedDay===state.absDay,cl=state.care.cleanDay===state.absDay;
-    h+='<div class="row"><div class="em">🍼</div><div class="info"><b>今日の世話: 餌'+(fed?'✅':'⬜')+' 掃除'+(cl?'✅':'⬜')+' / 健康'+state.care.health+' 汚れ'+state.care.dirt+'</b><small>毎日必要！よく食べた牛は肥育度が上がって高く売れる(+30%まで)。サボると痩せて安く(-40%まで)・健康40未満は妊娠が進まない。従業員に🐂牛の世話を指示すると自動</small></div>'+
+    const fed=state.care.fedWeek===state.weekN,cl=state.care.cleanWeek===state.weekN;
+    // v25: 配合飼料在庫と購入UI
+    const formulaStock=state.formulaFeed||0;
+    const herd=herdCount();
+    const canBuyFormula=state.money>=ECON.FORMULA_BULK_PRICE;
+    h+='<div class="row"><div class="em">🍽</div><div class="info"><b>配合飼料在庫: '+formulaStock+'週分</b><small>牧草が不足した時に補填(1週×1頭分で'+fmt(ECON.FORMULA_FEED_PRICE)+')。まとめ買いで10週分'+man(ECON.FORMULA_BULK_PRICE)+'。'+herd+'頭に充分なら'+Math.ceil(formulaStock/herd)+'週分</small></div>'+
+    '<button class="buy" '+(canBuyFormula?'':'disabled')+' onclick="buyFormulaFeed();renderMenu()">10週分買う('+man(ECON.FORMULA_BULK_PRICE)+')</button></div>';
+    h+='<div class="row"><div class="em">🍼</div><div class="info"><b>今週の世話: 餌'+(fed?'✅':'⬜')+' 掃除'+(cl?'✅':'⬜')+' / 健康'+state.care.health+' 汚れ'+state.care.dirt+'</b><small>週1回必要！よく食べた牛は肥育度が上がって高く売れる(+30%まで)。サボると痩せて安く(-40%まで)・健康40未満は妊娠が進まない。従業員に🐂牛の世話を指示すると自動</small></div>'+
     '<button class="buy" '+((fed&&cl)?'disabled':'')+' onclick="doCowCare(null);renderMenu()">世話する</button></div>';
     // v24: 繋留⇄散歩の切り替え(マップ右の🚶ボタンと同じ)
     h+='<div class="row"><div class="em">'+(state.cowFree?'🚶':'⛓')+'</div><div class="info"><b>'+(state.cowFree?'いま: 散歩中(放し飼い)':'いま: 定位置に繋留中')+'</b><small>ふだんは各牛が牛舎の床の定位置に繋がれている(餌やり・なでるがやりやすい)。🚶散歩で牛舎の床を放し飼い→🏠戻すで全頭が定位置へ整列。どちらでも世話・種付け・売却はできるよ</small></div>'+
@@ -3975,18 +4161,18 @@ function cowsHTML(){
   }
   if(!state.cows.length&&!state.calves.length)h+='<p style="color:#8a6a45">牛はまだいないよ。🐂セリ市場でメス牛を買おう(与信100万円)。</p>';
   for(const c of state.cows){
-    const canBreed=!c.retired&&c.preg<0&&c.bredMonth!==state.monthN&&!c.sick&&state.calves.length<calfCapNow();
+    const canBreed=!c.retired&&c.preg<0&&c.bredWeek!==state.weekN&&!c.sick&&state.calves.length<calfCapNow();
     h+='<div class="cowrow"><span style="font-size:18px">🐂</span><span class="st">'+cowStatusText(c)+'</span>'+
       (c.retired?'<button class="minibtn orange" onclick="sellMother('+c.id+')">'+man(motherSalePrice(c))+'で売却</button>':
        '<button class="minibtn" '+(canBreed?'':'disabled')+' onclick="breedCow('+c.id+')">種付け(80%)</button>')+'</div>';
   }
   for(const cf of state.calves){
-    const ship=cf.age>=ECON.CALF_SHIP_AGE&&!cf.sick;
+    const ship=(cf.ageWeeks||0)>=ECON.CALF_SHIP_WEEKS&&!cf.sick;
     h+='<div class="cowrow"><span style="font-size:15px">🐮</span><span class="st">'+calfStatusText(cf)+(ship?'<br><small style="color:#8a6a45">'+condReasons(cf)+'</small>':'')+'</span>'+
       (ship?('<button class="minibtn orange" onclick="sellCalf('+cf.id+')">'+man(calfSalePrice(cf))+'で売却</button>'+
         (cf.sex==='F'?'<button class="minibtn" '+(state.cows.length<barnCapNow()?'':'disabled')+' onclick="keepAsMother('+cf.id+')">母牛に残す</button>':'')):'')+'</div>';
   }
-  h+='<p class="sub2" style="font-size:11.5px;color:#8a6a45">餌代: 1頭 月3.5万円(🌿牧草でまかなえた牛は月1万円)。種付け→10ヶ月で出産→子牛は8ヶ月で出荷。売値ベース: ♀メス100万/♂オス120万(肥育・健康・病歴で±)。売却額の半分(最大50万)は母牛の借金返済へ。♀メスは売らずに母牛として残せる(与信なしの自家育成)。母牛は8産まで。</p>';
+  h+='<p class="sub2" style="font-size:11.5px;color:#8a6a45">餌代: 牧草自給=週'+fmt(ECON.FEED_GRASS/4)+'/頭。牧草不足は配合飼料(週'+fmt(ECON.FORMULA_FEED_PRICE)+'/頭)か市販(週'+fmt(ECON.FEED_MARKET/4)+'/頭)。種付け→40週で出産→子牛は生後4週で離乳→32週で出荷。売値ベース: ♀メス100万/♂オス120万(肥育・健康・病歴で±)。売却額の半分(最大50万)は母牛の借金返済へ。♀メスは売らずに母牛として残せる(与信なしの自家育成)。母牛は8産まで。</p>';
   return h;
 }
 // セリ市場: メス牛の与信購入・子牛/親牛の売却
@@ -3995,12 +4181,12 @@ function auctionHTML(){
   let h='<p>🐂 セリ市場(街・担当: 競り人の勝さん)。メス牛は「与信(その牛の借金)」で購入=現金は減らないよ。</p>'+
   '<div class="row"><div class="em">🐂</div><div class="info"><b>メス牛を買う(与信100万円)</b><small>'+(hasBarn()?('母牛の枠の空き '+(barnCapNow()-state.cows.length)+'頭分。現金は出て行かず、この牛に借金100万円が付く'):'先に🏚古い牛舎を借りるか、🚜農協で⛰新築牛舎を建ててね')+'</small></div>'+
   '<button class="buy orange" '+(canBuy?'':'disabled')+' onclick="buyCowCredit()">与信で購入</button></div>';
-  const ship=state.calves.filter(c=>c.age>=ECON.CALF_SHIP_AGE&&!c.sick);
+  const ship=state.calves.filter(c=>(c.ageWeeks||0)>=ECON.CALF_SHIP_WEEKS&&!c.sick);
   h+='<p><b>売る</b>(ベース: ♀メス'+man(ECON.CALF_PRICE_F)+'/♂オス'+man(ECON.CALF_PRICE_M)+'。肥育・健康・病歴で±)</p>';
   if(ship.length){
     for(const cf of ship){
       const price=calfSalePrice(cf),adj=Math.round(cowCondAdj(cf)*100);
-      h+='<div class="cowrow"><span style="font-size:15px">🐮</span><span class="st">'+sexMark(cf)+'の子牛'+cf.id+'(月齢'+cf.age+'ヶ月)<br><small style="color:#8a6a45">'+condReasons(cf)+' → ベース'+man(calfBasePrice(cf))+(adj!==0?(adj>0?'の+':'の')+adj+'%で'+(adj>0?'高く':'安く')+'売れる':'')+'</small></span>'+
+      h+='<div class="cowrow"><span style="font-size:15px">🐮</span><span class="st">'+sexMark(cf)+'の子牛'+cf.id+'(週齢'+(cf.ageWeeks||0)+'週)<br><small style="color:#8a6a45">'+condReasons(cf)+' → ベース'+man(calfBasePrice(cf))+(adj!==0?(adj>0?'の+':'の')+adj+'%で'+(adj>0?'高く':'安く')+'売れる':'')+'</small></span>'+
       '<button class="minibtn orange" onclick="sellCalf('+cf.id+')">'+man(price)+'で売却</button>'+
       (cf.sex==='F'?'<button class="minibtn" '+(state.cows.length<barnCapNow()?'':'disabled')+' onclick="keepAsMother('+cf.id+')">母牛に残す</button>':'')+'</div>';
     }
@@ -4054,6 +4240,14 @@ function staffHTML(){
   }
   h+='<p class="sub2" style="font-size:11.5px;color:#8a6a45">仕事: 🌾米=4月田植え・5〜9月水管理・10月収穫・毎月出荷 / 🌿牧草=刈り取りと売却 / 🐂牛の世話=毎日の餌+掃除と種付け・セリ / 🟫堆肥=ふん回収・肥料出荷。米は年数回しか作業がないから、閑散期は指示を変えて有効活用しよう！</p>';
   return h;
+}
+// v25: 配合飼料の一括購入(10週分=牧草不足時の補填用)
+function buyFormulaFeed(){
+  if(state.money<ECON.FORMULA_BULK_PRICE){toast('💸 配合飼料代'+man(ECON.FORMULA_BULK_PRICE)+'が払えない…現金が足りないよ');return;}
+  addExpense(ECON.FORMULA_BULK_PRICE,'feed','cow');
+  state.formulaFeed=(state.formulaFeed||0)+10;
+  toast('🍽 配合飼料を10週分購入した！(−'+man(ECON.FORMULA_BULK_PRICE)+' 在庫'+state.formulaFeed+'週分)');
+  updateHUD();renderMenu();
 }
 function makeCompost(){
   const n=state.res.manure||0;
@@ -4279,7 +4473,7 @@ function buildMapWorld(){
 function ensureRiceVisual(){
   if(state.riceField==='none')return;
   for(const k in state.crops)if(state.crops[k].type==='rice')return; // もう見た目がある
-  const mon=state.riceField==='ready'?6:Math.max(0,Math.min(6,state.monthN-(state.ricePlantMonthN>=0?state.ricePlantMonthN:state.monthN)));
+  const mon=state.riceField==='ready'?6:Math.max(0,Math.min(6,Math.floor((state.weekN-(state.ricePlantWeekN>=0?state.ricePlantWeekN:state.weekN))/4))); // v25: 週ベース
   buildRiceVisual(mon);
 }
 // 暗転演出つきのマップ切替
@@ -4321,20 +4515,44 @@ window.__v4dbg.barnAreas=()=>barnAreas();
 window.__v4dbg.topYAt=(x,z)=>topY(x,z);
 window.__v4dbg.blockAt=(x,y,z)=>getB(x,y,z);
 window.__v4dbg.cowSlots=()=>cowMeshes.map(m=>({id:(m.userData.cow||m.userData.calf||{id:-1}).id,slot:m.userData.slot,x:+m.position.x.toFixed(2),z:+m.position.z.toFixed(2)}));
+window.__v4dbg.nearAction=(x,z)=>{if(x!==undefined){player.x=x;player.z=z;}const a=nearestAction(player.x,player.z);return a?a.label:null;}; // 検証用: 現在地の最寄りアクション名
 window.__v4dbg.forceManure=n=>{for(let i=0;i<(n||1);i++){if(!cowMeshes.length)break;const m=cowMeshes[Math.floor(Math.random()*cowMeshes.length)];const areas=barnAreas(),a=areas[Math.min(m.userData.bi||0,areas.length-1)];const mx=Math.max(a.x0,Math.min(a.x1,m.position.x+(Math.random()-0.5)*0.9)),mz=Math.max(a.z0,Math.min(a.z1,m.position.z+(Math.random()-0.5)*0.9));dropManure(mx,mz);}return manures.length;};
+// v26検証用: 牛舎を借りて母牛/授乳仔牛/離乳仔牛を用意
+window.__v4dbg.devBarn=(nCow,nNurse,nWean)=>{
+  rentBarn();
+  for(let i=0;i<(nCow||10);i++)buyCowCredit();
+  let id=9000;
+  for(let i=0;i<(nNurse||3);i++)state.calves.push({id:id++,name:'乳'+i,ageWeeks:1,motherId:(state.cows[i]||{}).id,bornWeekN:state.weekN,weaned:false,sex:i%2?'m':'f',fat:55,homeGrown:true});
+  for(let i=0;i<(nWean||5);i++)state.calves.push({id:id++,name:'離'+i,ageWeeks:8,motherId:-1,bornWeekN:state.weekN-8,weaned:true,sex:i%2?'m':'f',fat:60,homeGrown:true});
+  refreshCowMeshes();
+  return {cows:state.cows.length,calves:state.calves.length,areas:barnAreas().length};
+};
+window.__v4dbg.roofOff=(bi)=>{
+  const areas=barnAreas();const a=areas[bi||0];if(!a)return 'no area';
+  const x0=Math.floor(a.x0-1),x1=Math.ceil(a.x1+1),z0=Math.floor(a.z0-1),z1=Math.ceil(a.z1+1);
+  for(let x=x0;x<=x1;x++)for(let z=z0;z<=z1;z++){gset(x,6,z,0);gset(x,5,z,0);markDirty(x,z);}flushDirty();return 'roof off '+bi;
+}; // 検証用: 牛舎の屋根/上壁を外して中を見る
+window.__v4dbg.devNewBarn=()=>{ // 検証用: 新築牛舎(両側・中央通路)を建てて牛を入れる
+  state.dungYard=true;state.newBarns=1;
+  terraformNewBarn(0);rebuildAll();
+  for(let i=0;i<12;i++)buyCowCredit();
+  let id=8000;for(let i=0;i<4;i++)state.calves.push({id:id++,name:'離'+i,ageWeeks:8,motherId:-1,bornWeekN:state.weekN-8,weaned:true,sex:i%2?'m':'f',fat:60,homeGrown:true});
+  refreshCowMeshes();
+  return {plot:NEW_BARN_PLOTS[0],cows:state.cows.length,areas:barnAreas().length};
+};
 
 // ---------- セーブ / ロード ----------
 function saveGame(showToast){
   if(isGameOver)return; // v15: 倒産後は保存しない
   try{
     state.map=curMap; // v19: いまのマップも保存
-    const data={v:20,state,player:{x:player.x,y:player.y,z:player.z}};
+    const data={v:25,state,player:{x:player.x,y:player.y,z:player.z}};
     localStorage.setItem(SAVE_KEY,JSON.stringify(data));
     if(showToast)toast('💾 セーブしたよ！');
   }catch(e){if(showToast)toast('セーブできなかった…');}
 }
 function loadSaveData(){
-  try{const s=localStorage.getItem(SAVE_KEY);if(!s)return null;const d=JSON.parse(s);if(d&&d.v===20)return d;}catch(e){}
+  try{const s=localStorage.getItem(SAVE_KEY);if(!s)return null;const d=JSON.parse(s);if(d&&(d.v===25||d.v===20))return d;}catch(e){}
   return null;
 }
 function applyEdits(){
@@ -4356,6 +4574,7 @@ function setCamDist(v){camDist=Math.max(CAM_MIN,Math.min(CAM_MAX,v));}
 window.__v4dbg.getCamDist=()=>camDist;
 window.__v4dbg.setCamDist=v=>setCamDist(v);
 window.__v4dbg.camRange={min:CAM_MIN,max:CAM_MAX};
+window.__v4dbg.setCam=o=>{if(o.yaw!==undefined)camYaw=o.yaw;if(o.pitch!==undefined)camPitch=Math.max(0.08,Math.min(1.2,o.pitch));if(o.dist!==undefined)setCamDist(o.dist);}; // 検証用: カメラ角度/引きを直接設定
 const keys={};
 // IME(日本語入力)中は e.key が 'Process' になるため e.code でも判定する
 const CODEKEY={KeyW:'w',KeyA:'a',KeyS:'s',KeyD:'d',ArrowUp:'arrowup',ArrowDown:'arrowdown',ArrowLeft:'arrowleft',ArrowRight:'arrowright',ShiftLeft:'shift',ShiftRight:'shift',Space:' ',KeyE:'e',KeyQ:'q',KeyM:'m'};
@@ -4482,8 +4701,7 @@ function bindControls(){
   ub.addEventListener('mousedown',ubDown);
   document.getElementById('menuOpenBtn').addEventListener('click',openMenu);
   document.getElementById('quest').addEventListener('click',()=>{ac();showQuestInfo();});     // v21: クエストの❓タップで詳細
-  document.getElementById('dayBtn').addEventListener('click',()=>{ac();nextDay();});          // v16: 日送り(基本操作)
-  document.getElementById('monthBtn').addEventListener('click',()=>{ac();nextMonthBatch();}); // v16: 30日一括(放置)
+  document.getElementById('weekBtn').addEventListener('click',()=>{ac();nextWeek();});         // v26: 時間送りは「次の週へ」の1本のみ(週単位)
   document.getElementById('cowModeBtn').addEventListener('click',()=>{ac();toggleCowMode();}); // v24: 🚶散歩⇄🏠戻す
   // v20: カメラズーム。ホイール(PC)+🔍±ボタン(スマホ/PC共通)。ピンチはタッチ側で処理
   el.addEventListener('wheel',e=>{e.preventDefault();setCamDist(camDist+e.deltaY*0.012);},{passive:false});
@@ -4526,7 +4744,7 @@ function areaName(x,z){
   if(curMap==='town')return areaNameTown(x,z); // v19: 街のエリア名
   // v20: 大倉庫(複合施設)と新築牛舎
   if(x>=WHX0-2&&x<=WHX1+1&&z>=WHZ0-1&&z<=WHZ1+1)return'🏭 大倉庫(加工場・事務所)';
-  for(let i=0;i<state.newBarns;i++){const p=NEW_BARN_PLOTS[i];if(x>=p[0]-1&&x<=p[0]+7&&z>=p[1]-1&&z<=p[1]+7)return'🐂 新牛舎'+(i+1)+'号棟';}
+  for(let i=0;i<state.newBarns;i++){const p=NEW_BARN_PLOTS[i];if(x>=p[0]-1&&x<=p[0]+12&&z>=p[1]-1&&z<=p[1]+11)return'🐂 新牛舎'+(i+1)+'号棟';} // v25: 12×11
   // v16: 拡張区画
   if(x>=50&&x<=66&&z>=8&&z<=21)return state.land.grass2?'🌿 東の牧草地':'🧱 販売中の区画(荒れ地)';
   if(x>=47&&x<=66&&z>=37&&z<=47)return state.land.rice2?'🌾 東の棚田':'🧱 販売中の区画(荒れ地)';
@@ -4646,11 +4864,12 @@ function animate(ts){
   for(const m of cowMeshes){
     const u=m.userData;u.t+=dt;
     const a=cowAreas[Math.min(u.bi||0,cowAreas.length-1)];
+    const roam=u.roam||a; // v26: メッシュ個別の徘徊/クランプ矩形(母牛=列/離乳仔牛=ペン/授乳仔牛=母の隣)
     let tx,tz,arrive;
-    if(state.cowFree){ // 🚶散歩(放し飼い): 牛舎の床を自由に歩き回る
+    if(state.cowFree){ // 🚶散歩(放し飼い): 自分の区画の中を自由に歩き回る
       if(u.t>4){u.t=0;
-        u.tx=a.x0+Math.random()*(a.x1-a.x0);
-        u.tz=a.z0+Math.random()*(a.z1-a.z0);
+        u.tx=roam.x0+Math.random()*(roam.x1-roam.x0);
+        u.tz=roam.z0+Math.random()*(roam.z1-roam.z0);
       }
       tx=u.tx;tz=u.tz;arrive=0.4;
     }else{ // 🏠繋留(デフォルト): 定位置へ(着いていれば待機)
@@ -4662,12 +4881,13 @@ function animate(ts){
       const sp=state.cowFree?0.8:1.4; // 戻る時は少し早歩き
       const st2=Math.min(dl,sp*dt);
       let nx=m.position.x+dx/dl*st2,nz=m.position.z+dz/dl*st2;
-      nx=Math.max(a.x0,Math.min(a.x1,nx));nz=Math.max(a.z0,Math.min(a.z1,nz)); // 床の外(壁・屋根)へは出ない
+      nx=Math.max(roam.x0,Math.min(roam.x1,nx));nz=Math.max(roam.z0,Math.min(roam.z1,nz)); // 区画の外(壁・屋根)へは出ない
       m.position.set(nx,cowFloorY(nx,nz),nz);
       m.rotation.y=Math.atan2(dx,dz)-Math.PI/2;
     }else if(!state.cowFree){
-      // 繋留中はなめらかに北向き(頭を飼槽側)へそろえる
-      let dr=Math.PI/2-m.rotation.y;
+      // 繋留中はなめらかに通路(中央)向きへそろえる=顔が見える
+      const targetRot=u.calf?m.rotation.y:barnFaceRot(a,m.position.x);
+      let dr=targetRot-m.rotation.y;
       while(dr>Math.PI)dr-=Math.PI*2;while(dr<-Math.PI)dr+=Math.PI*2;
       m.rotation.y+=dr*Math.min(1,dt*4);
     }
@@ -4678,10 +4898,13 @@ function animate(ts){
   manureAcc+=dt;
   if(manureAcc>18){manureAcc=0;
     if(curMap==='farm'&&state.cows.length>0&&cowMeshes.length>0){
-      const m=cowMeshes[Math.floor(Math.random()*cowMeshes.length)];
+      // v26: 母牛のみ排糞。糞は牛の後ろ=通路と反対の「壁側」に落ちる(そこを掃除する)
+      const mothers=cowMeshes.filter(cm=>cm.userData.big);
+      const m=(mothers.length?mothers:cowMeshes)[Math.floor(Math.random()*(mothers.length||cowMeshes.length))];
       const areas=barnAreas(),a=areas[Math.min(m.userData.bi||0,areas.length-1)];
-      const mx=Math.max(a.x0,Math.min(a.x1,m.position.x+(Math.random()-0.5)*0.9));
-      const mz=Math.max(a.z0,Math.min(a.z1,m.position.z+(Math.random()-0.5)*0.9));
+      const backDir=(m.position.x<a.faceMid)?-1:1; // 通路の反対(壁)側へ
+      const mx=Math.max(a.x0-0.4,Math.min(a.x1+0.4,m.position.x+backDir*0.7+(Math.random()-0.5)*0.4));
+      const mz=m.position.z+(Math.random()-0.5)*0.5;
       dropManure(mx,mz);
     }
   }
@@ -4808,8 +5031,8 @@ function startGame(saveData){
   document.getElementById('loading').style.display='flex';
   setTimeout(()=>{
     state=saveData?saveData.state:freshState();
-    migrateFy();  // v17: 事業セグメント帳簿を追補
-    migrateV20(); // v20: 機械・糞置き場・新築牛舎・牛の個体パラメータを追補(堅牢化)
+    migrateFy();   // v17: 事業セグメント帳簿を追補
+    migrateV25();  // v25: 週単位時間・配合飼料・仔牛授乳の新フィールドを追補(堅牢化)
     curMap=state.map||'farm'; // v19: セーブしたマップ(農場/街)で再開
     initThree();
     initNPCs();       // v19: 全NPC(農場+街)を生成
@@ -4838,7 +5061,7 @@ function initTitle(){
   if(sv){
     const b=document.getElementById('contBtn');
     b.style.display='block';
-    b.textContent='💾 続きから（'+sv.state.year+'年目 '+sv.state.month+'月）';
+    b.textContent='💾 続きから（'+sv.state.year+'年目 第'+(sv.state.week||14)+'週）';
     b.addEventListener('click',()=>{ac();startGame(sv);});
   }
 }
