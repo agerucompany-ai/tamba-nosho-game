@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v32 日付を「1年目 4月1週目」表記に(第14週→わかりやすく)</title>
+<title>丹波農商 牧場物語 v33 マップ切替ボタン・BSを決算書レイアウト・水管理の案内強化</title>
 <link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -80,12 +80,16 @@
   #week4Btn:active{transform:translateY(2px);box-shadow:0 1px 0 #4a3a8a;}
   #careChip{position:fixed;top:calc(128px + env(safe-area-inset-top));right:8px;z-index:12;padding:5px 10px;font-size:12px;font-weight:bold;color:#5a3714;display:none;background:rgba(255,253,245,.92);border:2px solid #c9a86f;border-radius:10px;pointer-events:none;}
   /* v24: 牛の🚶散歩(放し飼い)⇄🏠戻す(繋留)トグルボタン */
-  #cowModeBtn{position:fixed;top:calc(168px + env(safe-area-inset-top));right:8px;z-index:13;display:none;background:#3a8a3a;border-color:#1f5a1f;box-shadow:0 4px 0 #1f5a1f;font-size:13px;}
+  #mapBtn{position:fixed;top:calc(90px + env(safe-area-inset-top));right:8px;z-index:13;background:#7a5fd8;border-color:#4a3a8a;box-shadow:0 4px 0 #4a3a8a;font-size:13px;}
+  #mapBtn:active{transform:translateY(2px);box-shadow:0 1px 0 #4a3a8a;}
+  #cowModeBtn{position:fixed;top:calc(132px + env(safe-area-inset-top));right:8px;z-index:13;display:none;background:#3a8a3a;border-color:#1f5a1f;box-shadow:0 4px 0 #1f5a1f;font-size:13px;}
   #cowModeBtn:active{transform:translateY(2px);box-shadow:0 1px 0 #1f5a1f;}
   #cowModeBtn.walking{background:#e8743f;border-color:#a04515;box-shadow:0 4px 0 #a04515;}
   .fs{width:100%;border-collapse:collapse;margin:6px 0;}
   .fs td{padding:4px 7px;font-size:13px;color:#5a3714;border-bottom:1px solid #e6d5b8;text-align:left;}
   .fs td.amt{text-align:right;font-weight:bold;white-space:nowrap;}
+  .bs-col td{padding:2px 3px !important;font-size:10.5px !important;word-break:break-word;} /* v33: BS左右2列をモバイルでも並べる */
+  .bs-col td.amt{font-size:10.5px !important;}
   .fs tr.hd td{background:#f0e2cc;font-weight:bold;}
   .fs tr.tot td{border-top:2px solid #c9a86f;font-weight:bold;font-size:14px;}
   .prof{color:#1f7a1f!important;} .loss{color:#c03030!important;}
@@ -112,6 +116,7 @@
 <div id="menuBtn"><div class="mbtn" id="menuOpenBtn">☰ メニュー</div></div>
 <div id="weekBtnWrap"><div class="mbtn" id="weekBtn">⏭ 次の週へ</div></div>
 <div id="careChip">🐂 餌⬜ 掃除⬜</div>
+<div class="mbtn" id="mapBtn">🏘 街へ行く</div>
 <div class="mbtn" id="cowModeBtn">🚶 散歩(放し飼い)</div>
 <div id="joy"><div id="joyKnob"></div></div>
 <div id="actHint">🌱 種をまく</div>
@@ -1647,13 +1652,13 @@ function doRicePlant(){
   fanfare();
   toast('🌾 苗代'+man(cost)+'を払って田植えした！('+wkLabel(ECON.RICE_HARVEST_WEEK)+'に'+riceBagsYield()+'袋収穫見込み)'+(state.compostShed?'(堆肥舎の肥料で−50万)':''));
   if(state.ricePlanterBonus)toast('🌱 田植え機で機械化！今年の収量+10%');
-  toast('🚿 夏(第18〜35週)は数週間に1回「水の管理」！サボると収量が5%ずつ減るよ');
+  toast('🚿 夏(5〜9月)は月1回「水の管理」が必要！その週になったら🌾棚田に近づいて「使う」でOK。サボると収量が5%ずつ減るよ');
   updateHUD();
 }
 // v16: 水管理(5〜9月に月1回)。自分で棚田に行くか、米担当の従業員が自動でやる
 function doRiceWater(who){
   if(state.riceField!=='planted'){toast('🌾 いまは水管理の必要はないよ');return false;}
-  if(!isWaterSeason()){toast('🚿 水管理は夏(第18〜35週)だけだよ');return false;}
+  if(!isWaterSeason()){toast('🚿 水管理は夏(5〜9月)だけだよ');return false;}
   if(!isWaterWeek()){toast('🚿 今週は水管理の必要はないよ(次の水管理週まで待とう)');return false;}
   if(state.waterWeek===state.weekN){toast('🚿 今週の水管理は済んでいるよ');return false;}
   state.waterWeek=state.weekN;
@@ -2665,6 +2670,7 @@ function updateHUD(){
   document.getElementById('day').textContent=ymdLabel(); // v16: 年月日
   updateCareChip();
   updateQuest();
+  updateMapBtn(); // v33
 }
 // クエスト（経営チュートリアル：1つずつ）
 // v21: 常時表示は「短いアイコン+一言」だけ。❓(タップ)で詳しい説明ポップアップ
@@ -2943,6 +2949,10 @@ function toggleCowMode(){
   }
   sfx(600,.07,'sine',.05);
   updateCowModeBtn();
+}
+function updateMapBtn(){ // v33: 農場⇄街のワンタップ切替ボタンの表示
+  const el=document.getElementById('mapBtn');if(!el)return;
+  el.textContent=(curMap==='town')?'🌾 農場へ帰る':'🏘 街へ行く';
 }
 function updateCowModeBtn(){
   const el=document.getElementById('cowModeBtn');
@@ -3768,6 +3778,9 @@ function advanceWeek(notes,silent){
     notes.push('🌾 稲が実った！棚田で「収穫」しよう('+riceBagsYield()+'袋)');
   }
   if(state.week===ECON.RICE_PLANT_WEEK&&state.riceField==='none')notes.push('🌱 '+wkLabel(state.week)+'(春)！田植えの季節だよ(苗代'+man(riceSeedCost())+')');
+  // v33: 水管理の週が来たら明確に案内(やり方が分からない対策)
+  if(state.riceField==='planted'&&isWaterWeek()&&state.waterWeek!==state.weekN&&!staffWithJob('rice'))
+    notes.push('🚿 '+wkLabel(state.week)+'は「田んぼの水管理」の週！🌾棚田(緑色の田んぼ)に近づいて「使う」＝『🚿水の管理をする』をタップ。今週中にやらないと収量が'+(ECON.WATER_MISS_PENALTY*100)+'%減るよ(5〜9月に月1回)');
   if(state.grassSown){
     if(isGrassHarvestWeek())notes.push('✂ '+wkLabel(state.week)+'は'+(state.week===18?'🌸春':'🍂秋')+'の牧草の収穫週！今週中に収穫しよう(+'+grassCutYield()+'束)'+(staffWithJob('grass')?'(🌿担当が自動収穫)':''));
     const herd=herdCount();
@@ -3938,10 +3951,11 @@ function bsHTML(b){
   L+=row('純資産合計(資産−負債)',b.equity,true);
   L+=row('負債・純資産合計',b.liab+b.equity,true);
   const ok=b.assets===b.liab+b.equity;
-  return '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start">'+
-    '<table class="fs" style="flex:1;min-width:215px">'+A+'</table>'+
-    '<table class="fs" style="flex:1;min-width:215px">'+L+'</table></div>'+
-    '<p style="font-size:12px;font-weight:bold" class="'+(ok?'prof':'loss')+'">'+(ok?'✅':'⚠')+' 貸借一致: 資産合計'+fmt(b.assets)+' ＝ 負債'+fmt(b.liab)+'＋純資産'+fmt(b.equity)+'</p>';
+  // v33: 決算書のように「左=資産(借方) / 右=負債・純資産(貸方)」を常に左右に並べる(モバイルでも縦積みにしない)
+  return '<div style="display:flex;gap:5px;align-items:flex-start;font-size:11px">'+
+    '<table class="fs bs-col" style="flex:1 1 0;min-width:0">'+A+'</table>'+
+    '<table class="fs bs-col" style="flex:1 1 0;min-width:0">'+L+'</table></div>'+
+    '<p style="font-size:11.5px;font-weight:bold" class="'+(ok?'prof':'loss')+'">'+(ok?'✅':'⚠')+' 貸借一致: 資産'+fmt(b.assets)+' ＝ 負債'+fmt(b.liab)+'＋純資産'+fmt(b.equity)+'</p>';
 }
 const BS_NOTE='<p style="font-size:11.5px;color:#8a6a45">📐 評価ルール: 米=3万/袋・牧草=1万/束・肥料=8千/袋。母牛=取得原価100万(8産終了後は状態込みの売値)・子牛=いまの売値(♀100万/♂120万×状態補正)×月齢/8ヶ月。建物(糞置き場/本格堆肥舎/新築牛舎)・土地・機械=取得原価(補助金で半額購入した物は支払額)。純資産=資産−負債(元手1,000万+利益の蓄積)。</p>';
 // 事業別の利益一覧(Σ事業利益+共通=全社 の整合が見える表)
@@ -4627,6 +4641,7 @@ function switchMap(target){
   showTravel(target==='town'?'🌉 橋を渡って街へ…':'🌉 橋を渡って農場へ…',()=>{
     teardownMap();
     curMap=target;state.map=target;
+    updateMapBtn(); // v33
     buildMapWorld();
     const sp=target==='town'?TOWN_SPAWN:FARM_SPAWN;
     player.x=sp.x;player.z=sp.z;
@@ -4860,6 +4875,7 @@ function bindControls(){
   document.getElementById('menuOpenBtn').addEventListener('click',openMenu);
   document.getElementById('quest').addEventListener('click',()=>{ac();showQuestInfo();});     // v21: クエストの❓タップで詳細
   document.getElementById('weekBtn').addEventListener('click',()=>{ac();nextWeek();});         // v26: 時間送りは「次の週へ」の1本のみ(週単位)
+  document.getElementById('mapBtn').addEventListener('click',()=>{ac();switchMap(curMap==='town'?'farm':'town');}); // v33: ワンタップで農場⇄街
   document.getElementById('cowModeBtn').addEventListener('click',()=>{ac();toggleCowMode();}); // v24: 🚶散歩⇄🏠戻す
   // v20: カメラズーム。ホイール(PC)+🔍±ボタン(スマホ/PC共通)。ピンチはタッチ側で処理
   el.addEventListener('wheel',e=>{e.preventDefault();setCamDist(camDist+e.deltaY*0.012);},{passive:false});
