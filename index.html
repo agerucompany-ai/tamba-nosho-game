@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v29 食品加工=ポテサラ・栗園の看板を牛舎内から北東の丘へ移設</title>
+<title>丹波農商 牧場物語 v30 セーブ恒久化(更新で消えない)・不動産屋の見た目変更・糞置き場を廃止</title>
 <link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -485,8 +485,8 @@ const TOWN_CHARS={
     skin:'#eec096',cheek:'#e8907a',hair:'#1a1512',shirt:'#2a3a5a',pants:'#22262e',shoe:'#222',
     line:'丹波銀行です。直近の決算が黒字なら、売上高と同じ額まで無利息で融資しますよ🏦',
     line2:'赤字だと貸せません…毎年の決算を黒字にするのが信用の第一歩です'},
-  fudosan:{model:'naoto',name:'不動産屋の登さん',role:'不動産屋',menu:'land',pos:[25.5,34.6],
-    skin:'#eac199',cheek:'#e89a7a',hair:'#241a12',glasses:true,shirt:'#6a5a3a',pants:'#3a352a',shoe:'#333',
+  fudosan:{model:'ojiichan',urls:['char_min/ojiichan_walk.glb'],name:'不動産屋の登さん',role:'不動産屋',menu:'land',pos:[25.5,34.6], // v30: なおとと同じ見た目だったので専用モデル(ojiichan)に変更
+    skin:'#e8c9a8',cheek:'#e0907a',hair:'#8a8a8a',shirt:'#6a5a3a',pants:'#3a352a',shoe:'#333',
     line:'土地をお探しですか？西の牧草地・東の棚田・南の牧場、いい区画が揃ってますよ🏠',
     line2:'土地を買えば農場の世界が広がる。生産規模の拡大は経営の王道です'},
   nokyo:{model:'nokyo',name:'農協の米田さん',role:'農協職員',menu:'ja',pos:[40.5,34.6],
@@ -668,7 +668,7 @@ function fmt(n){return '￥'+Math.round(n).toLocaleString();}
 function man(n){const v=n/10000;return (v%1===0?v:v.toFixed(1))+'万円';}
 
 // ---------- ゲーム状態 ----------
-const SAVE_KEY='tamba_v28_save'; // v28: 牛舎座標変更(v27)＋制度融資/資格/食品加工の新stateで旧セーブ非互換のため新キー
+const SAVE_KEY='tamba_v28_save'; // v30: このキーを恒久固定(以後バージョンでも絶対に変えない=現在のセーブを保持)。新フィールドはmergeStateで既定値補完するのでデータは消えない
 let state=null;
 function freshState(){return{
   v:25,money:10000000,day:1,time:0.28,
@@ -761,7 +761,7 @@ function calfCapNow(){return (state.barnRented?ECON.BARN_CAP_CALF:0)+(state.land
 function isWaterSeason(){return state.week>=18&&state.week<=35;}
 // ---------- v19: 牛舎・機械・補助金・病気のヘルパ / v20: 実売価格・糞置き場 ----------
 function hasBarn(){return state.barnRented||state.newBarns>0||state.land.barn2;}
-function dungOk(){return state.dungYard||state.compostShed;} // v20: 糞の処理設備(牛舎増築の必須条件)
+function dungOk(){return true;} // v30: 糞置き場を廃止したので牛舎増築の前提条件を撤廃(いつでも増築可)
 const MACH_META={
   tractor:{n:'トラクター',em:'🚜',price:ECON.MACH_TRACTOR_M,repair:ECON.REP_TRACTOR,seg:'rice',desc:'田植え(4月)と収穫(10月)に必要。新品は小型150万(基本規模)/中型500万(東の棚田対応)',stop:'田植え・収穫ができない'},
   planter:{n:'田植え機',em:'🌱',price:ECON.MACH_PLANTER,repair:ECON.REP_PLANTER,seg:'rice',desc:'田植えの機械化。植えた年の米の収量+10%',stop:'田植えの機械化(+10%)が使えない'},
@@ -776,7 +776,7 @@ function machRepairCost(k){
 }
 const SUB_META={
   machine:{em:'🚜',n:'新品の機械',desc:'トラクター150万(小型)/500万(中型)・田植え機150万・コンバイン450万・精米機120万・加工機150万 → 半額(農協の資材窓口で購入)'},
-  barn:{em:'🏠',n:'新築牛舎',desc:'1棟3000万→1500万。母牛15頭+子牛15頭。⛰山を切り開いて増築(🟤糞置き場が必須)'},
+  barn:{em:'🏠',n:'新築牛舎',desc:'1棟3000万→1500万。母牛15頭+子牛15頭。⛰山を切り開いて増築'},
   shed:{em:'🏭',n:'本格堆肥舎',desc:'1500万→750万。牛糞→肥料の製造販売＋肥料代割引(農場の🟫堆肥場で建設)'},
 };
 function machineOwned(k){return (k==='tractor'||k==='polisher')?true:!!state.machines[k].lvl;} // トラクター/精米機は最初から中古を保有
@@ -2077,9 +2077,8 @@ function buildDecor(){
     b:()=>'米は年1サイクル: 4月に田植え(苗代'+man(riceSeedCost())+')→5〜9月は月1回🚿水管理→10月に収穫→毎月🍚精米出荷。<br>いまの状態: '+riceFieldLabel()+'<br>棚田に近づいて「使う」でも操作できるよ。',
     btns:()=>[[riceFieldLabel(),()=>riceFieldAction()]]});
   addSign(36.5,29.4,'🟫',{t:'🟫 堆肥場',
-    b:()=>'牛糞の処理設備を建てる場所。<br>🟤糞置き場('+man(ECON.DUNG_COST)+')=処分費ゼロ+⛰牛舎増築の必須条件。<br>🏭本格堆肥舎('+man(ECON.SHED_COST)+'・🏛補助で半額)=牛糞→肥料(頭数×'+ECON.FERT_PER_COW+'袋/月・1袋'+fmt(ECON.FERT_PRICE)+')の製造販売。<br>いま: '+(state.compostShed?'🏭本格堆肥舎が稼働中(肥料在庫'+state.fertStock+'袋)':state.dungYard?'🟤糞置き場で処理中(処分費ゼロ)':'未整備(牛がいると処分費 月1万円/頭)'),
+    b:()=>'🏭本格堆肥舎('+man(ECON.SHED_COST)+'・🏛補助で半額)を建てると、牛糞の処分費(月1万円/頭)がゼロになり、牛糞→肥料(頭数×'+ECON.FERT_PER_COW+'袋/月・1袋'+fmt(ECON.FERT_PRICE)+')を製造販売できるよ。<br>いま: '+(state.compostShed?'🏭本格堆肥舎が稼働中(肥料在庫'+state.fertStock+'袋)':'未整備(牛がいると処分費 月1万円/頭)'), // v30: 糞置き場を廃止
     btns:()=>{const a=[];
-      if(!state.dungYard&&!state.compostShed)a.push(['🟤 糞置き場を作る('+man(ECON.DUNG_COST)+')',()=>buyDungYard()]);
       if(!state.compostShed)a.push(['🏭 本格堆肥舎を建てる('+man(shedPriceNow())+')',()=>buildShed()]);
       else a.push(['🟫 肥料を出荷する('+state.fertStock+'袋)',()=>sellFert(false)]);
       return a;}});
@@ -2654,8 +2653,7 @@ const QUESTS=[
  {s:'🍼 牛の世話をしよう',t:'🌾通路の餌箱で餌やり(牧草＋配合飼料)＋🧹壁ぎわのフン掃除を週1回！よく食べた牛は太って高く売れる。仔牛は4週まで母のミルク→離乳でペンへ',c:()=>state.care.fedWeek>=0,r:150000},
  {s:'🎓 新規就農者になろう',t:'🚜街の農協で「新規就農者」の認定を受けよう。認定されると🏦銀行で新規就農資金3,000万円(7年・最初の3年は返済なし・無利息)が借りられるよ',c:()=>state.newFarmer,r:300000},
  {s:'🌰 栗園を買おう',t:'🏠街の不動産屋で栗園(300万)を買って栗の生産を始めよう。土地(牧草地/棚田/牧場)も広げて規模拡大！',c:()=>state.land.orchard||state.land.pasture1||state.land.rice2||state.land.barn2,r:200000},
- {s:'🟤 糞置き場を作ろう',t:'🟫堆肥場に🟤糞置き場(200万)を作ろう(糞の処分費ゼロ＋⛰牛舎増築の必須条件)',c:()=>state.dungYard||state.compostShed,r:200000},
- {s:'🏭 堆肥舎を建てよう',t:'🏭本格堆肥舎(1500万・🏛役場の補助で750万)を建てて肥料事業を始めよう(牛糞→肥料の製造販売)',c:()=>state.compostShed,r:300000},
+ {s:'🏭 堆肥舎を建てよう',t:'🏭本格堆肥舎(1500万・🏛役場の補助で750万)を建てて肥料事業を始めよう(牛糞の処分費ゼロ＋牛糞→肥料の製造販売)',c:()=>state.compostShed,r:300000},
  {s:'⛰ 牛舎を増築しよう',t:'⛰山を切り開いて新築牛舎(3000万・🏛補助で1500万・母15子15)を建てよう！🚜街の農協で建てられるよ',c:()=>state.newBarns>0,r:300000},
  {s:'🏅 認定農業者を目指す',t:'3年経って加工以外の売上(米・牛・牧草・肥料)が累計2,000万円を超えたら、🚜農協で「認定農業者」に。スーパーL資金で売上と同額を無利息(10年均等)で借りられる！',c:()=>state.certFarmer,r:500000},
  {s:'🌟 規模拡大へ！',t:'♀メスの子牛を母牛に残して増頭、認定農業者のスーパーL資金も使って規模拡大で利益を最大化しよう！',c:()=>false,r:0},
@@ -3032,11 +3030,7 @@ function nearestAction(wx,wz){
     if(isGrassHarvestWeek()&&state.grassCutWeek!==state.weekN){doGrassCut(null);return;}
     toast('🌿 牧草: 収穫は🌸第18週と🍂第36週(1回'+grassCutYield()+'束)・在庫'+state.grassStock+'束・牛の消費 週'+herdCount()+'束・次の収穫は'+nextGrassHarvestLabel());
   });
-  // v20: 堆肥場は2段階。🟤糞置き場(処理のみ・牛舎増築の必須条件)と🏭本格堆肥舎(肥料事業)
-  if(!state.compostShed)cand(36.5,36.2,2.4,state.dungYard?'🟤 糞置き場(糞の処理のみ)':'🟤 糞置き場を作る('+man(ECON.DUNG_COST)+')',()=>{
-    if(state.dungYard)toast('🟤 糞置き場: 牛糞をここで処理(外部処分費ゼロ)。肥料にして売るには🏭本格堆肥舎('+man(ECON.SHED_COST)+'・補助で半額)。⛰新築牛舎の必須条件はクリア済み✅');
-    else buyDungYard();
-  });
+  // v30: 糞置き場(200万)を廃止。堆肥場は🏭本格堆肥舎の一本のみ(処分費ゼロ＋肥料事業)
   cand(36.5,32.3,2.6,state.compostShed?('🟫 肥料を出荷する('+state.fertStock+'袋)'):'🏭 本格堆肥舎を建てる('+man(shedPriceNow())+(subApproved('shed')?'・補助済半額':'・補助で半額')+')',()=>{
     if(state.compostShed)sellFert(false);else buildShed();
   });
@@ -3137,8 +3131,7 @@ function ensureBarnBuilt(){
 }
 // v20: 新築牛舎(1棟3000万・補助で1500万)。⛰山を切り開いて増築。🟤糞置き場が必須。
 function buyNewBarn(){
-  if(!dungOk()){toast('🟤 新しく牛舎を建てるには、まず糞置き場('+man(ECON.DUNG_COST)+'・農場の堆肥場)が必要だよ(増築の必須条件)');return;}
-  if(state.newBarns>=NEW_BARN_PLOTS.length){toast('⛰ 山の開拓地はもう満杯だよ(新築牛舎'+state.newBarns+'棟)');return;}
+  if(state.newBarns>=NEW_BARN_PLOTS.length){toast('⛰ 山の開拓地はもう満杯だよ(新築牛舎'+state.newBarns+'棟)');return;} // v30: 糞置き場の必須条件を撤廃
   const pr=priceWithSub(ECON.NEW_BARN,'barn');
   if(state.money<pr.price){toast('💸 新築牛舎は1棟'+man(pr.price)+'。現金が足りないよ'+(pr.sub?'(補助済 半額)':'(🏛役場で申請すると半額の'+man(ECON.NEW_BARN/2)+')'));return;}
   addExpense(pr.price,'barn','cow');
@@ -3804,12 +3797,10 @@ function weekEnd(notes){
       const nfert=herd*ECON.FERT_PER_COW;
       state.fertStock+=nfert;
       notes.push('🏭 本格堆肥舎で肥料'+nfert+'袋ができた(在庫'+state.fertStock+'袋・1袋'+fmt(ECON.FERT_PRICE)+'で出荷できる)');
-    }else if(state.dungYard){ // v20: 糞置き場=処理のみ(処分費が浮くだけ)
-      notes.push('🟤 牛糞'+herd+'頭分を糞置き場で処理(処分費ゼロ。🏭本格堆肥舎なら肥料として売れる)');
-    }else{
+    }else{ // v30: 糞置き場を廃止。処分費は🏭本格堆肥舎で解消
       const fee=herd*ECON.MANURE_FEE;
       addExpense(fee,'manure');
-      notes.push('🚛 牛糞の処分費 −'+fmt(fee)+'(牛'+herd+'頭×1万円。🟤糞置き場(200万)でゼロにできる)');
+      notes.push('🚛 牛糞の処分費 −'+fmt(fee)+'(牛'+herd+'頭×1万円。🏭本格堆肥舎を建てると処分費ゼロ＋肥料が売れる)');
     }
   }
   // 5) 牛の週次進行(妊娠/出産/週齢。健康40未満は妊娠が進まない)
@@ -4134,9 +4125,8 @@ function jaHTML(){
   const bp=priceWithSub(ECON.NEW_BARN,'barn');
   const plotsLeft=NEW_BARN_PLOTS.length-state.newBarns;
   h+='<div class="row"><div class="em">🏠</div><div class="info"><b>新築牛舎を建てる(1棟'+man(ECON.NEW_BARN)+')</b><small>⛰山を切り開いて増築。1棟で母牛+'+ECON.NEW_BARN_MO+'頭・子牛+'+ECON.NEW_BARN_CALF+'頭。いま'+state.newBarns+'棟(開拓地の残り'+plotsLeft+')<br>'+
-    (dungOk()?'<span class="prof">🟤糞置き場OK✅</span>':'<span style="color:#c03030">⚠🟤糞置き場('+man(ECON.DUNG_COST)+'・農場の堆肥場)が必須！</span>')+' '+
     (bp.sub?'<span class="prof">🏛補助済 半額 '+man(bp.price)+'</span>':'<span style="color:#c03030">未申請 定価 '+man(bp.price)+'(申請で'+man(ECON.NEW_BARN/2)+')</span>')+'</small></div>'+
-    (plotsLeft>0?'<button class="buy" '+(state.money>=bp.price&&dungOk()?'':'disabled')+' onclick="buyNewBarn()">'+man(bp.price)+'</button>':'')+'</div>';
+    (plotsLeft>0?'<button class="buy" '+(state.money>=bp.price?'':'disabled')+' onclick="buyNewBarn()">'+man(bp.price)+'</button>':'')+'</div>';
   h+='<p class="sub2" style="font-size:11.5px;color:#8a6a45">💡 🏭本格堆肥舎('+man(ECON.SHED_COST)+'・補助で半額)と🟤糞置き場('+man(ECON.DUNG_COST)+')は農場の🟫堆肥場で建設してね。中古の牛舎レンタル(月3万・母10子10)は補助対象外。</p>';
   return h;
 }
@@ -4205,7 +4195,7 @@ function ledgerStatusHTML(){
   '<tr><td>従業員給与('+sc+'人×週'+man(ECON.EMP_SALARY/4)+')</td><td class="amt">'+fmt(sc*ECON.EMP_SALARY/4)+'</td></tr>'+
   '<tr><td>牛舎家賃'+(state.barnRented?'(週あたり)':(state.newBarns>0?'(新築牛舎は家賃なし)':'(未賃借)'))+'</td><td class="amt">'+fmt(state.barnRented?ECON.BARN_RENT/4:0)+'</td></tr>'+
   '<tr><td>餌代(牛'+herd+'頭・週あたり)</td><td class="amt">'+(herd>0?'約'+fmt(Math.min(state.grassStock,herd)*ECON.FEED_GRASS/4+Math.max(0,herd-state.grassStock)*feedShortUnit()):'￥0')+'</td></tr>'+
-  (herd>0?'<tr><td>牛糞の処分費'+(state.compostShed?'(🏭本格堆肥舎で収益化✨)':(state.dungYard?'(🟤糞置き場で不要✨)':'(4週ごとに月額。🟤糞置き場でゼロに)'))+'</td><td class="amt">'+fmt((state.compostShed||state.dungYard)?0:herd*ECON.MANURE_FEE/4)+'</td></tr>':'')+
+  (herd>0?'<tr><td>牛糞の処分費'+(state.compostShed?'(🏭本格堆肥舎で収益化✨)':'(4週ごとに月額。🏭本格堆肥舎でゼロに)')+'</td><td class="amt">'+fmt(state.compostShed?0:herd*ECON.MANURE_FEE/4)+'</td></tr>':'')+
   '</table>'+
   '<p class="sub2" style="font-size:11.5px;color:#8a6a45">🌿 牧草: '+(state.grassSown?('作付け済み(収穫は🌸第18週/🍂第36週・1回'+grassCutYield()+'束・'+(isGrassHarvestWeek()?('今週は収穫週！'+(state.grassCutWeek===state.weekN?'収穫済✅':'まだ⬜')):'次は'+nextGrassHarvestLabel())+')'):(state.land.pasture1?'未作付け(牧草地で'+man(grassSowCost())+')':'牧草地なし(🏠不動産屋で購入)'))+' / 牛の消費 週'+grassNeed+'束 / 米: '+(state.riceField==='none'?'未作付け(第14週に苗代'+man(riceSeedCost())+')':state.riceField==='planted'?('生育中(第40週に'+riceBagsYield()+'袋。水管理'+(isWaterSeason()?(isWaterWeek()&&state.waterWeek!==state.weekN?'今週まだ⬜':'済✅'):'は夏のみ')+')'):'収穫待ち！')+(herdCount()>0?' / 🐂健康'+state.care.health+'・汚れ'+state.care.dirt:'')+'</p>';
 }
@@ -4686,8 +4676,18 @@ function saveGame(showToast){
   }catch(e){if(showToast)toast('セーブできなかった…');}
 }
 function loadSaveData(){
-  try{const s=localStorage.getItem(SAVE_KEY);if(!s)return null;const d=JSON.parse(s);if(d&&(d.v===25||d.v===20))return d;}catch(e){}
+  try{const s=localStorage.getItem(SAVE_KEY);if(!s)return null;const d=JSON.parse(s);if(d&&d.state)return d;}catch(e){} // v30: バージョン番号に依存せず state があれば読む(更新でデータが消えない)
   return null;
+}
+// v30: freshStateの既定値に保存データを重ねて、追加された新フィールドを既定値で補完(1階層ネストも補完)
+function mergeState(base,saved){
+  if(!saved||typeof saved!=='object')return base;
+  const out=Object.assign({},base,saved);
+  for(const k of Object.keys(base)){
+    const bv=base[k],sv=saved[k];
+    if(bv&&typeof bv==='object'&&!Array.isArray(bv)&&sv&&typeof sv==='object'&&!Array.isArray(sv))out[k]=Object.assign({},bv,sv);
+  }
+  return out;
 }
 function applyEdits(){
   for(const k in state.edits){
@@ -5165,7 +5165,8 @@ function startGame(saveData){
   document.getElementById('title').style.display='none';
   document.getElementById('loading').style.display='flex';
   setTimeout(()=>{
-    state=saveData?saveData.state:freshState();
+    // v30: 旧セーブでも消えないよう、freshStateの既定値に保存データを重ねる(不足フィールドは既定値で補完)
+    state=saveData?mergeState(freshState(),saveData.state):freshState();
     migrateFy();   // v17: 事業セグメント帳簿を追補
     migrateV25();  // v25: 週単位時間・配合飼料・仔牛授乳の新フィールドを追補(堅牢化)
     curMap=state.map||'farm'; // v19: セーブしたマップ(農場/街)で再開
