@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v30 セーブ恒久化(更新で消えない)・不動産屋の見た目変更・糞置き場を廃止</title>
+<title>丹波農商 牧場物語 v31 工場レイアウト刷新(屋外の機械置き場・手前にポテサラ加工場)</title>
 <link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -1377,6 +1377,18 @@ function buildWarehouseComplexBlocks(){
   for(const x of[47,48])for(let y=3;y<=4;y++)gset(x,y,WHZ0,0);
   for(const x of[65,66])for(let y=3;y<=4;y++)gset(x,y,WHZ1,0);
   for(const x of[72,73])for(let y=3;y<=4;y++)gset(x,y,WHZ1,0);
+  buildMachineYardBlocks(); // v30: 倉庫の外(南)に屋根なしの機械置き場
+}
+// v30: 屋根なしの機械置き場(トラクタ/田植え機/コンバインを屋外に格納)。倉庫の南 z37-40。
+function buildMachineYardBlocks(){
+  const Y=MACHINE_YARD;
+  flatten(Y.x0-1,Y.x1+1,Y.z0-1,Y.z1+1,2);
+  for(let x=Y.x0;x<=Y.x1;x++)for(let z=Y.z0;z<=Y.z1;z++)gset(x,2,z,B.PAVE); // コンクリ土間
+  // 低い柵(北側=倉庫向きは開けて出入り自由)。屋根は張らない。
+  for(let x=Y.x0;x<=Y.x1;x++){gset(x,3,Y.z1,B.FENCE);}          // 南
+  for(let z=Y.z0;z<=Y.z1;z++){gset(Y.x0,3,z,B.FENCE);gset(Y.x1,3,z,B.FENCE);} // 東西
+  // 倉庫南裾(z36)から機械置き場への通路
+  for(let x=Y.x0+1;x<=Y.x0+3;x++){gset(x,2,36,B.PATH);}
 }
 // ---------- v20: 山を切り開く新築牛舎(3000万・母15+子15。糞置き場が必須) ----------
 // v24: 建物を7×6→9×9へ大型化(壁3段+屋根y6)。[12,58]は拡大に伴い第二牛舎の柵と
@@ -1834,7 +1846,10 @@ function updateBarnSign(){
 }
 let tractorMesh=null,polisherMesh=null,processorMesh=null,compostShedMesh=null,dungYardMesh=null,planterMesh=null,combineMesh=null,riceSackGroup=null;
 // v22: 機械の設置座標(超巨大倉庫の農機庫x42-54/米貯蔵x55-63/加工場x64-69の中にさらに広々配置)
-const MACH_POS={tractor:[46,29.5],planter:[43.2,25.5],combine:[51.5,31.5],polisher:[60.5,32],processor:[67,25.5]};
+// v30: 農機(トラクタ/田植え機/コンバイン)は倉庫の外・屋根なしの機械置き場(南側z37-40)へ。
+//      精米機は倉庫内。加工機/ポテサラ加工場は倉庫の一番手前(西の入口すぐ x44)へ。
+const MACH_POS={tractor:[44,38.5],planter:[47,38.5],combine:[50,39],polisher:[60.5,32],processor:[46,31]};
+const MACHINE_YARD={x0:42,x1:51,z0:37,z1:40}; // v30: 屋根なしの機械置き場(東の棚田x52+と干渉しない)
 function buildTractor(){
   if(tractorMesh||curMap!=='farm')return;
   const g=new THREE.Group();
@@ -1971,13 +1986,13 @@ function buildWarehouseInterior(){
   [[42.7,24.3],[43.5,24.8]].forEach(p=>{const d=new THREE.Mesh(new THREE.CylinderGeometry(0.34,0.34,0.9,10),new THREE.MeshLambertMaterial({color:0x3a6fd8}));d.position.set(p[0],F+0.45,p[1]);d.castShadow=true;decoGroup.add(d);});
   addDecoCollider(43.1,24.55,0.75,F); // ドラム缶(北壁沿い。搬入口の通路は塞がない)
   (function(){const t=new THREE.Mesh(new THREE.CylinderGeometry(0.5,0.5,0.3,10),new THREE.MeshLambertMaterial({color:0x222222}));t.rotation.z=Math.PI/2;t.position.set(53.5,F+0.5,24.2);decoGroup.add(t);addDecoCollider(53.5,24.2,0.5,F);})(); // 予備タイヤ
-  const gi=iconSprite('🚜',1.5);gi.position.set(47,F+3.6,28.5);decoGroup.add(gi);
-  addInfoIcon(gi,{t:'🚜 農機庫(大倉庫・西)',b:()=>{
+  const gi=iconSprite('🚜',1.5);gi.position.set((MACHINE_YARD.x0+MACHINE_YARD.x1)/2,5.4,MACHINE_YARD.z0-0.5);decoGroup.add(gi); // v30: 屋外の機械置き場へ
+  addInfoIcon(gi,{t:'🚜 機械置き場(倉庫の外・屋根なし)',b:()=>{
     const t=state.machines.tractor,names=[];
     names.push('🚜 トラクター: '+(t.lvl==='new'?(t.size==='small'?'小型・新品':'中型・新品'):'中古の中型')+(t.broken?' ⚠故障中':' ✅'));
     names.push('🌱 田植え機: '+(state.machines.planter.lvl?(state.machines.planter.broken?'⚠故障中':'✅稼働(収量+10%)'):'未保有'));
     names.push('🌾 コンバイン: '+(state.machines.combine.lvl?(state.machines.combine.broken?'⚠故障中':'✅稼働(収量+10%)'):'未保有'));
-    return '倉庫の西側は農機の格納庫。<br>'+names.join('<br>')+'<br><br>新しい機械は🚜街の農協で購入(🏛役場の補助で半額)。故障したら🔧街の修理屋へ。';
+    return '倉庫の外(南)の屋根なしの機械置き場。トラクタ等の農機を屋外に格納。<br>'+names.join('<br>')+'<br><br>新しい機械は🚜街の農協で購入(🏛役場の補助で半額)。故障したら🔧街の修理屋へ。';
   }});
   // --- 米の貯蔵(x55-63): 北壁沿いの大きな貯蔵棚2基+床のパレット(貯蔵量が見える規模) ---
   for(const cx of[57.7,61.3]){
@@ -1989,15 +2004,16 @@ function buildWarehouseInterior(){
   updateRiceSacks();
   const ri=iconSprite('📦',1.5);ri.position.set(59.5,F+3.6,24.6);decoGroup.add(ri);
   addInfoIcon(ri,{t:'📦 米の貯蔵庫(大倉庫)',b:()=>'収穫した米はこの棚に貯蔵されるよ。いま <b>'+state.riceBags+'袋</b>(1袋3万円)。<br>毎月1回、奥の🍚精米機で最大'+riceShipMax()+'袋を精米して出荷できる(10〜3月が出荷シーズン)。',btns:()=>[['📦 倉庫メニューを開く',()=>{menuTab='wh';openMenu();}],['🍚 精米して出荷する',()=>shipRice()]]});
-  // --- 食品加工場(x64-69): 作業テーブル・木箱・野菜コンテナ(南壁沿い) ---
-  wbox(68.5,33.6,2.0,0.9,1.0,0xb5843f);addDecoCollider(68.5,33.6,1.0,F); // 作業テーブル
-  [[64.6,33.8,0x9a6b3a],[65.3,33.8,0x9a6b3a],[64.95,34.4,0xb5843f],[66.2,34.1,0x2f8a4a]].forEach(p=>{
+  // --- v30: ポテサラ加工場(倉庫の一番手前=西の入口すぐ x43-45): 作業テーブル・野菜コンテナ・鍋 ---
+  wbox(44,30.5,1.8,0.9,1.0,0xb5843f);addDecoCollider(44,30.5,1.0,F); // 加工テーブル
+  [[43.0,31.6,0x9a6b3a],[43.7,31.6,0x9a6b3a],[43.35,32.2,0xd7b36a],[44.6,31.9,0x2f8a4a]].forEach(p=>{ // じゃがいも箱・野菜コンテナ
     const c=new THREE.Mesh(new THREE.BoxGeometry(0.66,0.66,0.66),new THREE.MeshLambertMaterial({color:p[2]}));
     c.position.set(p[0],F+0.33,p[1]);c.castShadow=true;decoGroup.add(c);
   });
-  addDecoCollider(65.2,34.0,0.9,F);
-  const pi=iconSprite('🍱',1.5);pi.position.set(66.5,F+3.6,29.5);decoGroup.add(pi);
-  addInfoIcon(pi,{t:'🍱 食品加工場(大倉庫)',b:()=>state.machines.processor.lvl?(machineBroken('processor')?'🍱加工機は⚠故障中！🔧街の修理屋で修理しよう。':'🍱加工機が稼働中！農産物(野菜/黒豆/栗など)の売値が1.5倍。売るのは📦倉庫メニューから。'):'ここに🍱加工機('+man(ECON.MACH_PROCESSOR)+'・🏛補助で半額)を置くと農産物の売値が1.5倍に。🚜街の農協で購入できるよ。',btns:()=>[['📦 農産物を売る(倉庫メニュー)',()=>{menuTab='wh';openMenu();}]]});
+  (function(){const pot=new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.34,0.4,12),new THREE.MeshLambertMaterial({color:0x555}));pot.position.set(44.7,F+1.15,30.3);decoGroup.add(pot);})(); // 寸胴鍋
+  addDecoCollider(43.3,31.9,0.9,F);
+  const pi=iconSprite('🥔',1.6);pi.position.set(44,F+3.6,30.5);decoGroup.add(pi);
+  addInfoIcon(pi,{t:'🥔 ポテサラ加工場(倉庫の一番手前)',b:()=>'丹波の野菜で<b>ポテサラ</b>を作って売る創業の収入源(設備投資なしで最初から使える)。近づいて「使う」＝週1回、売上'+man(ECON.FOOD_PROC_SALE)+'・利益'+man(ECON.FOOD_PROC_SALE-ECON.FOOD_PROC_COST)+'(毎月100万売上・利益30万)。'+(state.machines.processor&&state.machines.processor.lvl?'<br>🍱加工機が稼働中で増量＆農産物の売値1.5倍。':'<br>さらに🍱加工機('+man(ECON.MACH_PROCESSOR)+'・農協/補助で半額)を置くと増量＆農産物1.5倍。'),btns:()=>[['🥔 ポテサラを作って売る',()=>doProcess(null)],['📦 農産物を売る(倉庫メニュー)',()=>{menuTab='wh';openMenu();}]]});
   // --- 事務所(x71-74・板張り): 机+帳簿+書棚+キャビネット ---
   const desk=wbox(72.5,25.0,1.6,0.12,0.8,0x9a6b3a);desk.position.y=F+0.72;
   [[-0.65,-0.3],[0.65,-0.3],[-0.65,0.3],[0.65,0.3]].forEach(p=>{const leg=new THREE.Mesh(new THREE.BoxGeometry(0.1,0.7,0.1),new THREE.MeshLambertMaterial({color:0x6a4a25}));leg.position.set(72.5+p[0],F+0.35,25.0+p[1]);decoGroup.add(leg);});
@@ -3011,7 +3027,7 @@ function nearestAction(wx,wz){
   cand(MACH_POS.polisher[0],MACH_POS.polisher[1],2.0,machineBroken('polisher')?'⚠ 精米機(故障中)':'🍚 精米機(精米して出荷)',()=>{if(machineBroken('polisher')){toast('🍚 精米機が故障中！🔧街の修理屋で修理を('+man(machRepairCost('polisher'))+')');}else shipRice();});
   cand(59.5,25.2,2.2,'📦 米の貯蔵('+state.riceBags+'袋)・倉庫',()=>{menuTab='wh';openMenu();});
   cand(72.5,25.6,2.6,'🏢 事務所(雇用・帳簿・指示)',()=>{menuTab='staff';openMenu();});
-  cand(66.5,30.2,2.4,(state.procWeek===state.weekN)?'🥔 ポテサラ(今週は加工済)':'🥔 ポテサラを作って売る(週1・利益'+man(ECON.FOOD_PROC_SALE-ECON.FOOD_PROC_COST)+')',()=>doProcess(null)); // v28: 創業収入(v29: ポテサラ)
+  cand(44,31,2.6,(state.procWeek===state.weekN)?'🥔 ポテサラ加工場(今週は加工済)':'🥔 ポテサラを作って売る(週1・利益'+man(ECON.FOOD_PROC_SALE-ECON.FOOD_PROC_COST)+')',()=>doProcess(null)); // v30: 倉庫の一番手前(西の入口すぐ)へ移設
   cand(46.5,28.2,2.4,'🚜 農機庫(機械の格納)',()=>{
     const t=state.machines.tractor,names=[];
     names.push('🚜トラクター('+(t.lvl==='new'?(t.size==='small'?'小型・新品':'中型・新品'):'中古')+(t.broken?'⚠故障':'')+')');
