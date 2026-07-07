@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v28 クエスト報酬・食品加工の創業収入・新規就農/認定農業者の制度融資</title>
+<title>丹波農商 牧場物語 v29 食品加工=ポテサラ・栗園の看板を牛舎内から北東の丘へ移設</title>
 <link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -2083,7 +2083,7 @@ function buildDecor(){
       if(!state.compostShed)a.push(['🏭 本格堆肥舎を建てる('+man(shedPriceNow())+')',()=>buildShed()]);
       else a.push(['🟫 肥料を出荷する('+state.fertStock+'袋)',()=>sellFert(false)]);
       return a;}});
-  addSign(17,11.8,'🌰',{t:'🌰 栗園',b:'栗の木に近づいて「使う」で栗を拾えるよ(翌日また実る)。拾った栗は📦出荷箱/倉庫メニューで売れる(🍱加工機があれば1.5倍)。'});
+  if(state.land.orchard)addSign(40,6.5,'🌰',{t:'🌰 栗園',b:'北東の丘の栗園。栗の木に近づいて「使う」で栗を拾えるよ(翌週また実る)。拾った栗は📦出荷箱/倉庫メニューで売れる(🍱加工機があれば1.5倍)。'}); // v29: 牛舎内の旧位置(17,11.8)から北東の栗園へ移設＋購入時のみ表示(増築の邪魔を解消)
   buildPastureDecor(); // v22: 牧草地の看板・干し草・草むらは区画を持っている時だけ
   buildShipBox(); // v22: 🛒購買屋台(机みたいな屋台)は撤去。種は📦出荷箱/倉庫メニューで買う
   buildWarehouseInterior(); // v21: 巨大倉庫の内装(米袋の棚・農機庫・加工場・事務所・照明)
@@ -2646,7 +2646,7 @@ function updateHUD(){
 // クエスト（経営チュートリアル：1つずつ）
 // v21: 常時表示は「短いアイコン+一言」だけ。❓(タップ)で詳しい説明ポップアップ
 const QUESTS=[
- {s:'🍱 食品加工で創業資金',t:'まず現金が尽きないよう🏭東の大倉庫の🍱食品加工場で「食品加工して売る」(週1)。黒豆や栗を煮て売り、毎月100万円・利益30万円で創業期を乗り切ろう！',c:()=>state.procWeek>=0,r:200000},
+ {s:'🥔 ポテサラで創業資金',t:'まず現金が尽きないよう🏭東の大倉庫の🍱食品加工場で「ポテサラを作って売る」(週1)。丹波の野菜でポテサラを作って売り、毎月100万円・利益30万円で創業期を乗り切ろう！',c:()=>state.procWeek>=0,r:200000},
  {s:'🌾 田植えしよう(春)',t:'春の第14週：🌾棚田で「田植え」しよう(苗代300万円)。棚田のアイコンをタップするか、棚田に近づいて「使う」',c:()=>state.riceField!=='none'||state.riceBags>0||state.soldRiceBags>0,r:300000},
  {s:'⏭ 週を進めよう',t:'⏭「次の週へ」で時間を進めよう。5〜9月は🚿水管理(サボると収量減)！秋に収穫できるよ',c:()=>state.riceBags>0||state.soldRiceBags>0,r:100000},
  {s:'🍚 精米して出荷',t:'📦大倉庫の🍚精米機で「精米して出荷」しよう(1袋3万円・週1回)。精米機のアイコンからも出荷できるよ',c:()=>state.soldRiceBags>0,r:300000},
@@ -2765,7 +2765,7 @@ function pickCompost(){
 function closeSeedPick(){document.getElementById('seedPick').style.display='none';}
 function actTree(i){
   const t=chestnutTrees[i];
-  if(!state.treeFruit[i]){toast('🌰 実は明日までお休み');return;}
+  if(!state.treeFruit[i]){toast('🌰 実は来週までお休み');return;}
   state.treeFruit[i]=false;
   if(treeFruitMeshes[i])treeFruitMeshes[i].visible=false;
   addRes('chestnut',2);
@@ -3013,7 +3013,7 @@ function nearestAction(wx,wz){
   cand(MACH_POS.polisher[0],MACH_POS.polisher[1],2.0,machineBroken('polisher')?'⚠ 精米機(故障中)':'🍚 精米機(精米して出荷)',()=>{if(machineBroken('polisher')){toast('🍚 精米機が故障中！🔧街の修理屋で修理を('+man(machRepairCost('polisher'))+')');}else shipRice();});
   cand(59.5,25.2,2.2,'📦 米の貯蔵('+state.riceBags+'袋)・倉庫',()=>{menuTab='wh';openMenu();});
   cand(72.5,25.6,2.6,'🏢 事務所(雇用・帳簿・指示)',()=>{menuTab='staff';openMenu();});
-  cand(66.5,30.2,2.4,(state.procWeek===state.weekN)?'🍱 食品加工(今週は加工済)':'🍱 食品加工して売る(週1・利益'+man(ECON.FOOD_PROC_SALE-ECON.FOOD_PROC_COST)+')',()=>doProcess(null)); // v28: 創業収入
+  cand(66.5,30.2,2.4,(state.procWeek===state.weekN)?'🥔 ポテサラ(今週は加工済)':'🥔 ポテサラを作って売る(週1・利益'+man(ECON.FOOD_PROC_SALE-ECON.FOOD_PROC_COST)+')',()=>doProcess(null)); // v28: 創業収入(v29: ポテサラ)
   cand(46.5,28.2,2.4,'🚜 農機庫(機械の格納)',()=>{
     const t=state.machines.tractor,names=[];
     names.push('🚜トラクター('+(t.lvl==='new'?(t.size==='small'?'小型・新品':'中型・新品'):'中古')+(t.broken?'⚠故障':'')+')');
