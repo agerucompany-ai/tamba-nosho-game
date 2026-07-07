@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v27 牛舎屋根なし・フン溝・放し飼いドア・栗園購入制・あつし位置修正</title>
+<title>丹波農商 牧場物語 v28 クエスト報酬・食品加工の創業収入・新規就農/認定農業者の制度融資</title>
 <link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -611,6 +611,14 @@ const ECON={
   WATER_WEEKS:[18,22,26,30,34],// 水管理が必要な週(夏)
   FORMULA_FEED_PRICE:8750,    // 配合飼料の週コスト(1頭。月35000円≈週8750円)
   FORMULA_BULK_PRICE:50000,   // 配合飼料の一括購入価格(10頭分×1週相当)
+  // ---- v28: 食品加工の創業収入・制度融資 ----
+  FOOD_PROC_SALE:250000,   // 食品加工1回(週1)の売上。4週で100万円/月
+  FOOD_PROC_COST:175000,   // 食品加工1回の材料・人件費。利益7.5万/週=30万/月
+  STARTUP_LOAN:30000000,   // 新規就農資金(一括3000万)
+  STARTUP_TERM:7,          // 償還期間(年)
+  STARTUP_GRACE:3,         // 据置(最初の3年は返済なし)。4年目から4年均等
+  CERT_YEARS:3,            // 認定農業者: 3年経過が条件
+  CERT_SALES_REQ:20000000, // 認定農業者: 加工以外の累計売上2000万以上
   // ---- v16: 日次・土地・堆肥舎の前提値 ----
   MANURE_FEE:10000,      // 牛糞の外部処分費(1頭・月) 糞置き場/堆肥舎ができるまで
   DUNG_COST:2000000,     // v20: 糞置き場(簡易)=糞の処理のみ(処分費ゼロ)。牛舎増築の必須条件
@@ -660,7 +668,7 @@ function fmt(n){return '￥'+Math.round(n).toLocaleString();}
 function man(n){const v=n/10000;return (v%1===0?v:v.toFixed(1))+'万円';}
 
 // ---------- ゲーム状態 ----------
-const SAVE_KEY='tamba_v26_save'; // v26: 牛舎の構造刷新(片側1列/両側中央通路)でブロック編集が非互換のため新キー
+const SAVE_KEY='tamba_v28_save'; // v28: 牛舎座標変更(v27)＋制度融資/資格/食品加工の新stateで旧セーブ非互換のため新キー
 let state=null;
 function freshState(){return{
   v:25,money:10000000,day:1,time:0.28,
@@ -684,6 +692,12 @@ function freshState(){return{
   compostShed:false,fertStock:0, // v16: 堆肥舎と肥料在庫
   land:{pasture1:false,grass2:false,rice2:false,barn2:false,orchard:false},   // v16: 購入した区画 / v22: pasture1=西の牧草地(基本。デフォルト無し) / v27: orchard=栗園(デフォルト無し)
   bankLoan:0,
+  // ---- v28: 資格と制度融資 ----
+  newFarmer:false,certFarmer:false, // 新規就農者 / 認定農業者 の認定
+  startupLoan:{taken:false,remain:0,loanYear:0}, // 新規就農資金3000万(7年・最初3年据置・4年目から均等返済・無利息)
+  superL:{remain:0,startYear:0,annual:0},        // スーパーL資金(売上と同額まで・10年均等・無利息)
+  cumSales:{farm:0,proc:0}, // 累計売上(加工以外=farm / 加工=proc)。認定農業者の判定に使用
+  procWeek:-1, // 食品加工して売った週(週1回)
   fy:freshFy(), // v17: 勘定別+事業セグメント別の期中帳簿
   lastResult:null,history:[],
   edits:{},crops:{},treeFruit:{},tuftDay:{},
@@ -879,12 +893,12 @@ const SEG_META={
   rice:{n:'米',em:'🌾'},grass:{n:'牧草',em:'🌿'},cow:{n:'牛(繁殖)',em:'🐂'},
   compost:{n:'堆肥(肥料)',em:'🟫'},other:{n:'加工・野菜',em:'🥬'},common:{n:'共通/本部',em:'🏢'},
 };
-const SALE_SEG={rice:'rice',calf:'cow',mother:'cow',grass:'grass',fert:'compost',proc:'other'};
+const SALE_SEG={rice:'rice',calf:'cow',mother:'cow',grass:'grass',fert:'compost',proc:'other',grant:'common'}; // v28: grant=クエスト協力金(共通)
 const EXP_SEG={owner:'common',emp:'common',rent:'cow',feed:'cow',manure:'cow',seed:'rice',grassSow:'grass',shed:'compost',land:'common',other:'common',
   machine:'rice',barn:'cow',repair:'rice',vet:'cow',loss:'cow',dung:'cow'}; // v19: 機械/牛舎/修理/獣医/死亡損失 v20: 糞置き場
 function freshSeg(){const o={};for(const k in SEG_META)o[k]={s:0,e:0,sd:{},ed:{}};return o;}
 function freshFy(){return{sales:0,exp:0,
-  sd:{rice:0,calf:0,mother:0,grass:0,proc:0,fert:0},
+  sd:{rice:0,calf:0,mother:0,grass:0,proc:0,fert:0,grant:0},
   ed:{owner:0,emp:0,rent:0,feed:0,seed:0,grassSow:0,shed:0,land:0,other:0,manure:0,machine:0,barn:0,repair:0,vet:0,loss:0,dung:0},
   seg:freshSeg()};}
 // v16セーブ(セグメント帳簿なし)の引き継ぎ: 既存fyの勘定別集計からセグメント帳簿を再構成
@@ -900,6 +914,7 @@ function migrateFy(){
 function addSale(a,cat){
   state.money+=a;state.fy.sales+=a;state.fy.sd[cat]=(state.fy.sd[cat]||0)+a;state.soldN++;
   const g=state.fy.seg[SALE_SEG[cat]||'other'];g.s+=a;g.sd[cat]=(g.sd[cat]||0)+a; // v17: 事業別に記帳
+  if(state.cumSales){if(cat==='proc')state.cumSales.proc+=a;else if(cat!=='grant')state.cumSales.farm+=a;} // v28: 累計売上(認定農業者の判定)
 }
 function addExpense(a,cat,seg){
   state.money-=a;state.fy.exp+=a;state.fy.ed[cat]=(state.fy.ed[cat]||0)+a;
@@ -934,7 +949,7 @@ function computeBS(){
     bldgDung:state.dungYard?(state.dungCost||ECON.DUNG_COST):0,    // v20: 糞置き場
     bldgBarn:(state.newBarnCosts||[]).reduce((s,c)=>s+c,0),        // v20: 新築牛舎(全棟の取得原価)
     mach:['tractor','polisher','processor','planter','combine'].reduce((s,k)=>s+((state.machines&&state.machines[k]&&state.machines[k].cost)||0),0), // v19/v20: 新品機械
-    landGrass:(state.land.pasture1?ECON.LAND_PASTURE_PRICE:0)+(state.land.grass2?ECON.LAND_GRASS_PRICE:0), // v22: 西の牧草地+東の牧草地
+    landGrass:(state.land.pasture1?ECON.LAND_PASTURE_PRICE:0)+(state.land.grass2?ECON.LAND_GRASS_PRICE:0)+(state.land.orchard?ECON.LAND_ORCHARD_PRICE:0), // v22: 西の牧草地+東の牧草地 / v28: 栗園
     landRice:state.land.rice2?ECON.LAND_RICE_PRICE:0,
     landBarn:state.land.barn2?ECON.LAND_BARN_PRICE:0,
     bank:state.bankLoan,cowDebt:cowDebtTotal(),
@@ -944,12 +959,14 @@ function computeBS(){
   b.inventory=b.invRice+b.invGrass+b.invFert;
   b.fixed=b.cowsV+b.calvesV+b.bldgShed+b.bldgDung+b.bldgBarn+b.mach+b.landGrass+b.landRice+b.landBarn; // v19: 牛舎・機械 v20: 糞置き場を追加
   b.assets=b.cash+b.inventory+b.fixed;
-  b.liab=b.bank+b.cowDebt;
+  b.inst=instLoanTotal(); // v28: 制度融資(新規就農資金+スーパーL)
+  b.liab=b.bank+b.cowDebt+b.inst;
   b.equity=b.assets-b.liab;
   return b;
 }
 function cowDebtTotal(){let s=0;for(const c of state.cows)s+=c.debt;return s;}
-function totalDebt(){return state.bankLoan+cowDebtTotal();}
+function instLoanTotal(){return (state.startupLoan?state.startupLoan.remain:0)+(state.superL?state.superL.remain:0);} // v28: 制度融資残
+function totalDebt(){return state.bankLoan+cowDebtTotal()+instLoanTotal();}
 function herdCount(){return state.cows.length+state.calves.length;}
 function staffCount(){let n=0;for(const k in state.staff)if(state.staff[k])n++;return n;}
 // v16: 従業員は「担当の仕事」を指示して使う。誰でもどの仕事にも配置できる。
@@ -2629,24 +2646,28 @@ function updateHUD(){
 // クエスト（経営チュートリアル：1つずつ）
 // v21: 常時表示は「短いアイコン+一言」だけ。❓(タップ)で詳しい説明ポップアップ
 const QUESTS=[
- {s:'🌾 田植えしよう(4月)',t:'4月：🌾棚田で「田植え」しよう(苗代300万円)。棚田のアイコンをタップするか、棚田に近づいて「使う」',c:()=>state.riceField!=='none'||state.riceBags>0||state.soldRiceBags>0},
- {s:'⏭ 日を進めよう',t:'⏭で日を進めよう。5〜9月は月1回🚿水管理(サボると収量減)！10月に収穫できるよ',c:()=>state.riceBags>0||state.soldRiceBags>0},
- {s:'🍚 精米して出荷',t:'📦大倉庫の🍚精米機で「精米して出荷」しよう(1袋3万円・月1回)。精米機のアイコンからも出荷できるよ',c:()=>state.soldRiceBags>0},
- {s:'📒 決算を見よう',t:'3月末まで進めて決算を見よう(黒字を目指せ！)。帳簿はメニューか🏢事務所のアイコンから',c:()=>!!state.lastResult},
- {s:'🐂 牛を飼おう',t:'🏚牛舎を借りて(月3万円)、🌉川の橋を渡って街へ行き🐂セリでメス牛を買おう(与信100万円=現金は減らない)',c:()=>state.cows.length>0||state.calves.length>0},
- {s:'🍼 牛の世話をしよう',t:'牛は週1回🍼餌やり＋🧹掃除！よく食べた牛は太って高く売れる(+30%まで)。サボると健康低下で安くなるよ',c:()=>state.care.fedWeek>=0},
- {s:'🤝 従業員に指示',t:'🏭大倉庫の🏢事務所で従業員を雇い「🐂牛の世話」を指示して自動化しよう(放置経営！)',c:()=>!!staffWithJob('cow')},
- {s:'🟤 糞置き場を作ろう',t:'🟫堆肥場に🟤糞置き場(200万)を作ろう(糞の処分費ゼロ＋⛰牛舎増築の必須条件)',c:()=>state.dungYard||state.compostShed},
- {s:'🏭 堆肥舎を建てよう',t:'🏭本格堆肥舎(1500万・🏛役場の補助で750万)を建てて肥料事業を始めよう(牛糞→肥料の製造販売)',c:()=>state.compostShed},
- {s:'⛰ 牛舎を増築しよう',t:'⛰山を切り開いて新築牛舎(3000万・🏛補助で1500万・母15子15)を建てよう！🚜街の農協で建てられるよ',c:()=>state.newBarns>0},
- {s:'🏠 土地を買おう',t:'🏠街の不動産屋で土地(区画)を買って世界を広げよう！(西の牧草地100万/東の牧草地150万/東の棚田250万/南の牧場300万)',c:()=>state.land.pasture1||state.land.grass2||state.land.rice2||state.land.barn2},
- {s:'🌟 規模拡大へ！',t:'♀メスの子牛を母牛に残して牛舎を増築、規模拡大で利益を最大化しよう！',c:()=>false},
+ {s:'🍱 食品加工で創業資金',t:'まず現金が尽きないよう🏭東の大倉庫の🍱食品加工場で「食品加工して売る」(週1)。黒豆や栗を煮て売り、毎月100万円・利益30万円で創業期を乗り切ろう！',c:()=>state.procWeek>=0,r:200000},
+ {s:'🌾 田植えしよう(春)',t:'春の第14週：🌾棚田で「田植え」しよう(苗代300万円)。棚田のアイコンをタップするか、棚田に近づいて「使う」',c:()=>state.riceField!=='none'||state.riceBags>0||state.soldRiceBags>0,r:300000},
+ {s:'⏭ 週を進めよう',t:'⏭「次の週へ」で時間を進めよう。5〜9月は🚿水管理(サボると収量減)！秋に収穫できるよ',c:()=>state.riceBags>0||state.soldRiceBags>0,r:100000},
+ {s:'🍚 精米して出荷',t:'📦大倉庫の🍚精米機で「精米して出荷」しよう(1袋3万円・週1回)。精米機のアイコンからも出荷できるよ',c:()=>state.soldRiceBags>0,r:300000},
+ {s:'🐂 牛を飼おう',t:'🏚牛舎を借りて(月3万円)、🌉川の橋を渡って街へ行き🐂セリでメス牛を買おう(与信100万円=現金は減らない)',c:()=>state.cows.length>0||state.calves.length>0,r:300000},
+ {s:'🍼 牛の世話をしよう',t:'🌾通路の餌箱で餌やり(牧草＋配合飼料)＋🧹壁ぎわのフン掃除を週1回！よく食べた牛は太って高く売れる。仔牛は4週まで母のミルク→離乳でペンへ',c:()=>state.care.fedWeek>=0,r:150000},
+ {s:'🎓 新規就農者になろう',t:'🚜街の農協で「新規就農者」の認定を受けよう。認定されると🏦銀行で新規就農資金3,000万円(7年・最初の3年は返済なし・無利息)が借りられるよ',c:()=>state.newFarmer,r:300000},
+ {s:'🌰 栗園を買おう',t:'🏠街の不動産屋で栗園(300万)を買って栗の生産を始めよう。土地(牧草地/棚田/牧場)も広げて規模拡大！',c:()=>state.land.orchard||state.land.pasture1||state.land.rice2||state.land.barn2,r:200000},
+ {s:'🟤 糞置き場を作ろう',t:'🟫堆肥場に🟤糞置き場(200万)を作ろう(糞の処分費ゼロ＋⛰牛舎増築の必須条件)',c:()=>state.dungYard||state.compostShed,r:200000},
+ {s:'🏭 堆肥舎を建てよう',t:'🏭本格堆肥舎(1500万・🏛役場の補助で750万)を建てて肥料事業を始めよう(牛糞→肥料の製造販売)',c:()=>state.compostShed,r:300000},
+ {s:'⛰ 牛舎を増築しよう',t:'⛰山を切り開いて新築牛舎(3000万・🏛補助で1500万・母15子15)を建てよう！🚜街の農協で建てられるよ',c:()=>state.newBarns>0,r:300000},
+ {s:'🏅 認定農業者を目指す',t:'3年経って加工以外の売上(米・牛・牧草・肥料)が累計2,000万円を超えたら、🚜農協で「認定農業者」に。スーパーL資金で売上と同額を無利息(10年均等)で借りられる！',c:()=>state.certFarmer,r:500000},
+ {s:'🌟 規模拡大へ！',t:'♀メスの子牛を母牛に残して増頭、認定農業者のスーパーL資金も使って規模拡大で利益を最大化しよう！',c:()=>false,r:0},
 ];
 function updateQuest(){
   while(state.questDone<QUESTS.length-1&&QUESTS[state.questDone].c()){
-    state.questDone++;fanfare();toast('✅ 目標達成！');
+    const q=QUESTS[state.questDone];
+    state.questDone++;fanfare();
+    if(q.r){addSale(q.r,'grant');toast('✅ 目標達成！協力金 +'+man(q.r)+'（現金'+man(state.money)+'）');}
+    else toast('✅ 目標達成！');
   }
-  document.getElementById('quest').textContent='🎯 '+QUESTS[state.questDone].s+'　❓';
+  const el=document.getElementById('quest');if(el)el.textContent='🎯 '+QUESTS[state.questDone].s+'　❓';
 }
 // v21: クエストの❓タップで詳細説明
 function showQuestInfo(){
@@ -2992,10 +3013,7 @@ function nearestAction(wx,wz){
   cand(MACH_POS.polisher[0],MACH_POS.polisher[1],2.0,machineBroken('polisher')?'⚠ 精米機(故障中)':'🍚 精米機(精米して出荷)',()=>{if(machineBroken('polisher')){toast('🍚 精米機が故障中！🔧街の修理屋で修理を('+man(machRepairCost('polisher'))+')');}else shipRice();});
   cand(59.5,25.2,2.2,'📦 米の貯蔵('+state.riceBags+'袋)・倉庫',()=>{menuTab='wh';openMenu();});
   cand(72.5,25.6,2.6,'🏢 事務所(雇用・帳簿・指示)',()=>{menuTab='staff';openMenu();});
-  cand(66.5,30.2,2.2,'🍱 食品加工場',()=>{
-    if(state.machines.processor.lvl)toast('🍱 加工機'+(machineBroken('processor')?'は⚠故障中！🔧街の修理屋へ':'が稼働中！農産物の売値1.5倍(出荷箱/倉庫から売却)'));
-    else toast('🍱 加工機はまだ無いよ。🚜街の農協で購入('+man(ECON.MACH_PROCESSOR)+'・補助で半額)すると農産物の売値1.5倍');
-  });
+  cand(66.5,30.2,2.4,(state.procWeek===state.weekN)?'🍱 食品加工(今週は加工済)':'🍱 食品加工して売る(週1・利益'+man(ECON.FOOD_PROC_SALE-ECON.FOOD_PROC_COST)+')',()=>doProcess(null)); // v28: 創業収入
   cand(46.5,28.2,2.4,'🚜 農機庫(機械の格納)',()=>{
     const t=state.machines.tractor,names=[];
     names.push('🚜トラクター('+(t.lvl==='new'?(t.size==='small'?'小型・新品':'中型・新品'):'中古')+(t.broken?'⚠故障':'')+')');
@@ -3253,6 +3271,82 @@ function bankRepay(amount){
   state.bankLoan-=a;state.money-=a;
   toast('🏦 '+fmt(a)+'を返済。残高'+fmt(state.bankLoan));
   updateHUD();renderMenu();
+}
+
+// ---------- v28: 食品加工の創業収入 ＋ 制度融資(新規就農資金/スーパーL) ＋ 資格 ----------
+// 食品加工(黒豆の煮豆・栗の渋皮煮など)。週1回。売上25万・材料/人件費17.5万→利益7.5万/週(月100万売上・利益30万)。
+function doProcess(who){
+  if(state.procWeek===state.weekN){if(!who)toast('🍱 食品加工は週1回。⏭次の週でまた加工できるよ');return false;}
+  state.procWeek=state.weekN;
+  const mult=(state.machines&&state.machines.processor&&state.machines.processor.lvl&&!machineBroken('processor'))?1.6:1; // 🍱加工機で増量
+  const sale=Math.round(ECON.FOOD_PROC_SALE*mult),cost=ECON.FOOD_PROC_COST;
+  addExpense(cost,'other','other');addSale(sale,'proc');
+  if(!who){
+    toast('🍱 食品加工して出荷！売上+'+man(sale)+'・材料/人件費−'+man(cost)+'＝利益'+man(sale-cost)+(mult>1?'(🍱加工機で増量)':''));
+    sfx(560,.07,'sine',.05);fanfare();
+  }
+  updateHUD();
+  return true;
+}
+// 農協: 新規就農者の認定(創業支援)→ 銀行の新規就農資金3000万が解禁
+function certifyNewFarmer(){
+  if(state.newFarmer){toast('🎓 もう新規就農者に認定されているよ');return;}
+  state.newFarmer=true;fanfare();
+  toast('🎓 新規就農者に認定！🏦銀行で「新規就農資金3,000万円」(7年・最初の3年は返済なし・無利息)が借りられるよ');
+  updateHUD();renderMenu();
+}
+function certFarmerOk(){return state.year>=ECON.CERT_YEARS&&(state.cumSales?state.cumSales.farm:0)>=ECON.CERT_SALES_REQ;}
+// 農協: 認定農業者の認定(3年経過＋加工以外の累計売上2000万)→ スーパーL資金が解禁
+function certifyCertFarmer(){
+  if(state.certFarmer){toast('🏅 もう認定農業者だよ');return;}
+  if(!certFarmerOk()){toast('🏅 認定農業者の条件: 3年経過(いま'+state.year+'年目)＋加工以外の累計売上2000万以上(いま'+man(state.cumSales?state.cumSales.farm:0)+')');return;}
+  state.certFarmer=true;fanfare();
+  toast('🏅 認定農業者に認定！🏦銀行の「スーパーL資金」で直近売上と同額まで無利息(10年均等返済)で借りられるよ');
+  updateHUD();renderMenu();
+}
+// 銀行: 新規就農資金(一括3000万・7年・最初3年据置・4年目から4年均等・無利息)
+function borrowStartup(){
+  if(!state.newFarmer){toast('🏦 先に🚜農協で「新規就農者」の認定を受けてね');return;}
+  if(state.startupLoan.taken){toast('🏦 新規就農資金はもう借りているよ(残'+man(state.startupLoan.remain)+')');return;}
+  state.startupLoan={taken:true,remain:ECON.STARTUP_LOAN,loanYear:state.year};
+  state.money+=ECON.STARTUP_LOAN;
+  sfxSeq([[600,.08],[800,.1]]);fanfare();
+  toast('🏦 新規就農資金'+man(ECON.STARTUP_LOAN)+'を借入！最初の3年は返済なし・4年目から年'+man(ECON.STARTUP_LOAN/(ECON.STARTUP_TERM-ECON.STARTUP_GRACE))+'を無利息返済');
+  updateHUD();renderMenu();
+}
+// 銀行: スーパーL資金(直近売上と同額まで・10年均等・無利息)
+function superLCap(){
+  const r=state.lastResult;if(!state.certFarmer||!r)return 0;
+  return Math.max(0,r.sales-state.superL.remain);
+}
+function borrowSuperL(amount){
+  if(!state.certFarmer){toast('🏦 先に🚜農協で「認定農業者」の認定を受けてね');return;}
+  const cap=superLCap();
+  if(cap<=0){toast('🏦 スーパーLは直近売上高'+man(state.lastResult?state.lastResult.sales:0)+'まで。今は上限まで借りているよ');return;}
+  const a=Math.min(amount,cap);
+  state.superL.remain+=a;if(!state.superL.startYear)state.superL.startYear=state.year;
+  state.superL.annual=Math.ceil(state.superL.remain/10); // 10年均等(残高から再計算)
+  state.money+=a;sfxSeq([[600,.08],[820,.1]]);
+  toast('🏦 スーパーL資金'+man(a)+'を借入(無利息)。残高'+man(state.superL.remain)+'・年返済'+man(state.superL.annual));
+  updateHUD();renderMenu();
+}
+// 年度末: 制度融資の返済(無利息・現金から)。据置/均等を処理し notes に記載。
+function repayInstitutionalLoans(notes){
+  const sl=state.startupLoan;
+  if(sl&&sl.taken&&sl.remain>0){
+    const elapsed=state.year-sl.loanYear; // 借入年からの経過年数(年度末なので+1済み)
+    if(elapsed>ECON.STARTUP_GRACE){ // 最初の3年(elapsed 1-3)は据置。elapsed 4-7で返済
+      const pay=Math.min(sl.remain,Math.round(ECON.STARTUP_LOAN/(ECON.STARTUP_TERM-ECON.STARTUP_GRACE)));
+      sl.remain-=pay;state.money-=pay;
+      notes.push('🏦 新規就農資金の返済 −'+man(pay)+'(残'+man(sl.remain)+'・無利息)');
+    }
+  }
+  const su=state.superL;
+  if(su&&su.remain>0&&su.annual>0){
+    const pay=Math.min(su.remain,su.annual);
+    su.remain-=pay;state.money-=pay;
+    notes.push('🏦 スーパーL資金の返済 −'+man(pay)+'(残'+man(su.remain)+'・無利息)');
+  }
 }
 
 // ---------- v19: 補助金(役場)・機械の故障(修理屋)・牛の病気(農協の獣医) ----------
@@ -3650,7 +3744,7 @@ function advanceWeek(notes,silent){
   // 週を進める(52週で年度末→翌年第1週に)
   const prevWeek=state.week;
   state.week=(state.week%ECON.WEEKS_PER_YEAR)+1;
-  if(prevWeek===ECON.WEEKS_PER_YEAR){state.year++;} // 年が変わった
+  if(prevWeek===ECON.WEEKS_PER_YEAR){state.year++;repayInstitutionalLoans(notes);} // 年が変わった / v28: 制度融資の年次返済
   // 8) 収穫タイミング通知
   if(state.week===ECON.RICE_HARVEST_WEEK&&state.riceField==='planted'){
     state.riceField='ready';
@@ -3767,7 +3861,7 @@ function doFiscalClose(){
   if(tax>0)toast('🏛 税金'+fmt(tax)+'を納付した(牛の利益は非課税)');
   if(r.profit>=0)fanfare();
 }
-const SD_LABEL={rice:'米の出荷',calf:'子牛の売却',mother:'親牛の売却',grass:'牧草の売却',fert:'肥料の売却(堆肥舎)',proc:'加工品・農産物'};
+const SD_LABEL={rice:'米の出荷',calf:'子牛の売却',mother:'親牛の売却',grass:'牧草の売却',fert:'肥料の売却(堆肥舎)',proc:'加工品・農産物',grant:'協力金・補助'};
 const ED_LABEL={owner:'自分の給与(役員報酬)',emp:'従業員の給与',rent:'牛舎の家賃',feed:'牛の餌代',manure:'牛糞の処分費',seed:'苗代(米の作付け)',grassSow:'牧草の作付け',shed:'本格堆肥舎の建設',dung:'糞置き場の建設',land:'土地の購入',other:'その他(種代等)',
   machine:'機械の購入(新品)',barn:'新築牛舎の建設',repair:'機械の修理代',vet:'獣医の往診・治療費',loss:'牛の死亡損失(与信精算)'}; // v19/v20
 function plRows(obj,labels){
@@ -3820,6 +3914,7 @@ function bsHTML(b){
   A+=row('資産合計',b.assets,true);
   let L='<tr class="hd"><td>負債の部</td><td class="amt"></td></tr>';
   L+=row('🏦 銀行借入金',b.bank);
+  if(b.inst>0)L+=row('🎓 制度融資(新規就農/スーパーL)',b.inst);
   L+=row('🐂 牛の与信(繁殖ローン)',b.cowDebt);
   L+=row('負債合計',b.liab,true);
   L+='<tr class="hd"><td>純資産の部</td><td class="amt"></td></tr>';
@@ -3869,7 +3964,7 @@ function segBSHTML(segKey,b){
   else if(segKey==='cow'){rows.push(['🐂 母牛'+b.nCows+'頭',b.cowsV],['🐮 子牛'+b.nCalves+'頭',b.calvesV],['🏠 新築牛舎'+state.newBarns+'棟(取得原価)',b.bldgBarn],['🟤 糞置き場(取得原価)',b.bldgDung],['🏠 南の牧場+第二牛舎(取得原価)',b.landBarn]);liabs.push(['🐂 牛の与信(繁殖ローン)',b.cowDebt]);}
   else if(segKey==='compost'){rows.push(['🏭 本格堆肥舎(取得原価)',b.bldgShed],['🟫 肥料在庫('+b.nFert+'袋×8千)',b.invFert]);}
   else if(segKey==='other'){rows.push(['🍱 加工機(取得原価)',state.machines.processor.cost||0]);}
-  else if(segKey==='common'){rows.push(['💴 現金(全社の資金は本部で管理)',b.cash]);liabs.push(['🏦 銀行借入金',b.bank]);}
+  else if(segKey==='common'){rows.push(['💴 現金(全社の資金は本部で管理)',b.cash]);liabs.push(['🏦 銀行借入金',b.bank]);if(b.inst>0)liabs.push(['🎓 制度融資(新規就農/スーパーL)',b.inst]);}
   else rows.push(['(この事業の在庫は少額のため計上なし)',0]);
   let at=0,lt=0;
   let h='<table class="fs"><tr class="hd"><td>'+SEG_META[segKey].em+' '+SEG_META[segKey].n+'事業の資産</td><td class="amt"></td></tr>';
@@ -3999,7 +4094,14 @@ function yakubaHTML(){
 }
 function jaHTML(){
   const sick=sickAnimals();
-  let h='<p>🚜 丹波農協。<b>資材(新品の機械・牛舎)の窓口</b>と<b>獣医の手配(往診)</b>をしているよ。</p>';
+  let h='<p>🚜 丹波農協。<b>資材(新品の機械・牛舎)の窓口</b>・<b>獣医の手配</b>・<b>就農の認定</b>をしているよ。</p>';
+  // v28: 就農の認定(新規就農者→3000万融資 / 認定農業者→スーパーL)
+  h+='<p style="margin-top:6px"><b>🎓 就農の認定(制度融資の窓口)</b></p>';
+  h+='<div class="row"><div class="em">🎓</div><div class="info"><b>新規就農者の認定</b><small>認定されると🏦銀行で<b>新規就農資金3,000万円</b>(7年・最初の3年は返済なし・4年目から均等・無利息)が借りられる。創業期の大きな元手に。</small></div>'+
+    (state.newFarmer?'<span class="prof">認定済✅</span>':'<button class="buy orange" onclick="certifyNewFarmer()">認定を受ける</button>')+'</div>';
+  const cok=certFarmerOk();
+  h+='<div class="row"><div class="em">🏅</div><div class="info"><b>認定農業者の認定</b><small>条件: 3年経過＋加工以外の累計売上2,000万以上(いま '+state.year+'年目・加工以外 '+man(state.cumSales?state.cumSales.farm:0)+')。認定で<b>スーパーL資金</b>(直近売上と同額まで・10年均等・無利息)が使える。</small></div>'+
+    (state.certFarmer?'<span class="prof">認定済✅</span>':(cok?'<button class="buy orange" onclick="certifyCertFarmer()">認定を受ける</button>':'<span style="color:#c03030">条件未達</span>'))+'</div>';
   h+='<p><b>🩺 獣医の往診(担当: 犬飼先生)</b></p>';
   if(herdCount()===0)h+='<p style="color:#8a6a45">牛はまだいないよ(牛を飼うと病気のリスクがある。その時はここで獣医を呼ぼう)。</p>';
   else if(sick.length===0)h+='<p style="color:#1f7a1f;font-weight:bold">✅ いま牛はみんな元気！(発病したらここで獣医を呼ぼう。放置は悪化→最悪死亡)</p>';
@@ -4226,8 +4328,16 @@ function bankHTML(){
   '<button class="minibtn blue" '+(cap>0?'':'disabled')+' onclick="bankBorrow(bankCap())">限度まで</button></div>'+
   '<div class="row"><div class="em">💸</div><div class="info"><b>返す</b><small>残高'+fmt(state.bankLoan)+'</small></div>'+
   '<button class="minibtn" '+(state.bankLoan>0&&state.money>0?'':'disabled')+' onclick="bankRepay(1000000)">100万</button>'+
-  '<button class="minibtn orange" '+(state.bankLoan>0&&state.money>0?'':'disabled')+' onclick="bankRepay(state.bankLoan)">全額</button></div>'+
-  '<p class="sub2" style="font-size:11.5px;color:#8a6a45">※牛の与信(セリ市場)は銀行融資とは別枠だよ。</p>';
+  '<button class="minibtn orange" '+(state.bankLoan>0&&state.money>0?'':'disabled')+' onclick="bankRepay(state.bankLoan)">全額</button></div>';
+  // v28: 制度融資(新規就農資金 / スーパーL)
+  h+='<p style="margin-top:8px"><b>🎓 制度融資(農協の認定が必要)</b></p>';
+  const sl=state.startupLoan;
+  h+='<div class="row"><div class="em">🎓</div><div class="info"><b>新規就農資金 '+man(ECON.STARTUP_LOAN)+'</b><small>7年・最初の3年は返済なし・4年目から年'+man(ECON.STARTUP_LOAN/(ECON.STARTUP_TERM-ECON.STARTUP_GRACE))+'均等・無利息。'+(state.newFarmer?'':'<span style="color:#c03030">※🚜農協で新規就農者の認定を受けてから</span>')+(sl.taken?'<br>借入中: 残'+man(sl.remain):'')+'</small></div>'+
+    (sl.taken?'<span class="prof">借入済</span>':'<button class="buy orange" '+(state.newFarmer?'':'disabled')+' onclick="borrowStartup()">借りる</button>')+'</div>';
+  const scap=superLCap();
+  h+='<div class="row"><div class="em">🏅</div><div class="info"><b>スーパーL資金</b><small>直近売上と同額まで・10年均等・無利息。'+(state.certFarmer?('借入残'+man(state.superL.remain)+'・あと'+man(scap)+'借りられる'):'<span style="color:#c03030">※🚜農協で認定農業者の認定を受けてから</span>')+'</small></div>'+
+    (state.certFarmer?'<button class="buy orange" '+(scap>0?'':'disabled')+' onclick="borrowSuperL(superLCap())">限度まで借りる</button>':'')+'</div>';
+  h+='<p class="sub2" style="font-size:11.5px;color:#8a6a45">※牛の与信(セリ市場)は銀行融資とは別枠。制度融資の返済は毎年3月末に自動で行われるよ。</p>';
   return h;
 }
 // v16: 雇用と指示。従業員に「担当の仕事」を指示すると毎日/月初に自動でやる
@@ -4526,6 +4636,20 @@ window.__v4dbg.topYAt=(x,z)=>topY(x,z);
 window.__v4dbg.blockAt=(x,y,z)=>getB(x,y,z);
 window.__v4dbg.cowSlots=()=>cowMeshes.map(m=>({id:(m.userData.cow||m.userData.calf||{id:-1}).id,slot:m.userData.slot,x:+m.position.x.toFixed(2),z:+m.position.z.toFixed(2)}));
 window.__v4dbg.nearAction=(x,z)=>{if(x!==undefined){player.x=x;player.z=z;}const a=nearestAction(player.x,player.z);return a?a.label:null;}; // 検証用: 現在地の最寄りアクション名
+window.__v4dbg.devFinance=()=>{ // 検証用: 食品加工/資格/制度融資/年次返済の一連
+  const out={};out.m0=state.money;
+  doProcess();out.procNet=state.money-out.m0;out.procWeek=state.procWeek;
+  const mq=state.money;certifyNewFarmer();out.newFarmer=state.newFarmer;
+  borrowStartup();out.startupBorrowed=state.money-mq;out.startupRemain=state.startupLoan.remain;
+  state.year=3;state.cumSales.farm=25000000;certifyCertFarmer();out.certFarmer=state.certFarmer;
+  state.lastResult={sales:20000000,profit:1000000,year:3};
+  const ms=state.money;borrowSuperL(superLCap());out.superLBorrowed=state.money-ms;out.superLRemain=state.superL.remain;
+  out.totalDebt=totalDebt();out.bsInst=computeBS().inst;
+  // 据置明け(4年目)の返済テスト
+  state.startupLoan.loanYear=state.year-4;const notes=[];repayInstitutionalLoans(notes);
+  out.repayNotes=notes;out.startupAfterRepay=state.startupLoan.remain;out.superLAfterRepay=state.superL.remain;
+  return out;
+};
 window.__v4dbg.forceManure=n=>{for(let i=0;i<(n||1);i++){if(!cowMeshes.length)break;const m=cowMeshes[Math.floor(Math.random()*cowMeshes.length)];const areas=barnAreas(),a=areas[Math.min(m.userData.bi||0,areas.length-1)];const mx=Math.max(a.x0,Math.min(a.x1,m.position.x+(Math.random()-0.5)*0.9)),mz=Math.max(a.z0,Math.min(a.z1,m.position.z+(Math.random()-0.5)*0.9));dropManure(mx,mz);}return manures.length;};
 // v26検証用: 牛舎を借りて母牛/授乳仔牛/離乳仔牛を用意
 window.__v4dbg.devBarn=(nCow,nNurse,nWean)=>{
