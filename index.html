@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v36 フンの処理に1頭500円/月のコスト(旧・週末の自動処分費は廃止)</title>
+<title>丹波農商 牧場物語 v37 堆肥舎があれば糞処理費ゼロ・牧草は自給できれば餌代ゼロ(市販は買う)</title>
 <link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -1438,7 +1438,7 @@ function terraformNewBarn(i){
 }
 // ---------- v16: 土地区画(ワールド拡張) ----------
 const PARCELS={
-  pasture1:{n:'西の牧草地(基本)',em:'🌿',price:ECON.LAND_PASTURE_PRICE,desc:'牛舎の東の空き地を柵付きの牧草地に開拓。作付け(10万)すると🌸春(5月)と🍂秋(9月)の年2回、牧草を収穫できる(1回72束〜。牛が多い時は頭数×9ヶ月分まで増える)。牧草があれば牛の餌代が3.5万→1万/頭に。'},
+  pasture1:{n:'西の牧草地(基本)',em:'🌿',price:ECON.LAND_PASTURE_PRICE,desc:'牛舎の東の空き地を柵付きの牧草地に開拓。作付け(10万)すると🌸春(5月)と🍂秋(9月)の年2回、牧草を収穫できる(1回72束〜。牛が多い時は頭数×9ヶ月分まで増える)。牧草を自給できれば牛の餌代がタダに(市販の牧草を買わずに済む)。'},
   grass2:{n:'東の牧草地(拡張)',em:'🌿',price:ECON.LAND_GRASS_PRICE,desc:'牧草の収穫が2倍(72→144束/回)になる拡張区画。荒れ地を開拓して西の牧草地とつなげる(先に西の牧草地が必要)。'},
   rice2:{n:'東の棚田',em:'🌾',price:ECON.LAND_RICE_PRICE,desc:'米の規模が1.5倍(苗代450万・収穫450袋・年商1,350万円)に。水管理と出荷の作業量も増える。'},
   barn2:{n:'南の牧場+第二牛舎',em:'🏠',price:ECON.LAND_BARN_PRICE,desc:'収容枠が母牛+5頭・子牛+5頭に。南の荒れ地に第二牛舎が建つ(低予算の増頭)。'},
@@ -2151,12 +2151,12 @@ function buildPastureDecor(){
   if(pastureVacantSign){removeSignInfo(pastureVacantSign);decoGroup.remove(pastureVacantSign);pastureVacantSign=null;}
   if(!state.land.pasture1){ // 未購入: 空き地の案内だけ
     pastureVacantSign=addSign(37,14.5,'🧱',{t:'🧱 空き地(牧草地の予定地)',
-      b:()=>'ここは牧草地にできる空き地。🏘街の🏠不動産屋で「西の牧草地(基本)」('+man(ECON.LAND_PASTURE_PRICE)+')を買うと柵付きの牧草地になるよ。<br>牧草を育てると🌸春(5月)と🍂秋(9月)の年2回収穫でき、牛の餌代が3.5万→1万/頭に下がる(いまは市販飼料のみ)。'});
+      b:()=>'ここは牧草地にできる空き地。🏘街の🏠不動産屋で「西の牧草地(基本)」('+man(ECON.LAND_PASTURE_PRICE)+')を買うと柵付きの牧草地になるよ。<br>牧草を育てると🌸春(5月)と🍂秋(9月)の年2回収穫でき、牛の餌代がタダになる(いまは市販の牧草を買っている)。'});
     return;
   }
   hayRoll(38.5,11.5);hayRoll(41,17.2);hayRoll(45.5,10.3);hayRoll(44,19.5);
   addSign(37,14.5,'🌿',{t:'🌿 牧草地',
-    b:()=>'牧草を作付け('+man(grassSowCost())+')すると育成が始まり、🌸春(5月1週目)と🍂秋(9月3週目)の年2回✂収穫できる(1回'+grassCutYield()+'束)。牛1頭は週1束消費、余りは1束1万円で売れる(餌代が3.5万→1万/頭に)。<br>いま: '+(state.grassSown?('作付け済み・在庫'+state.grassStock+'束・'+(isGrassHarvestWeek()?(state.grassCutWeek===state.weekN?'今シーズンの収穫✅済':'✂収穫できる週！'):'育成中(次の収穫は'+nextGrassHarvestLabel()+')')):'未作付け'), // v25: 週ベース
+    b:()=>'牧草を作付け('+man(grassSowCost())+')すると育成が始まり、🌸春(5月1週目)と🍂秋(9月3週目)の年2回✂収穫できる(1回'+grassCutYield()+'束)。牛1頭は週1束消費、余りは1束1万円で売れる(自給できれば餌代タダ)。<br>いま: '+(state.grassSown?('作付け済み・在庫'+state.grassStock+'束・'+(isGrassHarvestWeek()?(state.grassCutWeek===state.weekN?'今シーズンの収穫✅済':'✂収穫できる週！'):'育成中(次の収穫は'+nextGrassHarvestLabel()+')')):'未作付け'), // v25: 週ベース
     btns:()=>state.grassSown?(isGrassHarvestWeek()&&state.grassCutWeek!==state.weekN?[['✂ 牧草を収穫する(春・秋の年2回)',()=>doGrassCut(null)]]:[]):[['🌿 牧草を育てる('+man(grassSowCost())+')',()=>sowGrass()]]});
   buildTufts();updateTufts();
 }
@@ -2933,10 +2933,13 @@ function doClean(who){
 function processBarnDung(){
   if((state.barnDung||0)<=0){toast('🟤 溜まった糞はまだないよ(🧹牛舎を掃除するとここに溜まる)');return;}
   const n=state.barnDung;
-  const fee=ECON.DUNG_PROC_FEE*herdCount(); // v36: 処理コスト=1頭500円(毎月相当)
+  // v37: 🏭本格堆肥舎があれば処理費ゼロ(堆肥舎が肥料にして売ってくれる)。なければ1頭500円。
+  const fee=state.compostShed?0:ECON.DUNG_PROC_FEE*herdCount();
   if(fee>0)addExpense(fee,'manure','cow');
   addRes('manure',n);
-  toast('🟤 溜まった糞'+n+'個を処理した！処理費−'+man(fee)+'(牛'+herdCount()+'頭×500円)。堆肥の原料に'+(state.compostShed?'(🏭本格堆肥舎が毎月これを肥料にして売ってくれる)':'(🏭本格堆肥舎を建てると肥料として売れる)'));
+  toast(state.compostShed?
+    ('🟤 溜まった糞'+n+'個を🏭本格堆肥舎で処理！処理費ゼロ＋肥料になって売れる(堆肥の原料'+n+')'):
+    ('🟤 溜まった糞'+n+'個を処理した！処理費−'+man(fee)+'(牛'+herdCount()+'頭×500円)。堆肥の原料に(🏭本格堆肥舎を建てると処理費ゼロ＋肥料が売れる)'));
   state.barnDung=0;updateBarnDungMesh();
   fanfare();sfx(300,.08,'sine',.05);
   updateHUD();if(document.getElementById('menu').style.display==='flex')renderMenu();
@@ -3862,12 +3865,14 @@ function weekEnd(notes){
     state.formulaFeed-=formulaUsed;
   }
   const stillShort=feedShort-formulaUsed;
-  const feedCost=fed*ECON.FEED_GRASS/4 + formulaUsed*ECON.FORMULA_FEED_PRICE + stillShort*shortUnit;
+  // v37: 自給の牧草(fed)で賄えた頭は餌代ゼロ。足りない分だけ🌾配合飼料や🛒市販の牧草を「買う」コスト。
+  const feedCost=formulaUsed*ECON.FORMULA_FEED_PRICE + stillShort*shortUnit;
   if(feedCost>0)addExpense(feedCost,'feed');
+  if(fed>0&&feedShort===0)notes.push('🌿 自給の牧草で全'+herd+'頭に給餌(餌代ゼロ✨)。在庫'+state.grassStock+'束');
   if(feedShort>0)notes.push(formulaUsed>0?
-    '🍽 牧草不足'+feedShort+'頭分を配合飼料'+formulaUsed+'週分でカバー'+(stillShort>0?'('+stillShort+'頭分は市販3.5万/頭相当)':''):
-    (state.grassSown?'⚠ 牧草切れ！不足'+feedShort+'頭は市販飼料。配合飼料を購入するか次の収穫('+nextGrassHarvestLabel()+')まで待とう':
-    '⚠ 牧草地なし: 全'+herd+'頭が市販飼料(週'+fmt(herd*ECON.FEED_MARKET/4)+')'));
+    '🍽 牧草不足'+feedShort+'頭分を🌾配合飼料'+formulaUsed+'週分で購入'+(stillShort>0?'(残'+stillShort+'頭分は🛒市販の牧草を購入)':''):
+    (state.grassSown?'🛒 牧草切れ！不足'+feedShort+'頭分の牧草を市販で購入(自給の牧草が育つ次の収穫='+nextGrassHarvestLabel()+'まで)':
+    '🛒 牧草地がまだ無い: 全'+herd+'頭分の牧草を市販で購入(週'+fmt(herd*ECON.FEED_MARKET/4)+')。🏠不動産屋で牧草地を買って自給すれば餌代ゼロに'));
   // 3) 固定費(4週ごとに月額給与を徴収: 週1/4ずつ)
   addExpense(ECON.OWNER_SALARY/4,'owner');
   for(const k in state.staff)if(state.staff[k])addExpense(ECON.EMP_SALARY/4,'emp',state.staffJobs[k]||'common');
@@ -4126,7 +4131,7 @@ function renderMenu(){
 // v16: 土地(区画)の購入=ワールド拡張
 function landHTML(){
   let h='<p>🏠 不動産屋。土地(区画)を買うと荒れ地が開拓されて<b>世界が広がり、生産規模が拡大</b>するよ。作業量も増えるので従業員の配置を考えよう。</p>';
-  if(!state.land.pasture1)h+='<p style="color:#c03030;font-weight:bold;font-size:12.5px">🌿 牧草地はまだ持っていないよ！「西の牧草地(基本)」を買うと牧草を育てられる(餌代3.5万→1万/頭)。</p>';
+  if(!state.land.pasture1)h+='<p style="color:#c03030;font-weight:bold;font-size:12.5px">🌿 牧草地はまだ持っていないよ！「西の牧草地(基本)」を買うと牧草を自給できる(餌代がタダに)。</p>';
   const rows=[
     ['pasture1','🌿',PARCELS.pasture1], // v22: 基本の牧草地(開始時は持っていない)
     ['grass2','🌿',PARCELS.grass2],
