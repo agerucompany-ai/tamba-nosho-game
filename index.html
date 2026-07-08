@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v44: 黒枝豆(6月まき→10月一気に収穫)追加=防鳥ネット・専用低窒素肥料(窒素は罠)・カメムシ防除で満額、サボると6分の1。青ネギ再収穫/にんじん糖度/稲3段肥料も継続</title>
+<title>丹波農商 牧場物語 v44: 従業員は話しかけて雇用/指示・1人に複数の仕事OK・牛担当は獣医も自動・牧草は年2回まき直し・解雇不可+毎年3万昇給の注意・決算は3月末・大倉庫の屋根撤去。黒枝豆や青ネギ等も継続</title>
 <link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -574,7 +574,8 @@ const SEED_PRICE={veg_seed:2000,negi_seed:1500,bean_seed:3000,edamame_seed:2000}
 // v14: 経営シミュの前提値(すべて円)。骨子は仕様どおり厳密。
 const ECON={
   OWNER_SALARY:300000,   // 自分(オーナー)の給与/生活費(月)
-  EMP_SALARY:300000,     // 従業員の月給(1人)
+  EMP_SALARY:300000,     // 従業員の月給(1人・初年度)
+  EMP_RAISE:30000,       // v44: 毎年の自動昇給(勤続1年ごとに月給+3万円)
   BARN_RENT:30000,       // 古い牛舎の家賃(月)
   FEED_MARKET:15000,     // v38: 市販の牧草(粗飼料)の餌代(1頭・月)。自給できれば無料
   FEED_CONCENTRATE:5000, // v38: 配合飼料(濃厚飼料)の餌代(1頭・月)。常時かかる。牧草15千+配合5千=月2万/頭
@@ -685,7 +686,8 @@ function freshState(){return{
   res:{veg:0,negi:0,bean:0,edamame:0,chestnut:0,compost:0,manure:0,veg_seed:0,negi_seed:0,bean_seed:0,edamame_seed:0},
   barnRented:false,
   staff:{atsushi:false,yusuke:false,naoto:false},
-  staffJobs:{atsushi:null,yusuke:null,naoto:null}, // v16: 指示した担当(rice/grass/cow/compost)
+  staffJobs:{atsushi:[],yusuke:[],naoto:[]}, // v44: 1人に複数の仕事を指示できる(配列)。rice/grass/cow/compost
+  staffHireYear:{atsushi:0,yusuke:0,naoto:0}, // v44: 雇った年(勤続年数=毎年+3万の自動昇給の起点)
   formulaFeed:0, // v25: 配合飼料の在庫(単位:週×頭分)
   cows:[],   // 母牛 {id,name,preg(-1=未妊娠/0..39=妊娠週数),births,debt,retired,bredWeek}
   calves:[], // 子牛 {id,ageWeeks(週齢),motherId,bornWeekN,weaned}
@@ -1040,8 +1042,21 @@ const JOBS={
   cow:{n:'牛の世話',em:'🐂',desc:'毎日の餌やり＋牛舎掃除、月初の種付け・子牛/親牛のセリ売却を自動でやる'},
   compost:{n:'堆肥',em:'🟫',desc:'牛ふんの回収と堆肥化、肥料の出荷、農産物の売却を自動でやる'},
 };
-function jobLabel(k){const j=state.staffJobs[k];return j?JOBS[j].em+' '+JOBS[j].n:'指示なし(遊んでいる)';}
-function staffWithJob(job){for(const k in state.staff)if(state.staff[k]&&state.staffJobs[k]===job)return k;return null;}
+// v44: 1人が複数の仕事を持てる。staffJobs[k]は配列(旧セーブのnull/文字列も吸収)
+function jobsOf(k){const j=state.staffJobs&&state.staffJobs[k];return Array.isArray(j)?j:(j?[j]:[]);}
+function jobLabel(k){const js=jobsOf(k);return js.length?js.map(j=>JOBS[j].em+JOBS[j].n).join('・'):'指示なし(遊んでいる)';}
+function staffWithJob(job){for(const k in state.staff)if(state.staff[k]&&jobsOf(k).includes(job))return k;return null;}
+// v44: 勤続年数と、毎年+3万円の自動昇給を反映した今の月給
+function staffYears(k){return Math.max(0,(state.year||1)-(state.staffHireYear&&state.staffHireYear[k]||state.year||1));}
+function staffSalary(k){return ECON.EMP_SALARY+ECON.EMP_RAISE*staffYears(k);}
+function toggleJob(k,job){
+  if(!state.staff[k]){toast('先に雇用してね');return;}
+  const js=jobsOf(k),i=js.indexOf(job);
+  if(i>=0)js.splice(i,1);else js.push(job);
+  state.staffJobs[k]=js;
+  toast('📋 '+STAFF_META[k].name+': '+(i>=0?JOBS[job].n+'を担当から外した':JOBS[job].em+JOBS[job].n+'を指示した(担当'+js.length+'件・毎日/月初に自動)'));
+  sfx(660,.07,'sine',.05);updateHUD();renderMenu();
+}
 
 // ---------- three.js 基本 ----------
 let scene,camera,renderer,sun,hemi,moonL,worldGroup;
@@ -1423,7 +1438,7 @@ function buildWarehouseComplexBlocks(){
       const corner=(x===WHX0||x===WHX1)&&(z===WHZ0||z===WHZ1);
       if(!corner&&(((z===WHZ0||z===WHZ1)&&x%3===1)||((x===WHX0||x===WHX1)&&z%3===1))){gset(x,6,z,B.WATER);gset(x,7,z,B.WATER);gset(x,8,z,B.WATER);} // 高窓3段
     }
-    gset(x,10,z,B.RROOF); // 大屋根
+    gset(x,10,z,0); // v44: 大倉庫の屋根も撤去(牛舎と同じく屋根なし=上から中が見える)
   }
   // 事務所の間仕切り(x=70・全高)と通用口(z=28,29)
   for(let z=WHZ0+1;z<WHZ1;z++)for(let y=3;y<=9;y++)gset(70,y,z,B.PLANK);
@@ -1803,7 +1818,9 @@ function doGrassCut(who){
   const y=grassCutYield();
   state.grassStock+=y;
   state.grassProdLast=y;
-  if(!who){toast('✂ '+(state.week===18?'🌸春(5月1週目)':'🍂秋(9月3週目)')+'の牧草を収穫した！+'+y+'束(在庫'+state.grassStock+'束)');sfx(420,.07);}
+  state.grassSown=false; // v44: 刈り取ったら畑は終わり=次のシーズンにまた種まき(年2回タネまき→刈り取り)。勝手に生え続けない
+  if(!who){toast('✂ '+(state.week===18?'🌸春(5月1週目)':'🍂秋(9月3週目)')+'の牧草を刈り取った！+'+y+'束(在庫'+state.grassStock+'束)。畑は刈り終わり→次のシーズンにまた種まきしよう');sfx(420,.07);}
+  if(state.land.pasture1)buildPastureDecor(); // v44: 刈り取り後は牧草地の見た目を更新(未作付けに)
   updateHUD();
   return true;
 }
@@ -3226,7 +3243,7 @@ function nearestAction(wx,wz){
   if(curMap==='town'){
     for(const n of npcs){
       if(!n.mesh.parent)continue;
-      cand(n.mesh.position.x,n.mesh.position.z,1.8,'💬 '+n.cfg.name+'と話す',()=>{actNPC(n);if(n.cfg.menu){menuTab=n.cfg.menu;openMenu();}});
+      cand(n.mesh.position.x,n.mesh.position.z,1.8,'💬 '+n.cfg.name+'と話す',()=>{actNPC(n);if(isStaffNpc(n.key)){openStaffTalk(n.key);}else if(n.cfg.menu){menuTab=n.cfg.menu;openMenu();}}); // v44: 従業員は話して雇用/指示
     }
     cand(31.8,21.2,2.6,'🏛 役場(補助金の申請)',()=>{menuTab='yakuba';openMenu();});
     cand(19.5,34.5,2.4,'🏦 銀行(借入/返済)',()=>{menuTab='bank';openMenu();});
@@ -3243,7 +3260,7 @@ function nearestAction(wx,wz){
     cand(m.position.x,m.position.z,1.6,m.userData.calf?'🐮 子牛の状態':'🐂 牛の状態',()=>actCow(m));
   }
   // NPC
-  for(const n of npcs){if(!n.mesh.parent)continue;cand(n.mesh.position.x,n.mesh.position.z,1.6,'💬 話す',()=>actNPC(n));}
+  for(const n of npcs){if(!n.mesh.parent)continue;cand(n.mesh.position.x,n.mesh.position.z,1.6,'💬 話す',()=>{actNPC(n);if(isStaffNpc(n.key))openStaffTalk(n.key);else if(n.cfg.menu){menuTab=n.cfg.menu;openMenu();}});}
   // v22: 街の入口(橋の西岸)。バス停は廃止
   cand(1.5,21.5,3.0,'🏘 街へ入る(橋の西)',()=>switchMap('town'));
   // v19: 故障中の機械(修理屋への案内) v20: 大倉庫内の設置場所に合わせた
@@ -3733,25 +3750,37 @@ function callVet(){
 function hireStaff(k){
   if(state.staff[k])return;
   state.staff[k]=true;
+  state.staffHireYear=state.staffHireYear||{};state.staffHireYear[k]=state.year||1; // v44: 昇給の起点
+  state.staffJobs[k]=[];
   fanfare();
   toast('🤝 '+STAFF_META[k].name+'を雇った！(月給'+man(ECON.EMP_SALARY)+')');
-  toast('👉 担当の仕事(米/牧草/牛の世話/堆肥)を指示しよう。指示しないと遊んだまま給料だけかかるよ！');
+  toast('⚠ 注意: 一度雇うと解雇できません。さらに毎年+'+man(ECON.EMP_RAISE)+'の自動昇給で人件費が増えます(勤続で重くなる)');
+  toast('👉 続けて仕事(米/牧草/牛の世話/堆肥)を指示しよう。1人に複数OK。指示しないと遊んだまま給料だけかかるよ！');
   updateHUD();renderMenu();
 }
+// v44: 解雇は不可(実雇用の重みを出すため)。呼ばれても何もしない。
 function fireStaff(k){
-  if(!state.staff[k])return;
-  state.staff[k]=false;state.staffJobs[k]=null;
-  toast('👋 '+STAFF_META[k].name+'との契約を終了した(担当していた仕事は自分でやろう)');
-  updateHUD();renderMenu();
+  toast('🙅 一度雇った従業員は解雇できません(雇用時に注意書きあり)。担当を変えるなら「指示」で付け替えよう');
 }
-function assignJob(k,job){
+function assignJob(k,job){ // v44: 単一指定→トグルに統合。'指示なし'は全解除
   if(!state.staff[k]){toast('先に雇用してね');return;}
-  state.staffJobs[k]=job||null;
-  if(job)toast('📋 '+STAFF_META[k].name+'に「'+JOBS[job].em+' '+JOBS[job].n+'」を指示した！毎日/月初に自動でやってくれるよ');
-  else toast('📋 '+STAFF_META[k].name+'の指示を外した(この仕事は自分の手作業に戻るよ)');
-  sfx(660,.07,'sine',.05);
-  updateHUD();renderMenu();
+  if(!job){state.staffJobs[k]=[];toast('📋 '+STAFF_META[k].name+'の担当を全部外した(自分の手作業に戻る)');sfx(660,.07,'sine',.05);updateHUD();renderMenu();return;}
+  toggleJob(k,job);
 }
+// v44: 従業員に話しかけて、その場で雇用/仕事の指示ができる(1人に複数OK)
+function openStaffTalk(k){
+  const m=STAFF_META[k];const hired=state.staff[k];
+  showIconInfo({t:'👤 '+m.name+(hired?'(雇用中)':''),
+    b:()=>hired
+      ? '担当: '+jobLabel(k)+'<br>勤続'+(staffYears(k)+1)+'年目・今の月給'+man(staffSalary(k))+'<br>⚠ 解雇はできません／毎年+'+man(ECON.EMP_RAISE)+'の自動昇給あり<br>下のボタンで仕事を指示(複数OK・もう一度押すと外す)。'
+      : (m.line2||m.line)+'<br><br>⚠ 一度雇うと解雇できません。毎年+'+man(ECON.EMP_RAISE)+'の自動昇給で人件費が増えます。',
+    btns:()=>{const a=[];
+      if(!hired){a.push(['🤝 雇う(月給'+man(ECON.EMP_SALARY)+'・解雇不可)',()=>{hireStaff(k);openStaffTalk(k);}]);}
+      else{for(const j in JOBS){const has=jobsOf(k).includes(j);a.push([(has?'✅ ':'▫️ ')+JOBS[j].em+JOBS[j].n+(has?'(外す)':'を指示')+'',()=>{toggleJob(k,j);openStaffTalk(k);}]);}
+        a.push(['🧹 担当を全部外す',()=>{assignJob(k,null);openStaffTalk(k);}]);}
+      return a;}});
+}
+function isStaffNpc(key){return key==='atsushi'||key==='yusuke'||key==='naoto';}
 
 // ---------- v16: 従業員の自動作業（毎日実行・月次仕事は月1回ガードで自動判断） ----------
 // 指示された仕事だけを自動でやる。雇った/指示した日からすぐ働く。
@@ -3778,7 +3807,17 @@ function staffMonthlyJobs(notes){
   const wk=staffWithJob('cow');
   if(wk){
     const nm=STAFF_META[wk].name;
-    if(sickAnimals().length>0)notes.push('🤒 '+nm+': 病気の牛がいる！🚜街の農協で獣医を呼んでください'); // v19/v25
+    // v44: 牛担当なら獣医も自動で呼ぶ(雇ったら全部自動)。往診料+治療費は自動精算
+    const sick=sickAnimals();
+    if(sick.length>0){
+      const cost=ECON.VET_CALL+ECON.VET_TREAT*sick.length;
+      if(state.money>=cost){
+        addExpense(cost,'vet','cow');
+        for(const a of sick){a.sick=false;a.sickDays=0;}
+        state.care.health=Math.min(100,state.care.health+5);state.vetVisitDay=state.absWeek;
+        notes.push('🩺 '+nm+': 病気の牛'+sick.length+'頭に獣医を呼んで全快させた(往診+治療 −'+man(cost)+')');
+      }else notes.push('🤒 '+nm+': 病気の牛がいるが往診料'+man(cost)+'が払えない…現金を確保して(放置は最悪死亡)');
+    }
     for(const c of state.cows){
       if(!c.retired&&!c.sick&&c.preg<0&&c.bredWeek!==state.weekN){ // v19: 病気の牛は種付けしない
         if(state.calves.length>=calfCapNow()){notes.push('⚠ '+nm+': 子牛の枠が満員で種付けを見送り(⛰増築か出荷を)');break;} // v20: 収容枠
@@ -4009,7 +4048,7 @@ function advanceWeek(notes,silent){
   // 週を進める(52週で年度末→翌年第1週に)
   const prevWeek=state.week;
   state.week=(state.week%ECON.WEEKS_PER_YEAR)+1;
-  if(prevWeek===ECON.WEEKS_PER_YEAR){state.year++;repayInstitutionalLoans(notes);} // 年が変わった / v28: 制度融資の年次返済
+  if(prevWeek===ECON.RICE_PLANT_WEEK-1){state.year++;repayInstitutionalLoans(notes);} // v44: 年度替わりは4月(3月末決算の翌週)。制度融資の年次返済もここ
   // 8) 収穫タイミング通知
   if(state.week===ECON.RICE_HARVEST_WEEK&&state.riceField==='planted'){
     state.riceField='ready';
@@ -4054,7 +4093,7 @@ function weekEnd(notes){
   if(herd>0)notes.push('🍽 餌代 −'+fmt(feedCost)+'／週(配合飼料5千/頭'+(roughShort>0?('＋市販の牧草15千×'+roughShort+'頭'):'')+(fed>0?('・自給の牧草で'+fed+'頭ぶんは牧草代タダ✨'):'')+'。合計 月2万/頭・自給で月5千/頭)');
   // 3) 固定費(4週ごとに月額給与を徴収: 週1/4ずつ)
   addExpense(ECON.OWNER_SALARY/4,'owner');
-  for(const k in state.staff)if(state.staff[k])addExpense(ECON.EMP_SALARY/4,'emp',state.staffJobs[k]||'common');
+  for(const k in state.staff)if(state.staff[k])addExpense(staffSalary(k)/4,'emp',jobsOf(k)[0]||'common'); // v44: 勤続で昇給した月給
   if(state.barnRented)addExpense(ECON.BARN_RENT/4,'rent');
   // 4) 本格堆肥舎の肥料生産(4週ごと)。v36: 牛糞の処分費(週末自動)は廃止→掃除で集めた糞を「処理」する時に1頭500円
   if(herd>0&&state.weekN%4===3&&state.compostShed){
@@ -4064,8 +4103,8 @@ function weekEnd(notes){
   }
   // 5) 牛の週次進行(妊娠/出産/週齢。健康40未満は妊娠が進まない)
   progressCows(notes);
-  // 6) 年度末決算(第52週末)
-  if(state.week===ECON.WEEKS_PER_YEAR){
+  // 6) 年度末決算(3月末=4月の田植え直前の週。会計年度は4月〜翌3月) v44
+  if(state.week===ECON.RICE_PLANT_WEEK-1){
     doFiscalClose();
     if(isGameOver)return;
   }
@@ -4075,7 +4114,7 @@ function weekEnd(notes){
   if(Math.abs(delta)>0){
     const cost=[];
     cost.push('自分給与'+man(ECON.OWNER_SALARY/4));
-    if(sc>0)cost.push('従業員'+man(sc*ECON.EMP_SALARY/4));
+    if(sc>0){let ss=0;for(const k in state.staff)if(state.staff[k])ss+=staffSalary(k);cost.push('従業員'+man(ss/4));} // v44: 昇給込み
     if(state.barnRented)cost.push('家賃'+man(ECON.BARN_RENT/4));
     if(feedCost>0)cost.push('餌代'+man(feedCost));
     notes.push('📉 週次経費 '+(delta>=0?'+':'−')+man(Math.abs(delta))+' ('+cost.join('・')+')');
@@ -4605,23 +4644,25 @@ function bankHTML(){
 }
 // v16: 雇用と指示。従業員に「担当の仕事」を指示すると毎日/月初に自動でやる
 function staffHTML(){
-  let h='<p>従業員は月給'+man(ECON.EMP_SALARY)+'。<b>担当の仕事を指示</b>すると、自分が操作しなくても毎日/月初に自動でやってくれるよ(放置経営！)。指示を変えれば別の仕事に回せる。</p>';
+  let h='<p>従業員は月給'+man(ECON.EMP_SALARY)+'。<b>仕事を指示</b>すると自分が操作しなくても毎日/月初に自動(放置経営！)。<b>1人に複数の仕事を指示OK</b>(ボタンを押すたびに追加/解除)。農場で本人に話しかけても指示できるよ。</p>'+
+    '<p class="sub2" style="color:#b0462a;font-weight:bold">⚠ 一度雇うと解雇できません。さらに毎年+'+man(ECON.EMP_RAISE)+'の自動昇給で人件費が増えます(勤続で重くなる)。雇用は慎重に！</p>';
   for(const k in STAFF_META){
     const m=STAFF_META[k];
     const on=state.staff[k];
-    h+='<div class="row"><div class="em">'+m.em+'</div><div class="info"><b>'+m.name+(on?' ✅雇用中・担当: '+jobLabel(k):'')+'</b><small>'+m.hint+(on&&state.staffJobs[k]?'。'+JOBS[state.staffJobs[k]].desc:'')+'</small>';
+    const jobs=jobsOf(k);
+    h+='<div class="row"><div class="em">'+m.em+'</div><div class="info"><b>'+m.name+(on?' ✅雇用中(勤続'+(staffYears(k)+1)+'年目・月給'+man(staffSalary(k))+')':'')+'</b><small>'+m.hint+(on?'。担当: '+jobLabel(k)+(jobs.length?'('+jobs.map(j=>JOBS[j].desc).join(' / ')+')':''):'')+'</small>';
     if(on){
       h+='<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:5px">';
       for(const j in JOBS){
-        const sel=state.staffJobs[k]===j;
-        h+='<button class="minibtn'+(sel?'':' blue')+'" style="'+(sel?'background:#1f7a1f;border-color:#144d14;':'')+'" onclick="assignJob(\''+k+'\',\''+j+'\')">'+JOBS[j].em+' '+JOBS[j].n+(sel?'✓':'')+'</button>';
+        const sel=jobs.includes(j);
+        h+='<button class="minibtn'+(sel?'':' blue')+'" style="'+(sel?'background:#1f7a1f;border-color:#144d14;':'')+'" onclick="assignJob(\''+k+'\',\''+j+'\')">'+(sel?'✅':'')+JOBS[j].em+' '+JOBS[j].n+'</button>';
       }
-      h+='<button class="minibtn" style="background:#988478;border-color:#6a594d" onclick="assignJob(\''+k+'\',null)">指示なし</button></div>';
+      h+='<button class="minibtn" style="background:#988478;border-color:#6a594d" onclick="assignJob(\''+k+'\',null)">全部外す</button></div>';
     }
     h+='</div>'+
-      (on?'<button class="buy orange" onclick="fireStaff(\''+k+'\')">解雇</button>':'<button class="buy" onclick="hireStaff(\''+k+'\')">雇う(月30万)</button>')+'</div>';
+      (on?'<button class="buy" style="background:#b9b0a5;border-color:#8a8177" onclick="fireStaff(\''+k+'\')">解雇不可</button>':'<button class="buy" onclick="hireStaff(\''+k+'\')">雇う(月30万)</button>')+'</div>';
   }
-  h+='<p class="sub2" style="font-size:11.5px;color:#8a6a45">仕事: 🌾米(田植え/水管理/収穫/出荷) / 🌿牧草 / 🐂牛の世話(餌+掃除+種付け+セリ) / 🟫堆肥。閑散期は指示を変えて有効活用！</p>';
+  h+='<p class="sub2" style="font-size:11.5px;color:#8a6a45">仕事: 🌾米(田植え/水管理/収穫/出荷) / 🌿牧草(年2回の作付け・刈り取り) / 🐂牛の世話(餌+掃除+種付け+セリ+獣医) / 🟫堆肥。牧草は作業が少ないので、他の仕事と兼務させると効率的！</p>';
   return h;
 }
 // v25: 配合飼料の一括購入(10週分=牧草不足時の補填用)
