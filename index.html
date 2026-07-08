@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v38 餌代=牧草15千(自給無料)＋配合5千=月2万/頭・種付け代1回1万</title>
+<title>丹波農商 牧場物語 v39 街の建物上バグ修正・マップ両方中央着地・タイトルに戻る・クエスト/メニューを整理</title>
 <link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -2476,8 +2476,17 @@ function placeNPCs(){
     if(n.key==='juui'&&curMap==='farm'&&state.vetVisitDay===state.absWeek){show=true;pos=[33.0,18.5];} // 往診中の獣医 v24: 拡大した牛舎の前へ
     if(!show){scene.remove(n.mesh);continue;}
     scene.add(n.mesh);
-    const y=topY(Math.floor(pos[0]),Math.floor(pos[1]))+1;
-    n.mesh.position.set(pos[0],y,pos[1]);
+    // v39: NPCが建物の上(topY>2)に置かれるバグ対策=近くの地面(topY≤2)へ寄せる
+    let px=pos[0],pz=pos[1];
+    if(topY(Math.floor(px),Math.floor(pz))>2){
+      let done=false;
+      for(let r=1;r<=5&&!done;r++)for(let dz=-r;dz<=r&&!done;dz++)for(let dx=-r;dx<=r&&!done;dx++){
+        const gx=Math.floor(pos[0])+dx,gz=Math.floor(pos[1])+dz;
+        if(inWorld(gx,gz)&&topY(gx,gz)<=2){px=gx+0.5;pz=gz+0.5;done=true;}
+      }
+    }
+    const y=topY(Math.floor(px),Math.floor(pz))+1;
+    n.mesh.position.set(px,y,pz);
     n.mesh.rotation.y=0;
     if(n.wander)n.wi=0; // v21: 名前ラベルの常時/近距離表示は廃止(アイコン主体+会話で名前)
   }
@@ -2717,12 +2726,15 @@ function updateQuest(){
     if(q.r){addSale(q.r,'grant');toast('✅ 目標達成！協力金 +'+man(q.r)+'（現金'+man(state.money)+'）');}
     else toast('✅ 目標達成！');
   }
-  const el=document.getElementById('quest');if(el)el.textContent='🎯 '+QUESTS[state.questDone].s+'　❓';
+  const el=document.getElementById('quest');
+  if(el)el.innerHTML='🎯 <b>'+(state.questDone+1)+'. '+QUESTS[state.questDone].s+'</b> <span style="opacity:.65;font-weight:normal">▶くわしく</span>';
 }
 // v21: クエストの❓タップで詳細説明
 function showQuestInfo(){
   if(!state)return;
-  showIconInfo({t:'🎯 いまの目標',b:QUESTS[state.questDone].t});
+  const i=state.questDone,q=QUESTS[i];
+  const body='<b>▶ やること</b><br>'+q.t+(q.r?('<br><br>🎁 達成すると <b>協力金 '+man(q.r)+'</b> がもらえる！'):'')+'<br><br><small style="color:#8a6a45">目標 '+(i+1)+'／'+QUESTS.length+'。1つ達成すると自動で次の目標が出るよ。</small>';
+  showIconInfo({t:'🎯 いまの目標 '+(i+1)+'／'+QUESTS.length,b:body});
 }
 
 // ---------- v10: かんたん文脈アクション ----------
@@ -4118,6 +4130,7 @@ function renderMenu(){
   else html+=setHTML();
   html+='<button class="close" style="background:#3a6fd8;border-color:#1f3f8a;box-shadow:0 3px 0 #1f3f8a" onclick="nextWeek()">⏭ 次の週へ(1週間進む)</button>';
   html+='<button class="close" onclick="closeMenu()">閉じる</button>';
+  html+='<button class="close" style="background:#8a7a5a;border-color:#5a4a2a;box-shadow:0 3px 0 #5a4a2a;font-size:13px" onclick="backToTitle()">🏠 タイトルに戻る</button>'; // v39
   box.innerHTML=html;
 }
 // v16: 土地(区画)の購入=ワールド拡張
@@ -4137,7 +4150,7 @@ function landHTML(){
       (owned?'<span style="font-size:12px;color:#1f7a1f;font-weight:bold">開拓済み</span>'
       :'<button class="buy orange" '+(state.money>=p.price&&!locked?'':'disabled')+' onclick="buyLand(\''+k+'\')">'+man(p.price)+'</button>')+'</div>';
   }
-  h+='<p class="sub2" style="font-size:11.5px;color:#8a6a45">💡 西の牧草地=🌸5月と🍂9月の年2回収穫(1回72束)で餌代を圧縮。東の牧草地=収穫2倍(144束/回)。東の棚田=米の年商900万→1,350万(苗代も450万に)。南の牧場=母牛16頭で繁殖を倍速に。</p>';
+  h+='<p class="sub2" style="font-size:11.5px;color:#8a6a45">💡 牧草地=自給で牧草代タダ／東の棚田=米1.5倍／南の牧場=母牛16頭。</p>';
   return h;
 }
 // ---------- v19: 役場(補助金)・農協(資材/獣医)・修理屋のメニュー ----------
@@ -4200,7 +4213,7 @@ function jaHTML(){
   h+='<div class="row"><div class="em">🏠</div><div class="info"><b>新築牛舎を建てる(1棟'+man(ECON.NEW_BARN)+')</b><small>⛰山を切り開いて増築。1棟で母牛+'+ECON.NEW_BARN_MO+'頭・子牛+'+ECON.NEW_BARN_CALF+'頭。いま'+state.newBarns+'棟(開拓地の残り'+plotsLeft+')<br>'+
     (bp.sub?'<span class="prof">🏛補助済 半額 '+man(bp.price)+'</span>':'<span style="color:#c03030">未申請 定価 '+man(bp.price)+'(申請で'+man(ECON.NEW_BARN/2)+')</span>')+'</small></div>'+
     (plotsLeft>0?'<button class="buy" '+(state.money>=bp.price?'':'disabled')+' onclick="buyNewBarn()">'+man(bp.price)+'</button>':'')+'</div>';
-  h+='<p class="sub2" style="font-size:11.5px;color:#8a6a45">💡 🏭本格堆肥舎('+man(ECON.SHED_COST)+'・補助で半額)と🟤糞置き場('+man(ECON.DUNG_COST)+')は農場の🟫堆肥場で建設してね。中古の牛舎レンタル(月3万・母10子10)は補助対象外。</p>';
+  h+='<p class="sub2" style="font-size:11.5px;color:#8a6a45">💡 🏭本格堆肥舎(補助で半額)は農場の🟫堆肥場で建設。中古の牛舎レンタル(月3万)は補助対象外。</p>';
   return h;
 }
 function repairHTML(){
@@ -4313,7 +4326,7 @@ function cowsHTML(){
     return '<p>牛を飼うには、まず牛舎が必要だよ。</p>'+
     '<div class="row"><div class="em">🏚</div><div class="info"><b>古い牛舎を借りる</b><small>設備投資なしの低資本スタート。家賃 月3万円・母牛'+ECON.BARN_CAP+'頭+子牛'+ECON.BARN_CAP_CALF+'頭まで(中古なので補助対象外)</small></div>'+
     '<button class="buy orange" onclick="rentBarn();renderMenu()">借りる</button></div>'+
-    '<p class="sub2" style="font-size:11.5px;color:#8a6a45">💡 🚜街の農協では⛰新築牛舎(1棟'+man(ECON.NEW_BARN)+'・母15子15)も建てられる(🟤糞置き場が必須)。🏛役場で申請すれば半額！</p>';
+    '<p class="sub2" style="font-size:11.5px;color:#8a6a45">💡 🚜街の農協で⛰新築牛舎(母15子15)も建てられる。🏛役場で申請すれば半額！</p>';
   }
   let h='<p>🐂 収容枠: 母牛 <b>'+state.cows.length+'/'+barnCapNow()+'頭</b>・子牛 <b>'+state.calves.length+'/'+calfCapNow()+'頭</b><br><small>'+(state.barnRented?'🏚古い牛舎(家賃月3万・母10子10)':'')+(state.land.barn2?'・🏠第二牛舎(+5+5)':'')+(state.newBarns>0?'・⛰新築牛舎'+state.newBarns+'棟(各+15+15)':'')+'</small></p>';
   if(state.cows.length>=barnCapNow()||state.calves.length>=calfCapNow())h+='<p class="loss" style="font-weight:bold">⚠ 枠が満員！増やすなら🚜農協で⛰新築牛舎('+man(ECON.NEW_BARN)+'・補助で半額・🟤糞置き場必須)か、出荷で空けよう</p>';
@@ -4344,7 +4357,7 @@ function cowsHTML(){
       (ship?('<button class="minibtn orange" onclick="sellCalf('+cf.id+')">'+man(calfSalePrice(cf))+'で売却</button>'+
         (cf.sex==='F'?'<button class="minibtn" '+(state.cows.length<barnCapNow()?'':'disabled')+' onclick="keepAsMother('+cf.id+')">母牛に残す</button>':'')):'')+'</div>';
   }
-  h+='<p class="sub2" style="font-size:11.5px;color:#8a6a45">餌代: 牧草自給=週'+fmt(ECON.FEED_GRASS/4)+'/頭。牧草不足は配合飼料(週'+fmt(ECON.FORMULA_FEED_PRICE)+'/頭)か市販(週'+fmt(ECON.FEED_MARKET/4)+'/頭)。種付け→40週で出産→子牛は生後4週で離乳→32週で出荷。売値ベース: ♀メス100万/♂オス120万(肥育・健康・病歴で±)。売却額の半分(最大50万)は母牛の借金返済へ。♀メスは売らずに母牛として残せる(与信なしの自家育成)。母牛は8産まで。</p>';
+  h+='<p class="sub2" style="font-size:11.5px;color:#8a6a45">🌾餌=牧草15千+配合5千=月2万/頭(牧草は自給なら無料)。💉種付け1万→40週で出産→仔牛は4週で離乳→32週で出荷。売値♀100万/♂120万(状態で±)。売却の半分は母牛の借金返済へ。♀は母牛に残せる。母牛は8産まで。</p>';
   return h;
 }
 // セリ市場: メス牛の与信購入・子牛/親牛の売却
@@ -4365,7 +4378,7 @@ function auctionHTML(){
   }else h+='<p style="color:#8a6a45">出荷できる子牛はまだいないよ(月齢8ヶ月から。病気の子は治療してから)。</p>';
   const ret=state.cows.filter(c=>c.retired);
   for(const c of ret)h+='<div class="cowrow"><span style="font-size:18px">🐂</span><span class="st">'+cowStatusText(c)+'<br><small style="color:#8a6a45">'+condReasons(c)+'</small></span><button class="minibtn orange" onclick="sellMother('+c.id+')">'+man(motherSalePrice(c))+'で売却</button></div>';
-  h+='<p class="sub2" style="font-size:11.5px;color:#8a6a45">💡 売却額の半分(最大50万)はその母牛の借金返済に充当(2頭で完済、以降は満額が利益)。8産後の親牛はベース50万+状態補正。♀メスの子牛は売らずに「母牛に残す」と与信なしで繁殖に回せる(規模拡大の近道)。</p>';
+  h+='<p class="sub2" style="font-size:11.5px;color:#8a6a45">💡 売却の半分(最大50万)は母牛の借金返済へ(2頭で完済)。♀仔牛は「母牛に残す」と与信なしで増頭できる。</p>';
   return h;
 }
 // 銀行: 黒字のみ・限度=直近売上高・無利息
@@ -4418,7 +4431,7 @@ function staffHTML(){
     h+='</div>'+
       (on?'<button class="buy orange" onclick="fireStaff(\''+k+'\')">解雇</button>':'<button class="buy" onclick="hireStaff(\''+k+'\')">雇う(月30万)</button>')+'</div>';
   }
-  h+='<p class="sub2" style="font-size:11.5px;color:#8a6a45">仕事: 🌾米=4月田植え・5〜9月水管理・10月収穫・毎月出荷 / 🌿牧草=刈り取りと売却 / 🐂牛の世話=毎日の餌+掃除と種付け・セリ / 🟫堆肥=ふん回収・肥料出荷。米は年数回しか作業がないから、閑散期は指示を変えて有効活用しよう！</p>';
+  h+='<p class="sub2" style="font-size:11.5px;color:#8a6a45">仕事: 🌾米(田植え/水管理/収穫/出荷) / 🌿牧草 / 🐂牛の世話(餌+掃除+種付け+セリ) / 🟫堆肥。閑散期は指示を変えて有効活用！</p>';
   return h;
 }
 // v25: 配合飼料の一括購入(10週分=牧草不足時の補填用)
@@ -4468,7 +4481,7 @@ function toggleSound(){state.sound=!state.sound;renderMenu();}
 // ========== v19: 街マップ（生成・装飾・農場⇔街の切替） ==========
 let curMap='farm',mapBusy=false;
 // v22: 農場側は「橋の東のたもと」・街側は「南の門の内側」に出る(橋を渡って行き来する導線)
-const FARM_SPAWN={x:9.5,z:21.5},TOWN_SPAWN={x:33.0,z:57.5};
+const FARM_SPAWN={x:25.0,z:31.0},TOWN_SPAWN={x:32.5,z:34.0}; // v39: 両マップとも中央(街=お店の並び/農場=牛舎の前)に着地して迷わない
 // 街のボクセル生成(大通り・広場・噴水・建物・セリ市場の囲い)
 function genTown(){
   chestnutTrees.length=0;
@@ -4737,6 +4750,13 @@ window.__v4dbg.devNewBarn=()=>{ // 検証用: 新築牛舎(両側・中央通路
 };
 
 // ---------- セーブ / ロード ----------
+// v39: タイトルに戻る(進行はセーブしてからリロード→タイトルの「つづきから」で再開できる)
+function backToTitle(){
+  showConfirm('🏠 タイトルに戻る','いまの進行をセーブしてタイトル画面に戻るよ(「つづきから」で再開できる)。戻る？',()=>{
+    try{saveGame(false);}catch(e){}
+    location.reload();
+  },'🏠 タイトルへ','やめる');
+}
 function saveGame(showToast){
   if(isGameOver)return; // v15: 倒産後は保存しない
   try{
