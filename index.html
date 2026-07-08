@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v35 掃除したフンが牛舎に溜まる→月1回「処理」ボタンで片付ける(満杯だと掃除不可)</title>
+<title>丹波農商 牧場物語 v36 フンの処理に1頭500円/月のコスト(旧・週末の自動処分費は廃止)</title>
 <link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -477,7 +477,7 @@ const CHARS={
     line:'米の作業は田植え(4月)・水管理(5〜9月)・収穫(10月)だけ。閑散期は別の仕事をしよう🌾',
     line2:'僕を雇って「米」か「牧草」を指示すれば全部自動！季節で指示を変えるのがコツだよ(事務所で雇用・月給30万円)'},
   naoto:{name:'なおとさん',role:'加工・堆肥のお兄さん',skin:'#eac199',cheek:'#e89a7a',hair:'#241a12',glasses:true,ponytail:true,shirt:'#2f5fa8',pants:'#22262a',shoe:'#333',spot:'compost',
-    line:'牛糞は処分費が月1万円/頭もかかる…🏭堆肥舎を建てれば肥料にして売れるよ！',
+    line:'牛糞は🧹掃除して牛舎に溜めて、月1回「処理」する(1頭500円)。🏭堆肥舎を建てれば肥料にして売れるよ！',
     line2:'僕を雇って「堆肥」を指示すれば、ふん回収も肥料の出荷も自動だよ(事務所で雇用・月給30万円)'},
 };
 // ---------- v19: 街の登場人物(Meshy新住人6役+住民)。model=char_min/m{model}_walk.glb ----------
@@ -642,6 +642,7 @@ const ECON={
   CARE_DIRT_ADD:8,       // 掃除を忘れた日の汚れ増加
   CARE_DIRT_CLEAN:25,    // 掃除1回で減る汚れ
   BARN_DUNG_CAP:24,      // v35: 牛舎内に溜められるフンの上限(満杯だと掃除できない→月1回処理)
+  DUNG_PROC_FEE:500,     // v36: 糞の処理コスト(1頭・処理1回=毎月相当)
   CARE_DIRT_BAD:60,      // この汚れ以上で毎日健康-3
   WATER_MISS_PENALTY:0.05, // 水管理を1ヶ月サボるごとの収量減(最大25%)
   // ---- v19: 街・補助金・機械の故障・獣医の前提値 / v20: 実売価格に改定 ----
@@ -2125,7 +2126,7 @@ function buildDecor(){
     b:()=>'米は年1サイクル: 4月に田植え(苗代'+man(riceSeedCost())+')→5〜9月は月1回🚿水管理→10月に収穫→毎月🍚精米出荷。<br>いまの状態: '+riceFieldLabel()+'<br>棚田に近づいて「使う」でも操作できるよ。',
     btns:()=>[[riceFieldLabel(),()=>riceFieldAction()]]});
   addSign(36.5,29.4,'🟫',{t:'🟫 堆肥場',
-    b:()=>'🏭本格堆肥舎('+man(ECON.SHED_COST)+'・🏛補助で半額)を建てると、牛糞の処分費(月1万円/頭)がゼロになり、牛糞→肥料(頭数×'+ECON.FERT_PER_COW+'袋/月・1袋'+fmt(ECON.FERT_PRICE)+')を製造販売できるよ。<br>いま: '+(state.compostShed?'🏭本格堆肥舎が稼働中(肥料在庫'+state.fertStock+'袋)':'未整備(牛がいると処分費 月1万円/頭)'), // v30: 糞置き場を廃止
+    b:()=>'🏭本格堆肥舎('+man(ECON.SHED_COST)+'・🏛補助で半額)を建てると、牛糞→肥料(頭数×'+ECON.FERT_PER_COW+'袋/月・1袋'+fmt(ECON.FERT_PRICE)+')を製造販売できるよ。<br>牛糞は🧹掃除して牛舎に溜め、月1回「🟤溜まった糞を処理する」(1頭'+ECON.DUNG_PROC_FEE+'円)で片付く。<br>いま: '+(state.compostShed?'🏭本格堆肥舎が稼働中(肥料在庫'+state.fertStock+'袋)':'未整備(牛糞は処理で1頭'+ECON.DUNG_PROC_FEE+'円)'), // v36
     btns:()=>{const a=[];
       if(!state.compostShed)a.push(['🏭 本格堆肥舎を建てる('+man(shedPriceNow())+')',()=>buildShed()]);
       else a.push(['🟫 肥料を出荷する('+state.fertStock+'袋)',()=>sellFert(false)]);
@@ -2932,8 +2933,10 @@ function doClean(who){
 function processBarnDung(){
   if((state.barnDung||0)<=0){toast('🟤 溜まった糞はまだないよ(🧹牛舎を掃除するとここに溜まる)');return;}
   const n=state.barnDung;
-  if(state.compostShed){const bags=Math.max(1,Math.ceil(n/3));state.fertStock+=bags;toast('🟤 溜まった糞'+n+'個を🏭本格堆肥舎で処理！肥料'+bags+'袋に(在庫'+state.fertStock+'袋・🟫堆肥場で出荷)');}
-  else{addRes('manure',n);toast('🟤 溜まった糞'+n+'個を処理した！堆肥の原料に(🏭本格堆肥舎を建てると肥料として売れる)');}
+  const fee=ECON.DUNG_PROC_FEE*herdCount(); // v36: 処理コスト=1頭500円(毎月相当)
+  if(fee>0)addExpense(fee,'manure','cow');
+  addRes('manure',n);
+  toast('🟤 溜まった糞'+n+'個を処理した！処理費−'+man(fee)+'(牛'+herdCount()+'頭×500円)。堆肥の原料に'+(state.compostShed?'(🏭本格堆肥舎が毎月これを肥料にして売ってくれる)':'(🏭本格堆肥舎を建てると肥料として売れる)'));
   state.barnDung=0;updateBarnDungMesh();
   fanfare();sfx(300,.08,'sine',.05);
   updateHUD();if(document.getElementById('menu').style.display==='flex')renderMenu();
@@ -3869,17 +3872,11 @@ function weekEnd(notes){
   addExpense(ECON.OWNER_SALARY/4,'owner');
   for(const k in state.staff)if(state.staff[k])addExpense(ECON.EMP_SALARY/4,'emp',state.staffJobs[k]||'common');
   if(state.barnRented)addExpense(ECON.BARN_RENT/4,'rent');
-  // 4) 牛糞処分(4週ごとに月額費用を徴収)
-  if(herd>0&&state.weekN%4===3){
-    if(state.compostShed){ // v20: 本格堆肥舎=肥料の製造販売
-      const nfert=herd*ECON.FERT_PER_COW;
-      state.fertStock+=nfert;
-      notes.push('🏭 本格堆肥舎で肥料'+nfert+'袋ができた(在庫'+state.fertStock+'袋・1袋'+fmt(ECON.FERT_PRICE)+'で出荷できる)');
-    }else{ // v30: 糞置き場を廃止。処分費は🏭本格堆肥舎で解消
-      const fee=herd*ECON.MANURE_FEE;
-      addExpense(fee,'manure');
-      notes.push('🚛 牛糞の処分費 −'+fmt(fee)+'(牛'+herd+'頭×1万円。🏭本格堆肥舎を建てると処分費ゼロ＋肥料が売れる)');
-    }
+  // 4) 本格堆肥舎の肥料生産(4週ごと)。v36: 牛糞の処分費(週末自動)は廃止→掃除で集めた糞を「処理」する時に1頭500円
+  if(herd>0&&state.weekN%4===3&&state.compostShed){
+    const nfert=herd*ECON.FERT_PER_COW;
+    state.fertStock+=nfert;
+    notes.push('🏭 本格堆肥舎で肥料'+nfert+'袋ができた(在庫'+state.fertStock+'袋・1袋'+fmt(ECON.FERT_PRICE)+'で出荷できる)');
   }
   // 5) 牛の週次進行(妊娠/出産/週齢。健康40未満は妊娠が進まない)
   progressCows(notes);
@@ -4274,7 +4271,7 @@ function ledgerStatusHTML(){
   '<tr><td>従業員給与('+sc+'人×週'+man(ECON.EMP_SALARY/4)+')</td><td class="amt">'+fmt(sc*ECON.EMP_SALARY/4)+'</td></tr>'+
   '<tr><td>牛舎家賃'+(state.barnRented?'(週あたり)':(state.newBarns>0?'(新築牛舎は家賃なし)':'(未賃借)'))+'</td><td class="amt">'+fmt(state.barnRented?ECON.BARN_RENT/4:0)+'</td></tr>'+
   '<tr><td>餌代(牛'+herd+'頭・週あたり)</td><td class="amt">'+(herd>0?'約'+fmt(Math.min(state.grassStock,herd)*ECON.FEED_GRASS/4+Math.max(0,herd-state.grassStock)*feedShortUnit()):'￥0')+'</td></tr>'+
-  (herd>0?'<tr><td>牛糞の処分費'+(state.compostShed?'(🏭本格堆肥舎で収益化✨)':'(4週ごとに月額。🏭本格堆肥舎でゼロに)')+'</td><td class="amt">'+fmt(state.compostShed?0:herd*ECON.MANURE_FEE/4)+'</td></tr>':'')+
+  (herd>0?'<tr><td>牛糞の処理費(掃除→月1回処理・1頭'+ECON.DUNG_PROC_FEE+'円'+(state.compostShed?'・🏭堆肥舎で肥料化✨':'')+')</td><td class="amt">'+fmt(herd*ECON.DUNG_PROC_FEE)+'</td></tr>':'')+
   '</table>'+
   '<p class="sub2" style="font-size:11.5px;color:#8a6a45">🌿 牧草: '+(state.grassSown?('作付け済み(収穫は🌸5月1週目/🍂9月3週目・1回'+grassCutYield()+'束・'+(isGrassHarvestWeek()?('今週は収穫週！'+(state.grassCutWeek===state.weekN?'収穫済✅':'まだ⬜')):'次は'+nextGrassHarvestLabel())+')'):(state.land.pasture1?'未作付け(牧草地で'+man(grassSowCost())+')':'牧草地なし(🏠不動産屋で購入)'))+' / 牛の消費 週'+grassNeed+'束 / 米: '+(state.riceField==='none'?'未作付け(4月1週目に苗代'+man(riceSeedCost())+')':state.riceField==='planted'?('生育中(10月3週目に'+riceBagsYield()+'袋。水管理'+(isWaterSeason()?(isWaterWeek()&&state.waterWeek!==state.weekN?'今週まだ⬜':'済✅'):'は夏のみ')+')'):'収穫待ち！')+(herdCount()>0?' / 🐂健康'+state.care.health+'・汚れ'+state.care.dirt:'')+'</p>';
 }
@@ -4297,8 +4294,7 @@ function whHTML(){
     h+='<div class="row"><div class="em">🟫</div><div class="info"><b>肥料在庫: '+state.fertStock+'袋</b><small>本格堆肥舎で毎月 頭数×'+ECON.FERT_PER_COW+'袋生産。1袋'+fmt(ECON.FERT_PRICE)+'×'+state.fertStock+'='+fmt(state.fertStock*ECON.FERT_PRICE)+'</small></div>'+
     '<button class="buy" '+(state.fertStock>0?'':'disabled')+' onclick="sellFert(false);renderMenu()">出荷する</button></div>';
   }else if(herdCount()>0){
-    if(state.dungYard)h+='<div class="row"><div class="em">🟤</div><div class="info"><b>牛糞は糞置き場で処理中(処分費ゼロ)</b><small>糞置き場は処理だけで肥料は作れない。🏭本格堆肥舎('+man(ECON.SHED_COST)+'・補助で半額)で肥料事業に(🟫堆肥場で建設)</small></div></div>';
-    else h+='<div class="row"><div class="em">🚛</div><div class="info"><b>牛糞の処分費: 月'+fmt(herdCount()*ECON.MANURE_FEE)+'</b><small>🟤糞置き場('+man(ECON.DUNG_COST)+')で処分費ゼロ。🏭本格堆肥舎('+man(ECON.SHED_COST)+'・補助で半額)なら肥料が売れる(🟫堆肥場で建設)</small></div></div>';
+    h+='<div class="row"><div class="em">🟤</div><div class="info"><b>牛糞: 溜まり'+(state.barnDung||0)+'/'+ECON.BARN_DUNG_CAP+'(処理費 1頭'+ECON.DUNG_PROC_FEE+'円='+fmt(herdCount()*ECON.DUNG_PROC_FEE)+')</b><small>🧹掃除で牛舎に溜め、月1回「🟤溜まった糞を処理する」で片付ける(満杯だと掃除不可)。🏭本格堆肥舎('+man(ECON.SHED_COST)+'・補助で半額)なら肥料が売れる(🟫堆肥場で建設)</small></div></div>';
   }
   let any=false;
   for(const k in PRICE){
