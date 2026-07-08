@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v42 復旧: 使う釦を戻す・古いセーブの牛舎を作り直し餌やり復活・水管理は夏いつでも・肥料は田植え時に</title>
+<title>丹波農商 牧場物語 v43: 餌やり掃除を楽に(牛舎どこでもOK・全頭完了表示)・状態を左へ移動・にんじん/ねぎ(1ヶ月)追加・黒豆は6〜7月まき秋実り</title>
 <link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -78,7 +78,7 @@
   #weekBtn:active{transform:translateY(2px);box-shadow:0 1px 0 #1f3f8a;}
   #week4Btn{background:#7a5fd8;border-color:#4a3a8a;box-shadow:0 4px 0 #4a3a8a;font-size:12px;padding:6px 11px;}
   #week4Btn:active{transform:translateY(2px);box-shadow:0 1px 0 #4a3a8a;}
-  #careChip{position:fixed;top:calc(128px + env(safe-area-inset-top));right:8px;z-index:12;padding:5px 10px;font-size:12px;font-weight:bold;color:#5a3714;display:none;background:rgba(255,253,245,.92);border:2px solid #c9a86f;border-radius:10px;pointer-events:none;}
+  #careChip{position:fixed;top:calc(80px + env(safe-area-inset-top));left:8px;z-index:12;padding:5px 10px;font-size:12px;font-weight:bold;color:#5a3714;display:none;background:rgba(255,253,245,.94);border:2px solid #c9a86f;border-radius:10px;pointer-events:none;max-width:70vw;} /* v43: 右のボタン群と被るので左(クエストの下)へ */
   /* v24: 牛の🚶散歩(放し飼い)⇄🏠戻す(繋留)トグルボタン */
   #mapBtn{position:fixed;top:calc(90px + env(safe-area-inset-top));right:8px;z-index:13;background:#7a5fd8;border-color:#4a3a8a;box-shadow:0 4px 0 #4a3a8a;font-size:13px;}
   #mapBtn:active{transform:translateY(2px);box-shadow:0 1px 0 #4a3a8a;}
@@ -563,14 +563,14 @@ const BI={
 const RES={
  grass:{n:'牧草',em:'🌿'},hay:{n:'干し草',em:'🟨'},
  rice:{n:'お米(もみ)',em:'🌾'},polishedrice:{n:'白米',em:'🍚'},bean:{n:'黒豆',em:'🫘'},
- veg:{n:'野菜',em:'🥬'},chestnut:{n:'栗',em:'🌰'},chestnutproc:{n:'栗スイーツ',em:'🍡'},
+ veg:{n:'にんじん',em:'🥕'},negi:{n:'ねぎ',em:'🌱'},chestnut:{n:'栗',em:'🌰'},chestnutproc:{n:'栗スイーツ',em:'🍡'},
  foodproc:{n:'加工食品',em:'🍱'},compost:{n:'堆肥',em:'🟫'},manure:{n:'牛のふん',em:'🟤'},
  milk:{n:'牛乳',em:'🥛'},
- rice_seed:{n:'稲の苗',em:'🌱'},bean_seed:{n:'黒豆の種',em:'🫛'},veg_seed:{n:'野菜の種',em:'🥕'},
+ rice_seed:{n:'稲の苗',em:'🌱'},bean_seed:{n:'黒豆の種',em:'🫛'},veg_seed:{n:'にんじんの種',em:'🥕'},negi_seed:{n:'ねぎの種',em:'🌱'},
 };
 // v14: 少額の農産物単価(円)。主力経済(米/牛/牧草)はECONで管理
-const PRICE={veg:4000,bean:8000,chestnut:3000,compost:2000,manure:500};
-const SEED_PRICE={veg_seed:2000,bean_seed:3000};
+const PRICE={veg:4000,negi:2500,bean:8000,chestnut:3000,compost:2000,manure:500};
+const SEED_PRICE={veg_seed:2000,negi_seed:1500,bean_seed:3000};
 // v14: 経営シミュの前提値(すべて円)。骨子は仕様どおり厳密。
 const ECON={
   OWNER_SALARY:300000,   // 自分(オーナー)の給与/生活費(月)
@@ -682,7 +682,7 @@ let state=null;
 function freshState(){return{
   v:25,money:10000000,day:1,time:0.28,
   year:1,week:14,weekN:0,absWeek:0, // v25: 1年目4月1週目(4月相当)開始。weekN=通算週数
-  res:{veg:0,bean:0,chestnut:0,compost:0,manure:0,veg_seed:0,bean_seed:0},
+  res:{veg:0,negi:0,bean:0,chestnut:0,compost:0,manure:0,veg_seed:0,negi_seed:0,bean_seed:0},
   barnRented:false,
   staff:{atsushi:false,yusuke:false,naoto:false},
   staffJobs:{atsushi:null,yusuke:null,naoto:null}, // v16: 指示した担当(rice/grass/cow/compost)
@@ -1586,8 +1586,12 @@ function regrowChestnuts(){
 // v14: 作物は「⏭ 次の月へ」で成長する(months=成熟までの月数)
 const CROPMETA={
   rice:{n:'稲',stages:[0x8fce6a,0xa9d465,0xe0c94e],months:6,yield:'rice',num:1,em:'🌾'},
-  bean:{n:'黒豆',stages:[0x7ec46a,0x4f8f3a,0x2f6b24],months:4,yield:'bean',num:2,em:'🫘'},
-  veg:{n:'野菜',stages:[0x9ed46a,0x6fbf4a,0x4faf3f],months:2,yield:'veg',num:2,em:'🥬'},
+  // v43: 黒豆は丹波名物=6〜7月に種まき、秋(10〜11月)にしか実らない季節作物
+  bean:{n:'黒豆',stages:[0x7ec46a,0x4f8f3a,0x2f6b24],months:4,yield:'bean',num:2,em:'🫘',plantMonths:[6,7]},
+  // v43: 「野菜」が何か不明→にんじん(オレンジ)に明確化。2ヶ月
+  veg:{n:'にんじん',stages:[0x8fbf5a,0x6fae3a,0xe08a2a],months:2,yield:'veg',num:2,em:'🥕'},
+  // v43: ねぎ=早く育つ(1ヶ月)。明るい緑
+  negi:{n:'ねぎ',stages:[0xa6e07a,0x7fd455,0x53c437],months:1,yield:'negi',num:2,em:'🌱'},
 };
 function cropStage(c){const m=CROPMETA[c.type];if(c.mon>=m.months)return 2;return c.mon>=Math.ceil(m.months/2)?1:0;}
 function cropMature(c){return c.mon>=CROPMETA[c.type].months;}
@@ -2121,7 +2125,7 @@ function buildShipBox(){
   g.position.set(SHIP_POS.x,y-1+0.02,SHIP_POS.z);decoGroup.add(g);
   addDecoCollider(SHIP_POS.x,SHIP_POS.z,0.8,y);
   const ic=iconSprite('📦',1.6);ic.position.set(SHIP_POS.x,y+1.8,SHIP_POS.z);decoGroup.add(ic);
-  addInfoIcon(ic,{t:'📦 出荷箱・購買',b:'収穫した野菜・黒豆・栗や堆肥をまとめて売れるよ(🍱加工機が稼働中なら売値1.5倍)。🥕野菜や🫛黒豆の種もここで買える(南の🥬野菜畑にまこう)。',btns:[['📦 売る・種を買う(倉庫メニュー)',()=>{menuTab='wh';openMenu();}]]});
+  addInfoIcon(ic,{t:'📦 出荷箱・購買',b:'収穫したにんじん・ねぎ・黒豆・栗や堆肥をまとめて売れるよ(🍱加工機が稼働中なら売値1.5倍)。🥕にんじん(2ヶ月)・🌱ねぎ(1ヶ月で早い)・🫛黒豆(6〜7月まき→秋)の種もここで買える(南の畑にまこう)。',btns:[['📦 売る・種を買う(倉庫メニュー)',()=>{menuTab='wh';openMenu();}]]});
 }
 // v10: 牧草地の草むら（タップで ぼくそう ゲット、翌日はえる）
 const TUFT_SPOTS=[[37.5,10.5],[40.5,12.5],[43.5,10.5],[46.5,13.5],[38.5,16.5],[42.5,18.5],[46.5,17.5],[44.5,15.5],[39.5,19.5],[47.5,11.5]];
@@ -2849,6 +2853,7 @@ function actPlot(pl){
   // 畑：もっている種から選ぶ
   const opts=[];
   if((state.res.veg_seed||0)>0)opts.push('veg');
+  if((state.res.negi_seed||0)>0)opts.push('negi');
   if((state.res.bean_seed||0)>0)opts.push('bean');
   const canComp=(state.res.compost||0)>0&&getB(pl.x,pl.y-1,pl.z)===B.TILLED;
   if(!opts.length&&!canComp){toast('🥕 種がないよ（🛒お店で買おう）');return;}
@@ -2856,8 +2861,11 @@ function actPlot(pl){
   openSeedPick(pl,opts,canComp);
 }
 function plantSeed(pl,type){
-  const seedKey=type==='veg'?'veg_seed':'bean_seed';
+  const seedKey=type+'_seed'; // v43: veg_seed/negi_seed/bean_seed
   if((state.res[seedKey]||0)<=0)return;
+  // v43: 黒豆は季節作物=6〜7月にしか種まきできない(秋に実る)
+  const pm=CROPMETA[type].plantMonths;
+  if(pm){const mo=weekToMD(state.weekN).month; if(!pm.includes(mo)){toast('🫘 黒豆は'+pm.join('〜')+'月にしか種まきできないよ(秋に実る丹波名物)。いまは'+mo+'月');return;}}
   if(plantCrop(pl.x,pl.y,pl.z,type)){
     state.res[seedKey]--;
     toast(CROPMETA[type].em+' '+CROPMETA[type].n+'の種をまいた！');
@@ -2978,7 +2986,7 @@ function doFeed(who){
   const what=parts.join('＋');
   const nurse=state.calves.filter(c=>isNursing(c)).length;
   if(!who){
-    toast('🌾 餌箱に牧草を入れて全頭に餌やり！('+what+')。よく食べた牛は太って高く売れるよ');
+    toast('✅ 全'+n+'頭に餌やり完了！('+what+')。よく食べた牛は太って高く売れるよ〔左上の🐂餌✅で確認〕');
     if(nurse>0)toast('🍼 授乳中の仔牛'+nurse+'頭に、母牛のミルクを飲ませた(生後'+ECON.NURSE_WEEKS+'週まで毎週)');
     sfx(520,.07,'sine',.05);
     if(cowMeshes.length)heartBurst(cowMeshes[0].position.x,cowMeshes[0].position.y,cowMeshes[0].position.z);
@@ -3173,11 +3181,12 @@ function nearestAction(wx,wz){
   // v34: 餌やりは物理工程=🌾牧草の山(東x29)から「かかえて」→餌箱(x17)に「入れる」と全頭に給餌(世話ボタン廃止)
   if(herdCount()>0){
     if(state.care.fedWeek!==state.weekN){
-      if(!state.carryHay)cand(23,10.5,2.8,'🌾 牧草の山から牧草をかかえる',()=>{if(!removeHayPileBlock()){toast('🌾 牧草の山が空っぽ！次の週になると補充されるよ(🌿牧草地を持っていると豊富)');return;}state.carryHay=true;toast('🌾 牧草を一束かかえた(山から1ブロック減った)！西の🐄牛の前の餌箱まで運んで「入れる」');sfx(500,.06,'sine',.05);updateActHint&&updateActHint();});
-      else cand(17.5,16.5,3.2,'🌾 餌箱に牧草を入れる(みんなの餌)',()=>{doFeed(null);state.carryHay=false;});
+      // v43: 半径を大きく=牛舎のどこからでも届く。かかえる→餌箱に入れると全頭に給餌(1箇所でOK)
+      if(!state.carryHay)cand(23,10.5,6.5,'🌾 牧草をかかえる',()=>{if(!removeHayPileBlock()){toast('🌾 牧草の山が空っぽ！次の週になると補充されるよ(🌿牧草地を持っていると豊富)');return;}state.carryHay=true;toast('🌾 牧草を一束かかえた！🐄牛の前の餌箱まで運んで「入れる」と全頭に餌やり');sfx(500,.06,'sine',.05);updateActHint&&updateActHint();});
+      else cand(18,15,7.5,'🌾 餌箱に入れる(全'+herdCount()+'頭に餌やり)',()=>{doFeed(null);state.carryHay=false;});
     }
-    if(state.care.cleanWeek!==state.weekN)cand(15,16.5,3.4,'🧹 牛舎を掃除する'+(state.cowFree?'(放し飼い中=念入り)':'(牛の後ろの掃除アイスル)'),()=>doClean(null)); // 掃除アイスル(x15)
-    if((state.barnDung||0)>0)cand(28,9,3.4,'🟤 溜まった糞を処理する('+state.barnDung+'/'+ECON.BARN_DUNG_CAP+')',()=>processBarnDung()); // v41: 牛舎の右上(北東)の糞の山で処理
+    if(state.care.cleanWeek!==state.weekN)cand(16,15,8,'🧹 フンを撤去する(掃除)',()=>doClean(null)); // v43: 半径を大きく=牛舎内どこでも掃除OK
+    if((state.barnDung||0)>0)cand(28,9,6,'🟤 溜まった糞を処理する('+state.barnDung+'/'+ECON.BARN_DUNG_CAP+')',()=>processBarnDung()); // v41: 牛舎の右上(北東)の糞の山で処理
   }
   if(state.land.pasture1)cand(37,14.5,2.3,state.grassSown?(isGrassHarvestWeek()&&state.grassCutWeek!==state.weekN?'✂ 牧草を収穫する(春秋の年2回)':'🌿 牧草の状況'):'🌿 牧草を育てる('+man(grassSowCost())+')',()=>{ // v25: 週ベース
     if(!state.grassSown){sowGrass();return;}
@@ -3744,7 +3753,7 @@ function staffMonthlyJobs(notes){
     if((state.res.manure||0)>0){const n=state.res.manure;state.res.manure=0;state.res.compost+=n;notes.push('🟫 '+nm+': 堆肥を'+n+'個作った');}
     if(state.compostShed){const n=sellFert(true);if(n>0)notes.push('🟫 '+nm+': 肥料'+n+'袋を出荷('+fmt(n*ECON.FERT_PRICE)+')');}
     let g=0;
-    for(const kk of['veg','bean','chestnut','compost']){const n=state.res[kk]||0;if(n>0){g+=n*PRICE[kk];state.res[kk]=0;}}
+    for(const kk of['veg','negi','bean','chestnut','compost']){const n=state.res[kk]||0;if(n>0){g+=n*PRICE[kk];state.res[kk]=0;}}
     if(g>0){const gp=Math.round(g*procMult());addSale(gp,'proc');notes.push('🟫 '+nm+': 農産物を'+fmt(gp)+'で売却'+(procMult()>1?'(🍱加工機で1.5倍)':''));} // v19: 加工機
   }
 }
@@ -4391,8 +4400,9 @@ function whHTML(){
   }
   if(!any)h+='<p style="color:#8a6a45">農産物はまだないよ(野菜畑・栗園で育てよう)。</p>';
   h+='<p style="margin-top:8px"><b>🛒 種を買う</b>(南の畑用)</p>';
-  h+='<div class="row"><div class="em">🥕</div><div class="info"><b>野菜の種×3</b><small>2ヶ月で育つ</small></div><button class="buy" '+(state.money>=SEED_PRICE.veg_seed*3?'':'disabled')+' onclick="buySeed(\'veg_seed\')">'+fmt(SEED_PRICE.veg_seed*3)+'</button></div>';
-  h+='<div class="row"><div class="em">🫛</div><div class="info"><b>黒豆の種×3</b><small>丹波名物。4ヶ月で育つ</small></div><button class="buy" '+(state.money>=SEED_PRICE.bean_seed*3?'':'disabled')+' onclick="buySeed(\'bean_seed\')">'+fmt(SEED_PRICE.bean_seed*3)+'</button></div>';
+  h+='<div class="row"><div class="em">🥕</div><div class="info"><b>にんじんの種×3</b><small>2ヶ月で育つ。いつでも種まきOK</small></div><button class="buy" '+(state.money>=SEED_PRICE.veg_seed*3?'':'disabled')+' onclick="buySeed(\'veg_seed\')">'+fmt(SEED_PRICE.veg_seed*3)+'</button></div>';
+  h+='<div class="row"><div class="em">🌱</div><div class="info"><b>ねぎの種×3</b><small>たった1ヶ月で育つ早生。いつでもOK</small></div><button class="buy" '+(state.money>=SEED_PRICE.negi_seed*3?'':'disabled')+' onclick="buySeed(\'negi_seed\')">'+fmt(SEED_PRICE.negi_seed*3)+'</button></div>';
+  h+='<div class="row"><div class="em">🫛</div><div class="info"><b>黒豆の種×3</b><small>丹波名物。6〜7月に種まき→秋に実る(4ヶ月)</small></div><button class="buy" '+(state.money>=SEED_PRICE.bean_seed*3?'':'disabled')+' onclick="buySeed(\'bean_seed\')">'+fmt(SEED_PRICE.bean_seed*3)+'</button></div>';
   return h;
 }
 // 牛舎: 牛の一覧・種付け
