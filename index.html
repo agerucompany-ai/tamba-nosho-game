@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v37 堆肥舎があれば糞処理費ゼロ・牧草は自給できれば餌代ゼロ(市販は買う)</title>
+<title>丹波農商 牧場物語 v38 餌代=牧草15千(自給無料)＋配合5千=月2万/頭・種付け代1回1万</title>
 <link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -576,10 +576,11 @@ const ECON={
   OWNER_SALARY:300000,   // 自分(オーナー)の給与/生活費(月)
   EMP_SALARY:300000,     // 従業員の月給(1人)
   BARN_RENT:30000,       // 古い牛舎の家賃(月)
-  FEED_MARKET:35000,     // 市販飼料の餌代(1頭・月)
-  FEED_GRASS:10000,      // 牧草自給できた牛の餌代(1頭・月)
-  FEED_MID:20000,        // v23: 牧草切れ直後の不足分の餌代(1頭・月)。残り干し草+放牧で当座しのぐ
-  FEED_GRACE_MONTHS:2,   // v23: 当座しのぎ(2万/頭)で済む月数。3ヶ月目から市販3.5万に
+  FEED_MARKET:15000,     // v38: 市販の牧草(粗飼料)の餌代(1頭・月)。自給できれば無料
+  FEED_CONCENTRATE:5000, // v38: 配合飼料(濃厚飼料)の餌代(1頭・月)。常時かかる。牧草15千+配合5千=月2万/頭
+  FEED_GRASS:10000,      // (旧)牧草自給できた牛の餌代。v37以降 自給は無料
+  FEED_MID:20000,        // (旧)当座しのぎ
+  FEED_GRACE_MONTHS:2,   // (旧)
   RICE_SEED_COST:3000000,// 苗代(4月の作付け費)
   RICE_BAGS:300,         // 10月の一括収穫の袋数
   RICE_BAG_PRICE:30000,  // 米1袋の出荷価格
@@ -590,6 +591,7 @@ const ECON={
   CALF_REPAY:500000,     // 子牛売却時に母牛の借金へ充当する額
   MOTHER_PRICE:500000,   // 8産後の親牛のベース売却価格(状態で±)
   BREED_RATE:0.8,        // 種付け成功率
+  BREED_COST:10000,      // v38: 種付け代(人工授精)1回1万円
   PREG_WEEKS:40,         // 妊娠期間(週) ≈10ヶ月
   CALF_SHIP_WEEKS:32,    // 子牛の出荷可能週齢(≈8ヶ月)
   NURSE_WEEKS:4,         // 仔牛の授乳期間(週) ≈1ヶ月
@@ -912,7 +914,7 @@ const SEG_META={
 };
 const SALE_SEG={rice:'rice',calf:'cow',mother:'cow',grass:'grass',fert:'compost',proc:'other',grant:'common'}; // v28: grant=クエスト協力金(共通)
 const EXP_SEG={owner:'common',emp:'common',rent:'cow',feed:'cow',manure:'cow',seed:'rice',grassSow:'grass',shed:'compost',land:'common',other:'common',
-  machine:'rice',barn:'cow',repair:'rice',vet:'cow',loss:'cow',dung:'cow'}; // v19: 機械/牛舎/修理/獣医/死亡損失 v20: 糞置き場
+  machine:'rice',barn:'cow',repair:'rice',vet:'cow',loss:'cow',dung:'cow',breed:'cow'}; // v19: 機械/牛舎/修理/獣医/死亡損失 v20: 糞置き場 v38: 種付け代
 function freshSeg(){const o={};for(const k in SEG_META)o[k]={s:0,e:0,sd:{},ed:{}};return o;}
 function freshFy(){return{sales:0,exp:0,
   sd:{rice:0,calf:0,mother:0,grass:0,proc:0,fert:0,grant:0},
@@ -2896,9 +2898,9 @@ function doFeed(who){
   state.care.fedWeek=state.weekN;
   const n=herdCount();
   const parts=[];
-  if(state.grassSown&&state.grassStock>0)parts.push('🌿牧草'+Math.min(state.grassStock,n)+'束');
-  if((state.formulaFeed||0)>0)parts.push('🌾配合飼料(在庫'+state.formulaFeed+'週分)');
-  if(!parts.length)parts.push('🛒市販飼料(🌿牧草地の購入や🌾配合飼料の備蓄で餌代が安くなる)');
+  if(state.grassSown&&state.grassStock>0)parts.push('🌿自給の牧草'+Math.min(state.grassStock,n)+'束(牧草代タダ)');
+  else parts.push('🛒市販の牧草(15千/頭)');
+  parts.push('🌾配合飼料(5千/頭)');
   const what=parts.join('＋');
   const nurse=state.calves.filter(c=>isNursing(c)).length;
   if(!who){
@@ -3262,11 +3264,12 @@ function breedCow(id){
   if(state.calves.length>=calfCapNow()){toast('🐮 子牛の枠が満員('+calfCapNow()+'頭)で種付けできないよ。子牛を出荷するか⛰新築牛舎で増築しよう');return;} // v20
   if(c.bredWeek===state.weekN){toast(c.name+'は今週種付け済み。⏭で翌週に再挑戦');return;}
   c.bredWeek=state.weekN;
+  addExpense(ECON.BREED_COST,'breed','cow'); // v38: 種付け代(人工授精)1回1万円
   if(Math.random()<ECON.BREED_RATE){
     c.preg=0;
-    toast('💉 '+c.name+'の種付けに成功！40週後に出産だよ');sfx(700,.1,'sine',.05);
+    toast('💉 '+c.name+'の種付けに成功！(種付け代−'+man(ECON.BREED_COST)+')40週後に出産だよ');sfx(700,.1,'sine',.05);
   }else{
-    toast('💉 '+c.name+'の種付けは失敗…(成功率80%)。来週また挑戦しよう');
+    toast('💉 '+c.name+'の種付けは失敗…(種付け代−'+man(ECON.BREED_COST)+'・成功率80%)。来週また挑戦しよう');
   }
   renderMenu();updateHUD();
 }
@@ -3599,8 +3602,9 @@ function staffMonthlyJobs(notes){
       if(!c.retired&&!c.sick&&c.preg<0&&c.bredWeek!==state.weekN){ // v19: 病気の牛は種付けしない
         if(state.calves.length>=calfCapNow()){notes.push('⚠ '+nm+': 子牛の枠が満員で種付けを見送り(⛰増築か出荷を)');break;} // v20: 収容枠
         c.bredWeek=state.weekN;
-        if(Math.random()<ECON.BREED_RATE){c.preg=0;notes.push('🐂 '+nm+': '+c.name+'の種付け成功');}
-        else notes.push('🐂 '+nm+': '+c.name+'の種付け失敗(来週再挑戦)');
+        addExpense(ECON.BREED_COST,'breed','cow'); // v38: 自動種付けも種付け代1万
+        if(Math.random()<ECON.BREED_RATE){c.preg=0;notes.push('🐂 '+nm+': '+c.name+'の種付け成功(種付け代−'+man(ECON.BREED_COST)+')');}
+        else notes.push('🐂 '+nm+': '+c.name+'の種付け失敗(種付け代−'+man(ECON.BREED_COST)+'・来週再挑戦)');
       }
     }
     for(let i=state.calves.length-1;i>=0;i--){
@@ -3850,29 +3854,17 @@ function weekEnd(notes){
   if(state.grassSown&&isGrassHarvestWeek()&&state.grassCutWeek!==state.weekN){
     notes.push('⚠ '+wkLabel(state.week)+'の牧草の✂収穫をしそびれた…('+grassCutYield()+'束を逃した。次は'+nextGrassHarvestLabel()+')');
   }
-  // 2) 餌の消費と週次餌代
+  // 2) 餌の消費と週次餌代。v38: 餌=牧草(粗飼料15千/頭・自給なら無料)＋配合飼料(濃厚飼料5千/頭・常時)=最大 月2万/頭
   const herd=herdCount();
-  const fed=Math.min(state.grassStock,herd*ECON.GRASS_EAT);
+  const fed=Math.min(state.grassStock,herd*ECON.GRASS_EAT); // 自給の牧草で賄えた頭
   state.grassStock-=fed;
   state.grassFedLast=fed;
-  const feedShort=herd-fed;
-  const shortUnit=feedShortUnit();
-  state.grassOutWeeks=(feedShort>0&&state.grassSown)?(state.grassOutWeeks||0)+1:0;
-  // v25: 配合飼料を在庫から使う(牧草不足分をまずfedFormulaで補填)
-  let formulaUsed=0;
-  if(feedShort>0&&state.formulaFeed>0){
-    formulaUsed=Math.min(feedShort,state.formulaFeed);
-    state.formulaFeed-=formulaUsed;
-  }
-  const stillShort=feedShort-formulaUsed;
-  // v37: 自給の牧草(fed)で賄えた頭は餌代ゼロ。足りない分だけ🌾配合飼料や🛒市販の牧草を「買う」コスト。
-  const feedCost=formulaUsed*ECON.FORMULA_FEED_PRICE + stillShort*shortUnit;
+  const roughShort=herd-fed; // 市販の牧草(粗飼料)を買う頭数
+  const concentrate=Math.round(herd*ECON.FEED_CONCENTRATE/4); // 配合飼料(全頭・常時)
+  const roughage=Math.round(roughShort*ECON.FEED_MARKET/4);   // 牧草(自給で賄えない分は市販)
+  const feedCost=concentrate+roughage;
   if(feedCost>0)addExpense(feedCost,'feed');
-  if(fed>0&&feedShort===0)notes.push('🌿 自給の牧草で全'+herd+'頭に給餌(餌代ゼロ✨)。在庫'+state.grassStock+'束');
-  if(feedShort>0)notes.push(formulaUsed>0?
-    '🍽 牧草不足'+feedShort+'頭分を🌾配合飼料'+formulaUsed+'週分で購入'+(stillShort>0?'(残'+stillShort+'頭分は🛒市販の牧草を購入)':''):
-    (state.grassSown?'🛒 牧草切れ！不足'+feedShort+'頭分の牧草を市販で購入(自給の牧草が育つ次の収穫='+nextGrassHarvestLabel()+'まで)':
-    '🛒 牧草地がまだ無い: 全'+herd+'頭分の牧草を市販で購入(週'+fmt(herd*ECON.FEED_MARKET/4)+')。🏠不動産屋で牧草地を買って自給すれば餌代ゼロに'));
+  if(herd>0)notes.push('🍽 餌代 −'+fmt(feedCost)+'／週(配合飼料5千/頭'+(roughShort>0?('＋市販の牧草15千×'+roughShort+'頭'):'')+(fed>0?('・自給の牧草で'+fed+'頭ぶんは牧草代タダ✨'):'')+'。合計 月2万/頭・自給で月5千/頭)');
   // 3) 固定費(4週ごとに月額給与を徴収: 週1/4ずつ)
   addExpense(ECON.OWNER_SALARY/4,'owner');
   for(const k in state.staff)if(state.staff[k])addExpense(ECON.EMP_SALARY/4,'emp',state.staffJobs[k]||'common');
@@ -3934,7 +3926,7 @@ function doFiscalClose(){
 }
 const SD_LABEL={rice:'米の出荷',calf:'子牛の売却',mother:'親牛の売却',grass:'牧草の売却',fert:'肥料の売却(堆肥舎)',proc:'加工品・農産物',grant:'協力金・補助'};
 const ED_LABEL={owner:'自分の給与(役員報酬)',emp:'従業員の給与',rent:'牛舎の家賃',feed:'牛の餌代',manure:'牛糞の処分費',seed:'苗代(米の作付け)',grassSow:'牧草の作付け',shed:'本格堆肥舎の建設',dung:'糞置き場の建設',land:'土地の購入',other:'その他(種代等)',
-  machine:'機械の購入(新品)',barn:'新築牛舎の建設',repair:'機械の修理代',vet:'獣医の往診・治療費',loss:'牛の死亡損失(与信精算)'}; // v19/v20
+  machine:'機械の購入(新品)',barn:'新築牛舎の建設',repair:'機械の修理代',vet:'獣医の往診・治療費',loss:'牛の死亡損失(与信精算)',breed:'種付け代(人工授精)'}; // v19/v20 v38
 function plRows(obj,labels){
   let h='';
   for(const k in labels){
@@ -4329,12 +4321,10 @@ function cowsHTML(){
   if(skN>0)h+='<p class="loss" style="font-weight:bold">🤒 病気の牛が'+skN+'頭！🚜街の農協で獣医を呼ぼう(放置すると悪化→最悪死亡)</p>';
   if(herdCount()>0){
     const fed=state.care.fedWeek===state.weekN,cl=state.care.cleanWeek===state.weekN;
-    // v25: 配合飼料在庫と購入UI
-    const formulaStock=state.formulaFeed||0;
+    // v38: 餌代の内訳(牧草15千+配合5千=月2万/頭。牧草は自給できれば無料)
     const herd=herdCount();
-    const canBuyFormula=state.money>=ECON.FORMULA_BULK_PRICE;
-    h+='<div class="row"><div class="em">🍽</div><div class="info"><b>配合飼料在庫: '+formulaStock+'週分</b><small>牧草が不足した時に補填(1週×1頭分で'+fmt(ECON.FORMULA_FEED_PRICE)+')。まとめ買いで10週分'+man(ECON.FORMULA_BULK_PRICE)+'。'+herd+'頭に充分なら'+Math.ceil(formulaStock/herd)+'週分</small></div>'+
-    '<button class="buy" '+(canBuyFormula?'':'disabled')+' onclick="buyFormulaFeed();renderMenu()">10週分買う('+man(ECON.FORMULA_BULK_PRICE)+')</button></div>';
+    const selfOk=state.grassSown&&state.grassStock>=herd*ECON.GRASS_EAT;
+    h+='<div class="row"><div class="em">🍽</div><div class="info"><b>餌代: '+(selfOk?'月'+fmt(ECON.FEED_CONCENTRATE)+'/頭(自給の牧草で牧草代タダ✨＋配合飼料5千)':'月'+fmt(ECON.FEED_MARKET+ECON.FEED_CONCENTRATE)+'/頭(市販の牧草15千＋配合飼料5千)')+'</b><small>餌=🌿牧草(粗飼料15千/頭・🏠不動産屋で牧草地を買い作付け→収穫すれば自給で無料)＋🌾配合飼料(濃厚飼料5千/頭・常時)。牧草在庫'+state.grassStock+'束</small></div></div>';
     h+='<div class="row"><div class="em">🍼</div><div class="info"><b>今週の世話: 餌'+(fed?'✅':'⬜')+' 掃除'+(cl?'✅':'⬜')+' / 健康'+state.care.health+' 汚れ'+state.care.dirt+'</b><small>週1回必要！よく食べた牛は肥育度が上がって高く売れる(+30%まで)。サボると痩せて安く(-40%まで)・健康40未満は妊娠が進まない。従業員に🐂牛の世話を指示すると自動</small></div>'+
     '<button class="buy" '+((fed&&cl)?'disabled':'')+' onclick="doCowCare(null);renderMenu()">世話する</button></div>';
     // v24: 繋留⇄散歩の切り替え(マップ右の🚶ボタンと同じ)
