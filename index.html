@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v34 牛舎: 牧草を運んで餌箱に入れる給餌工程・後ろに掃除アイスル・両端から中央の放し飼いスペースへ</title>
+<title>丹波農商 牧場物語 v35 掃除したフンが牛舎に溜まる→月1回「処理」ボタンで片付ける(満杯だと掃除不可)</title>
 <link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -641,6 +641,7 @@ const ECON={
   CARE_RECOVER:2,        // 世話できた日の健康回復
   CARE_DIRT_ADD:8,       // 掃除を忘れた日の汚れ増加
   CARE_DIRT_CLEAN:25,    // 掃除1回で減る汚れ
+  BARN_DUNG_CAP:24,      // v35: 牛舎内に溜められるフンの上限(満杯だと掃除できない→月1回処理)
   CARE_DIRT_BAD:60,      // この汚れ以上で毎日健康-3
   WATER_MISS_PENALTY:0.05, // 水管理を1ヶ月サボるごとの収量減(最大25%)
   // ---- v19: 街・補助金・機械の故障・獣医の前提値 / v20: 実売価格に改定 ----
@@ -704,6 +705,7 @@ function freshState(){return{
   cumSales:{farm:0,proc:0}, // 累計売上(加工以外=farm / 加工=proc)。認定農業者の判定に使用
   procWeek:-1, // 食品加工して売った週(週1回)
   carryHay:false, // v34: 牧草をかかえているか(餌やりの運搬工程)
+  barnDung:0, // v35: 掃除で集めたフンが牛舎内に溜まる量。月1回「処理」で消す。満杯だと掃除できない
   fy:freshFy(), // v17: 勘定別+事業セグメント別の期中帳簿
   lastResult:null,history:[],
   edits:{},crops:{},treeFruit:{},tuftDay:{},
@@ -1859,6 +1861,21 @@ function updateBarnSign(){
       :[['🏚 古い牛舎を借りる(月3万円)',()=>rentBarn()]]});
 }
 let tractorMesh=null,polisherMesh=null,processorMesh=null,compostShedMesh=null,dungYardMesh=null,planterMesh=null,combineMesh=null,riceSackGroup=null;
+let barnDungMesh=null; // v35: 牛舎内に溜まるフンの山(barnDungで大きさが変わる)
+// v35: 牛舎の南(掃除アイスルの端 x15,z24)に、溜まったフンの量に応じた山を表示
+function updateBarnDungMesh(){
+  if(barnDungMesh){decoGroup.remove(barnDungMesh);const i=infoIcons.findIndex(e=>e.sp===barnDungMesh.userData.icon);if(i>=0)infoIcons.splice(i,1);barnDungMesh=null;}
+  if(curMap!=='farm'||!hasBarn()||(state.barnDung||0)<=0)return;
+  const g=new THREE.Group();
+  const f=(state.barnDung||0)/ECON.BARN_DUNG_CAP; // 0..1
+  const r=0.5+f*0.9, h=0.3+f*0.9;
+  const pile=new THREE.Mesh(new THREE.ConeGeometry(r,h,8),new THREE.MeshLambertMaterial({color:0x5a4028}));
+  pile.position.set(15.5,2+h/2,24);pile.castShadow=true;g.add(pile);
+  const ic=iconSprite('🟤',1.3);ic.position.set(15.5,2+h+0.9,24);g.add(ic);
+  addInfoIcon(ic,{t:'🟤 牛舎の糞の山',b:()=>'掃除で集めたフンがここに溜まる('+state.barnDung+'/'+ECON.BARN_DUNG_CAP+')。満杯になると掃除できないので、月1回「溜まった糞を処理する」で片付けよう。'+(state.compostShed?'🏭本格堆肥舎で肥料になる。':'🏭本格堆肥舎を建てると肥料として売れる。'),btns:()=>[['🟤 溜まった糞を処理する',()=>processBarnDung()]]});
+  g.userData.icon=ic;
+  decoGroup.add(g);barnDungMesh=g;
+}
 // v22: 機械の設置座標(超巨大倉庫の農機庫x42-54/米貯蔵x55-63/加工場x64-69の中にさらに広々配置)
 // v30: 農機(トラクタ/田植え機/コンバイン)は倉庫の外・屋根なしの機械置き場(南側z37-40)へ。
 //      精米機は倉庫内。加工機/ポテサラ加工場は倉庫の一番手前(西の入口すぐ x44)へ。
@@ -2103,6 +2120,7 @@ function buildDecor(){
   scene.add(decoGroup);
   // v21: 看板はアイコンのみ(クリックで説明)。移転済み施設の案内看板は撤去(跡地は更地)
   updateBarnSign();
+  updateBarnDungMesh(); // v35: 溜まったフンの山
   addSign(13.5,36.2,'🌾',{t:'🌾 棚田(米づくり)',
     b:()=>'米は年1サイクル: 4月に田植え(苗代'+man(riceSeedCost())+')→5〜9月は月1回🚿水管理→10月に収穫→毎月🍚精米出荷。<br>いまの状態: '+riceFieldLabel()+'<br>棚田に近づいて「使う」でも操作できるよ。',
     btns:()=>[[riceFieldLabel(),()=>riceFieldAction()]]});
@@ -2892,19 +2910,33 @@ function doFeed(who){
   return true;
 }
 // v34: 掃除。牛の後ろの掃除アイスルからフンを片付け。放し飼い(散歩)中はより念入り=汚れゼロ。
+// v35: 集めたフンは牛舎内の「糞の山」に溜まる。満杯だと掃除できない→月1回「処理」で片付ける。
 function doClean(who){
   if(herdCount()===0){if(!who)toast('🐂 牛はまだいないよ');return false;}
+  if(state.barnDung>=ECON.BARN_DUNG_CAP){if(!who)toast('🟤 牛舎の糞の山が満杯('+state.barnDung+')！これ以上は掃除できないよ。南の糞の山で「🟤溜まった糞を処理する」(月1回)をしてから');return false;}
   if(state.care.cleanWeek===state.weekN){if(!who)toast('🧹 今週の掃除はもう済んでいるよ');return false;}
   state.care.cleanWeek=state.weekN;
   const thorough=!!state.cowFree; // 放し飼い中は牛が退いていて念入りに掃除できる
   state.care.dirt=thorough?0:Math.max(0,state.care.dirt-ECON.CARE_DIRT_CLEAN);
-  let removed=0;for(let i=manures.length-1;i>=0;i--){const m=manures[i];scene.remove(m);manures.splice(i,1);removed++;addRes('manure',1);}
+  let removed=0;for(let i=manures.length-1;i>=0;i--){const m=manures[i];scene.remove(m);manures.splice(i,1);removed++;}
+  state.barnDung=Math.min(ECON.BARN_DUNG_CAP,state.barnDung+removed); // v35: 集めたフンは牛舎内の糞の山へ
+  updateBarnDungMesh();
   if(!who){
-    toast(thorough?('🧹 放し飼い中に牛舎を念入り掃除！フン'+removed+'個を片付け・汚れゼロに(堆肥の原料に)'):('🧹 牛の後ろのアイスルからフン'+removed+'個を片付けた(堆肥の原料に。汚れ'+state.care.dirt+'。🚶散歩中だともっと綺麗にできる)'));
+    toast((thorough?'🧹 放し飼い中に念入り掃除！':'🧹 牛の後ろのアイスルを掃除！')+'フン'+removed+'個を牛舎の🟤糞の山へ(いま'+state.barnDung+'/'+ECON.BARN_DUNG_CAP+'・月1回「処理」で片付く。汚れ'+state.care.dirt+')');
     sfx(300,.06,'sine',.05);
   }
   updateCareChip();
   return true;
+}
+// v35: 溜まった糞を処理(月1回のイメージ)。堆肥舎があれば肥料に、なければ堆肥の原料に。
+function processBarnDung(){
+  if((state.barnDung||0)<=0){toast('🟤 溜まった糞はまだないよ(🧹牛舎を掃除するとここに溜まる)');return;}
+  const n=state.barnDung;
+  if(state.compostShed){const bags=Math.max(1,Math.ceil(n/3));state.fertStock+=bags;toast('🟤 溜まった糞'+n+'個を🏭本格堆肥舎で処理！肥料'+bags+'袋に(在庫'+state.fertStock+'袋・🟫堆肥場で出荷)');}
+  else{addRes('manure',n);toast('🟤 溜まった糞'+n+'個を処理した！堆肥の原料に(🏭本格堆肥舎を建てると肥料として売れる)');}
+  state.barnDung=0;updateBarnDungMesh();
+  fanfare();sfx(300,.08,'sine',.05);
+  updateHUD();if(document.getElementById('menu').style.display==='flex')renderMenu();
 }
 // 週末に世話をサボっていないか判定(advanceWeek内で呼ぶ)
 function evalCowCareWeek(notes){
@@ -3063,6 +3095,7 @@ function nearestAction(wx,wz){
       else cand(17.5,16.5,3.2,'🌾 餌箱に牧草を入れる(みんなの餌)',()=>{doFeed(null);state.carryHay=false;});
     }
     if(state.care.cleanWeek!==state.weekN)cand(15,16.5,3.4,'🧹 牛舎を掃除する'+(state.cowFree?'(放し飼い中=念入り)':'(牛の後ろの掃除アイスル)'),()=>doClean(null)); // 掃除アイスル(x15)
+    if((state.barnDung||0)>0)cand(15.5,24,3.2,'🟤 溜まった糞を処理する('+state.barnDung+'/'+ECON.BARN_DUNG_CAP+')',()=>processBarnDung()); // v35: 月1回、南の糞の山で処理
   }
   if(state.land.pasture1)cand(37,14.5,2.3,state.grassSown?(isGrassHarvestWeek()&&state.grassCutWeek!==state.weekN?'✂ 牧草を収穫する(春秋の年2回)':'🌿 牧草の状況'):'🌿 牧草を育てる('+man(grassSowCost())+')',()=>{ // v25: 週ベース
     if(!state.grassSown){sowGrass();return;}
@@ -4607,7 +4640,7 @@ function teardownMap(){
   for(const m of cowMeshes)scene.remove(m);cowMeshes.length=0;
   for(const m of manures)scene.remove(m);manures.length=0;
   chestnutTrees.length=0;
-  tractorMesh=null;polisherMesh=null;processorMesh=null;compostShedMesh=null;dungYardMesh=null;planterMesh=null;combineMesh=null;riceSackGroup=null;barnSign=null;machineBadges={};pastureVacantSign=null; // v20/v22
+  tractorMesh=null;polisherMesh=null;processorMesh=null;compostShedMesh=null;dungYardMesh=null;planterMesh=null;combineMesh=null;riceSackGroup=null;barnSign=null;machineBadges={};pastureVacantSign=null;barnDungMesh=null; // v20/v22 v35
   for(const n of npcs)scene.remove(n.mesh);
   cancelMoveTarget();pendingAct=null;
   dirtySet.clear();
