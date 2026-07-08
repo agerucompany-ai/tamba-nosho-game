@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v41 作物が毎月育つ・肥料工程・牛メニュー分離・使う釦廃止・水管理明確化・糞は右上へ・牧草ブロック給餌</title>
+<title>丹波農商 牧場物語 v42 復旧: 使う釦を戻す・古いセーブの牛舎を作り直し餌やり復活・水管理は夏いつでも・肥料は田植え時に</title>
 <link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -18,7 +18,7 @@
   #joy{position:fixed;width:118px;height:118px;border-radius:50%;background:rgba(255,253,245,.18);border:3px solid rgba(255,253,245,.5);z-index:11;display:none;pointer-events:none;transform:translate(-50%,-50%);}
   #joyKnob{position:absolute;left:50%;top:50%;width:50px;height:50px;border-radius:50%;background:rgba(255,253,245,.85);border:3px solid #8a5a2b;transform:translate(-50%,-50%);}
   .abtn{position:fixed;z-index:12;border-radius:50%;font-weight:bold;color:#fff;user-select:none;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.15;}
-  #useBtn{display:none !important;} /* v41: 使う/取るボタンは廃止(対象をタップすればそこへ歩いて実行する) */
+  #useBtn{right:18px;bottom:calc(74px + env(safe-area-inset-bottom));width:88px;height:88px;font-size:18px;background:#3a8a3a;border:5px solid #1f5a1f;box-shadow:0 6px 0 #1f5a1f;} /* v42: 復活(v41で消したら操作できなくなった) */
   .abtn:active{transform:translateY(3px);box-shadow:0 2px 0 rgba(0,0,0,.4);}
   #actHint{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom));z-index:12;padding:6px 14px;font-size:13px;font-weight:bold;color:#3a5a2a;background:rgba(255,253,245,.94);border:2px solid #7aa35a;border-radius:14px;pointer-events:none;display:none;max-width:76vw;text-align:center;}
   #menuBtn{position:fixed;top:calc(6px + env(safe-area-inset-top));right:8px;z-index:13;}
@@ -1672,25 +1672,30 @@ function doRicePlant(){
   state.riceField='planted';
   state.ricePlantWeekN=state.weekN; // v25: 街滞在中の見た目復元用
   state.ricePlanterBonus=!!(state.machines.planter.lvl&&!state.machines.planter.broken); // v20: 田植え機で+10%
-  state.riceMiss=0;state.waterWeek=-1;state.riceFert=false; // v25: 水管理カウンタ / v41: 肥料フラグをリセット
+  state.riceMiss=0;state.waterWeek=-1;state.riceFert=false; // v25: 水管理カウンタ / v41: 肥料フラグ
+  // v42: 元肥(基肥)を田植えと同時に散布。🏭堆肥舎があれば自給でタダ、なければ肥料代。収量+15%。
+  {const need=10;
+   if(state.compostShed&&state.fertStock>=need){state.fertStock-=need;state.riceFert=true;}
+   else if(state.money>=need*ECON.FERT_PRICE){addExpense(need*ECON.FERT_PRICE,'other','rice');state.riceFert=true;}}
   buildRiceVisual(0);
   fanfare();
-  toast('🌾 苗代'+man(cost)+'を払って田植えした！('+wkLabel(ECON.RICE_HARVEST_WEEK)+'に'+riceBagsYield()+'袋収穫見込み)');
-  toast('🌿 田植え後に🌾棚田をタップ→「肥料をやる」で収量+15%(🏭堆肥舎があれば自給でタダ)。🚿夏(5〜9月)は月1回タップして水管理！');
-  if(state.ricePlanterBonus)toast('🌱 田植え機で機械化！今年の収量+10%');
+  toast('🌾 田植え完了(苗代'+man(cost)+')！'+(state.riceFert?('🌿元肥も散布('+(state.compostShed?'堆肥舎の肥料で自給タダ':'肥料代'+man(10*ECON.FERT_PRICE))+')→収量+15%✨'):'(肥料代不足で元肥なし)')+'。'+wkLabel(ECON.RICE_HARVEST_WEEK)+'に'+riceBagsYield()+'袋見込み');
+  toast('🚿 夏(5〜9月)は🌾稲マークをタップして3〜4週おきに水管理！サボると収量ダウン');
+  if(state.ricePlanterBonus)toast('🌱 田植え機で機械化！+10%');
   updateHUD();
 }
 // v16: 水管理(5〜9月に月1回)。自分で棚田に行くか、米担当の従業員が自動でやる
 function doRiceWater(who){
   if(state.riceField!=='planted'){toast('🌾 いまは水管理の必要はないよ');return false;}
   if(!isWaterSeason()){toast('🚿 水管理は夏(5〜9月)だけだよ');return false;}
-  if(!isWaterWeek()){toast('🚿 今週は水管理の必要はないよ(次の水管理週まで待とう)');return false;}
-  if(state.waterWeek===state.weekN){toast('🚿 今週の水管理は済んでいるよ');return false;}
+  if(state.weekN-(state.waterWeek!=null?state.waterWeek:-99)<3){if(!who)toast('🚿 最近水管理したよ(3〜4週おきでOK)');return false;} // v42: 夏はいつでも可・数週おき
   state.waterWeek=state.weekN;
-  if(!who){toast('🚿 田んぼの水を管理した！(今月分OK)');sfx(500,.07,'sine',.05);}
+  if(!who){toast('🚿 田んぼの水を管理した！しばらく大丈夫(夏は3〜4週おきに繰り返そう)');sfx(500,.07,'sine',.05);}
   updateHUD();
   return true;
 }
+// v42: 夏に水管理が「今できる/そろそろ必要」か
+function waterDue(){return state.riceField==='planted'&&isWaterSeason()&&state.weekN-(state.waterWeek!=null?state.waterWeek:-99)>=3;}
 function doRiceHarvest(){
   if(state.riceField!=='ready'){toast('🌾 まだ収穫できないよ');return;}
   if(machineBroken('tractor')){toast('🚜 トラクターが故障中で収穫できない！🔧街の修理屋で直そう('+man(machRepairCost('tractor'))+')');return;} // v19
@@ -1724,7 +1729,7 @@ function shipRice(){
 function riceFieldLabel(){
   if(state.riceField==='ready')return'🌾 米を収穫する('+riceBagsYield()+'袋)';
   if(state.riceField==='planted'){
-    if(isWaterSeason()&&isWaterWeek()&&state.waterWeek!==state.weekN)return'🚿 水の管理をする(今週まだ)';
+    if(waterDue())return'🚿 水の管理をする(そろそろ必要)';
     return'🌾 生育中('+wkLabel(ECON.RICE_HARVEST_WEEK)+'に収穫)';
   }
   return isRicePlantWeek()?'🌾 田植えする(苗代'+man(riceSeedCost())+')':'🌾 棚田(田植えは'+wkLabel(ECON.RICE_PLANT_WEEK)+')'; // v25: 週単位
@@ -1732,11 +1737,8 @@ function riceFieldLabel(){
 function riceFieldAction(){
   if(state.riceField==='ready'){doRiceHarvest();return;}
   if(state.riceField==='planted'){
-    if(isWaterSeason()&&isWaterWeek()&&state.waterWeek!==state.weekN){doRiceWater(null);return;} // v25: 週ベース
-    // v41: 水管理の案内を明確に(次の水管理週を表示)
-    const nw=ECON.WATER_WEEKS.filter(w=>w>state.week)[0]||ECON.WATER_WEEKS[0];
-    const done=isWaterSeason()&&state.waterWeek===state.weekN;
-    toast('🌾 稲は生育中！'+(done?'✅今月の🚿水管理は済み。':'')+'🚿水管理は5〜9月に月1回=次は'+wkLabel(nw)+'(その週に稲マークをタップ)。収穫は'+wkLabel(ECON.RICE_HARVEST_WEEK)+'。');
+    if(waterDue()){doRiceWater(null);return;} // v42: 夏はいつでも水管理OK
+    toast('🌾 稲は生育中！'+(isWaterSeason()?'✅水管理は最近やったよ(3〜4週おきでOK)。':'🚿水管理は夏(5〜9月)に3〜4週おき。')+'収穫は'+wkLabel(ECON.RICE_HARVEST_WEEK)+'。');
     return;
   }
   if(isRicePlantWeek())doRicePlant(); // v25: 週ベース
@@ -2147,8 +2149,8 @@ function buildDecor(){
   updateBarnSign();
   updateBarnDungMesh(); // v35: 溜まったフンの山
   addSign(13.5,36.2,'🌾',{t:'🌾 棚田(米づくり)',
-    b:()=>'米は年1サイクル: 4月田植え→🌿肥料(収量+15%)→5〜9月は月1回🚿水管理→10月収穫→🍚精米出荷。<br>いまの状態: '+riceFieldLabel()+(state.riceField==='planted'?('<br>肥料: '+(state.riceFert?'済✅':'まだ⬜(タップで散布)')):'')+'<br>棚田をタップして操作(稲が育つ→水管理→収穫)。',
-    btns:()=>{const a=[[riceFieldLabel(),()=>riceFieldAction()]];if(state.riceField==='planted'&&!state.riceFert)a.push(['🌿 肥料をやる(収量+15%)',()=>doFertilizeField()]);return a;}});
+    b:()=>'米は年1サイクル: 🌾4月に田植え(元肥もこの時に散布=収量+15%)→🚿5〜9月は3〜4週おきに水管理→🌾10月に収穫→🍚精米出荷。<br>いまの状態: '+riceFieldLabel()+(state.riceField==='planted'?('・元肥'+(state.riceFert?'済✅':'なし')+(waterDue()?'・🚿水管理そろそろ':'')):'')+'<br>棚田(この稲マーク)をタップして操作。',
+    btns:()=>[[riceFieldLabel(),()=>riceFieldAction()]]});
   addSign(36.5,29.4,'🟫',{t:'🟫 堆肥場',
     b:()=>'🏭本格堆肥舎('+man(ECON.SHED_COST)+'・🏛補助で半額)を建てると、牛糞→肥料(頭数×'+ECON.FERT_PER_COW+'袋/月・1袋'+fmt(ECON.FERT_PRICE)+')を製造販売できるよ。<br>牛糞は🧹掃除して牛舎に溜め、月1回「🟤溜まった糞を処理する」(1頭'+ECON.DUNG_PROC_FEE+'円)で片付く。<br>いま: '+(state.compostShed?'🏭本格堆肥舎が稼働中(肥料在庫'+state.fertStock+'袋)':'未整備(牛糞は処理で1頭'+ECON.DUNG_PROC_FEE+'円)'), // v36
     btns:()=>{const a=[];
@@ -3717,8 +3719,8 @@ function staffMonthlyJobs(notes){
     const smallNG=riceScale()>1&&state.machines.tractor.lvl==='new'&&state.machines.tractor.size==='small'; // v20: 小型は拡張棚田に非対応
     if(smallNG&&isRicePlantWeek()&&state.riceField==='none')notes.push('⚠ '+nm+': 小型トラクターでは東の棚田まで田植えできない！中型(500万)が必要');
     if(isRicePlantWeek()&&state.riceField==='none'&&!machineBroken('tractor')&&!smallNG&&state.money>=riceSeedCost()){doRicePlant();notes.push('🌾 '+nm+': 苗代'+man(riceSeedCost())+'で田植えした'+(state.ricePlanterBonus?'(🌱田植え機+10%)':''));}
-    if(state.riceField==='planted'&&isWaterSeason()&&isWaterWeek()&&state.waterWeek!==state.weekN){
-      if(doRiceWater('staff'))notes.push('🚿 '+nm+': 田んぼの水を管理した(今週分)');
+    if(waterDue()){
+      if(doRiceWater('staff'))notes.push('🚿 '+nm+': 田んぼの水を管理した');
     }
     if(state.riceField==='ready'&&!machineBroken('tractor')){const b=riceBagsYield();doRiceHarvest();notes.push('🌾 '+nm+': 米'+b+'袋を収穫した');}
     if(state.riceBags>0&&state.shipMonth!==state.weekN){
@@ -3912,9 +3914,9 @@ function advanceWeek(notes,silent){
     notes.push('🌾 稲が実った！棚田で「収穫」しよう('+riceBagsYield()+'袋)');
   }
   if(state.week===ECON.RICE_PLANT_WEEK&&state.riceField==='none')notes.push('🌱 '+wkLabel(state.week)+'(春)！田植えの季節だよ(苗代'+man(riceSeedCost())+')');
-  // v33: 水管理の週が来たら明確に案内(やり方が分からない対策)
-  if(state.riceField==='planted'&&isWaterWeek()&&state.waterWeek!==state.weekN&&!staffWithJob('rice'))
-    notes.push('🚿 '+wkLabel(state.week)+'は「田んぼの水管理」の週！🌾棚田(緑色の田んぼ)に近づいて「使う」＝『🚿水の管理をする』をタップ。今週中にやらないと収量が'+(ECON.WATER_MISS_PENALTY*100)+'%減るよ(5〜9月に月1回)');
+  // v42: 水管理がそろそろ必要なら案内(夏はいつでもOK・3〜4週おき)
+  if(waterDue()&&!staffWithJob('rice'))
+    notes.push('🚿 田んぼの水管理をしよう！🌾稲マーク(または田んぼ)をタップ→「🚿水の管理をする」。夏(5〜9月)は3〜4週おきに。ほうっておくと収量ダウン');
   if(state.grassSown){
     if(isGrassHarvestWeek())notes.push('✂ '+wkLabel(state.week)+'は'+(state.week===18?'🌸春':'🍂秋')+'の牧草の収穫週！今週中に収穫しよう(+'+grassCutYield()+'束)'+(staffWithJob('grass')?'(🌿担当が自動収穫)':''));
     const herd=herdCount();
@@ -3928,10 +3930,10 @@ function advanceWeek(notes,silent){
 // ---------- v25: 週末処理（月末処理を週単位に変換） ----------
 function weekEnd(notes){
   const preMoney=state.money;
-  // 0) 水管理のサボり判定(夏の特定週)
-  if(state.riceField==='planted'&&isWaterSeason()&&isWaterWeek()&&state.waterWeek!==state.weekN){
-    state.riceMiss=(state.riceMiss||0)+1;
-    notes.push('⚠ '+wkLabel(state.week)+'の水管理をサボった…収穫が5%減るよ(累計'+Math.min(5,state.riceMiss)+'回)');
+  // 0) 水管理のサボり判定(v42: 夏に5週以上ほったらかすとサボり1回)
+  if(state.riceField==='planted'&&isWaterSeason()&&state.weekN-(state.waterWeek!=null?state.waterWeek:-99)>=5&&!staffWithJob('rice')){
+    state.riceMiss=(state.riceMiss||0)+1;state.waterWeek=state.weekN-2; // 二重計上を防ぐ
+    notes.push('⚠ 水管理をしばらくサボった…収穫が5%減るよ(累計'+Math.min(5,state.riceMiss)+'回)。🌾稲マークをタップして水管理を！');
   }
   // 1) 牧草の収穫しそびれチェック(収穫週だが今週収穫してない)
   if(state.grassSown&&isGrassHarvestWeek()&&state.grassCutWeek!==state.weekN){
@@ -4356,7 +4358,7 @@ function ledgerStatusHTML(){
   '<tr><td>餌代(牛'+herd+'頭・週あたり)</td><td class="amt">'+(herd>0?'約'+fmt(Math.min(state.grassStock,herd)*ECON.FEED_GRASS/4+Math.max(0,herd-state.grassStock)*feedShortUnit()):'￥0')+'</td></tr>'+
   (herd>0?'<tr><td>牛糞の処理費(掃除→月1回処理・1頭'+ECON.DUNG_PROC_FEE+'円'+(state.compostShed?'・🏭堆肥舎で肥料化✨':'')+')</td><td class="amt">'+fmt(herd*ECON.DUNG_PROC_FEE)+'</td></tr>':'')+
   '</table>'+
-  '<p class="sub2" style="font-size:11.5px;color:#8a6a45">🌿 牧草: '+(state.grassSown?('作付け済み(収穫は🌸5月1週目/🍂9月3週目・1回'+grassCutYield()+'束・'+(isGrassHarvestWeek()?('今週は収穫週！'+(state.grassCutWeek===state.weekN?'収穫済✅':'まだ⬜')):'次は'+nextGrassHarvestLabel())+')'):(state.land.pasture1?'未作付け(牧草地で'+man(grassSowCost())+')':'牧草地なし(🏠不動産屋で購入)'))+' / 牛の消費 週'+grassNeed+'束 / 米: '+(state.riceField==='none'?'未作付け(4月1週目に苗代'+man(riceSeedCost())+')':state.riceField==='planted'?('生育中(10月3週目に'+riceBagsYield()+'袋。水管理'+(isWaterSeason()?(isWaterWeek()&&state.waterWeek!==state.weekN?'今週まだ⬜':'済✅'):'は夏のみ')+')'):'収穫待ち！')+(herdCount()>0?' / 🐂健康'+state.care.health+'・汚れ'+state.care.dirt:'')+'</p>';
+  '<p class="sub2" style="font-size:11.5px;color:#8a6a45">🌿 牧草: '+(state.grassSown?('作付け済み(収穫は🌸5月1週目/🍂9月3週目・1回'+grassCutYield()+'束・'+(isGrassHarvestWeek()?('今週は収穫週！'+(state.grassCutWeek===state.weekN?'収穫済✅':'まだ⬜')):'次は'+nextGrassHarvestLabel())+')'):(state.land.pasture1?'未作付け(牧草地で'+man(grassSowCost())+')':'牧草地なし(🏠不動産屋で購入)'))+' / 牛の消費 週'+grassNeed+'束 / 米: '+(state.riceField==='none'?'未作付け(4月1週目に苗代'+man(riceSeedCost())+')':state.riceField==='planted'?('生育中(10月3週目に'+riceBagsYield()+'袋。水管理'+(isWaterSeason()?(waterDue()?'そろそろ⬜':'済✅'):'は夏のみ')+')'):'収穫待ち！')+(herdCount()>0?' / 🐂健康'+state.care.health+'・汚れ'+state.care.dirt:'')+'</p>';
 }
 // 倉庫: 米の精米出荷・牧草売却・農産物・種
 function whHTML(){
@@ -4772,7 +4774,9 @@ function buildMapWorld(){
   if(curMap==='town'){
     genTown();rebuildAll();buildTownDecor();
   }else{
-    genWorld();applyLandParcels();applyEdits();rebuildAll();
+    genWorld();applyLandParcels();applyEdits();
+    if(state.barnRented)ensureBarnBuilt(); // v42: 古いセーブの牛舎を現行レイアウト(牧草の山・餌箱・掃除アイスル等)に作り直す→餌やり等が効くように
+    rebuildAll();
     if(state.compostShed)buildCompostShed();
     for(const k in state.crops)addCropMesh(k,state.crops[k]);
     ensureRiceVisual();
