@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v39 街の建物上バグ修正・マップ両方中央着地・タイトルに戻る・クエスト/メニューを整理</title>
+<title>丹波農商 牧場物語 v40 毎日ログインボーナス・実績・街の建物を屋根なし内装＋NPCを店内に・タイトル簡潔化</title>
 <link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -139,7 +139,7 @@
 <div id="seedPick"><div class="panel" id="seedPickBox"></div></div>
 <div id="title">
   <h1>🌾 丹波農商<br>牧場物語 <span style="font-size:16px">放置経営編</span></h1>
-  <div class="sub">現金1,000万円と棚田から始めるリアル農業経営！<br>時間は「⏭ 次の週へ」で1週間ずつ進む(週単位)。<br>🐄牛舎は牛が前を向いて繋がれ、後ろは掃除アイスル、東は中央の放し飼いスペース。🌾餌やりは「牧草の山」から牧草をかかえて→牛の前の餌箱に入れると全頭に給餌。🧹掃除は牛の後ろのアイスルで(🚶散歩ボタンで放し飼いにするともっと綺麗に)。<br>🍼仔牛は生後4週まで母牛のそばでミルク→離乳したら仔牛ペンへ移して別飼育、32週で出荷。<br>🏭東の巨大倉庫に農機・米・精米・加工・事務所。🌉川の橋(北・中央・南)を渡ると丹波の街(役場・銀行・農協・修理屋・セリ市場)。🌿牧草地は不動産屋で購入、収穫は5月1週目(春)と9月3週目(秋)。1年=52週で決算。🐂📒💰</div>
+  <div class="sub">現金1,000万円と棚田から始める農業経営シム。<br>🌾米・🐄牛・🌿牧草を育てて、丹波農商を大きくしよう！<br><span style="font-size:12px;opacity:.8">🎯画面の「目標」に沿って進めればOK。⏭で1週間ずつ進む。</span></div>
   <button class="bigbtn" id="newBtn">▶ はじめる</button>
   <button class="bigbtn orange" id="contBtn">💾 続きから</button>
 </div>
@@ -482,27 +482,27 @@ const CHARS={
 };
 // ---------- v19: 街の登場人物(Meshy新住人6役+住民)。model=char_min/m{model}_walk.glb ----------
 const TOWN_CHARS={
-  yakuba:{model:'yakuba',name:'役場の山田さん',role:'役場職員',menu:'yakuba',pos:[30.0,21.2],
+  yakuba:{model:'yakuba',name:'役場の山田さん',role:'役場職員',menu:'yakuba',pos:[31.5,16.5],
     skin:'#eec096',cheek:'#e8907a',hair:'#2a2118',shirt:'#5a6a7a',pants:'#3a4148',shoe:'#333',
     line:'補助金の申請はここ役場で！承認されると新品の機械・牛舎・堆肥舎が半額になるよ🏛',
     line2:'申請→2日で承認→90日以内の購入が半額。申請しないで買うと定価だから気をつけて！'},
-  ginko:{model:'ginko',name:'銀行の丹波さん',role:'銀行員',menu:'bank',pos:[16.5,34.6],
+  ginko:{model:'ginko',name:'銀行の丹波さん',role:'銀行員',menu:'bank',pos:[17.5,39.0],
     skin:'#eec096',cheek:'#e8907a',hair:'#1a1512',shirt:'#2a3a5a',pants:'#22262e',shoe:'#222',
     line:'丹波銀行です。直近の決算が黒字なら、売上高と同じ額まで無利息で融資しますよ🏦',
     line2:'赤字だと貸せません…毎年の決算を黒字にするのが信用の第一歩です'},
-  fudosan:{model:'ojiichan',urls:['char_min/ojiichan_walk.glb'],name:'不動産屋の登さん',role:'不動産屋',menu:'land',pos:[25.5,34.6], // v30: なおとと同じ見た目だったので専用モデル(ojiichan)に変更
+  fudosan:{model:'ojiichan',urls:['char_min/ojiichan_walk.glb'],name:'不動産屋の登さん',role:'不動産屋',menu:'land',pos:[26.5,38.8], // v30: なおとと同じ見た目だったので専用モデル(ojiichan)に変更
     skin:'#e8c9a8',cheek:'#e0907a',hair:'#8a8a8a',shirt:'#6a5a3a',pants:'#3a352a',shoe:'#333',
     line:'土地をお探しですか？西の牧草地・東の棚田・南の牧場、いい区画が揃ってますよ🏠',
     line2:'土地を買えば農場の世界が広がる。生産規模の拡大は経営の王道です'},
-  nokyo:{model:'nokyo',name:'農協の米田さん',role:'農協職員',menu:'ja',pos:[40.5,34.6],
+  nokyo:{model:'nokyo',name:'農協の米田さん',role:'農協職員',menu:'ja',pos:[42.0,39.2],
     skin:'#e8b98c',cheek:'#e8907a',hair:'#1c1712',cap:'#2f8a4a',shirt:'#2f8a4a',pants:'#33383f',shoe:'#333',
     line:'農協です。新品の機械や牛舎はうちの資材窓口へ🚜 役場の補助金を使えば半額ですよ',
     line2:'牛が病気の時はうちに来て。獣医の先生に往診をお願いできるよ'},
-  juui:{model:'juui',name:'獣医の犬飼先生',role:'獣医',menu:'ja',pos:[43.5,34.6],
+  juui:{model:'juui',name:'獣医の犬飼先生',role:'獣医',menu:'ja',pos:[44.5,40.0],
     skin:'#eec8a0',cheek:'#e8907a',hair:'#4a4a4a',shirt:'#f0f0f0',pants:'#3a4148',shoe:'#333',
     line:'牛が病気になったら農協で呼んでくれ。往診料はかかるが、放っておくと最悪死んでしまうぞ🩺',
     line2:'牛舎が汚れていると病気になりやすい。毎日の掃除が一番の予防だ'},
-  shuriya:{model:'shuriya',name:'修理屋の鉄男さん',role:'修理屋',menu:'repair',pos:[12.0,28.8],
+  shuriya:{model:'shuriya',name:'修理屋の鉄男さん',role:'修理屋',menu:'repair',pos:[11.0,24.8],
     skin:'#e5a97c',cheek:'#e88a6a',hair:'#111',cap:'#c23b22',shirt:'#3a3a3f',pants:'#2a2e33',shoe:'#222',
     line:'機械が壊れたら俺のところへ！トラクターも精米機も直すぜ🔧',
     line2:'中古の機械はよく壊れる。農協で新品に買い替えるのも手だぞ(補助金で半額！)'},
@@ -714,6 +714,7 @@ function freshState(){return{
   edits:{},crops:{},treeFruit:{},tuftDay:{},
   planted:0,harvestN:0,soldN:0,
   sound:true,questDone:0,
+  lastLogin:'',loginStreak:0,claimedAch:{}, // v40: 毎日ログインボーナス・実績
   // ---- v19: 街・補助金・機械・獣医 / v20: 実売価格の機械・糞置き場・新築牛舎 ----
   map:'farm',
   machines:{tractor:{lvl:'old',size:'mid',broken:false,cost:0},polisher:{lvl:'old',broken:false,cost:0},processor:{lvl:null,broken:false,cost:0},planter:{lvl:null,broken:false,cost:0},combine:{lvl:null,broken:false,cost:0}},
@@ -2476,17 +2477,8 @@ function placeNPCs(){
     if(n.key==='juui'&&curMap==='farm'&&state.vetVisitDay===state.absWeek){show=true;pos=[33.0,18.5];} // 往診中の獣医 v24: 拡大した牛舎の前へ
     if(!show){scene.remove(n.mesh);continue;}
     scene.add(n.mesh);
-    // v39: NPCが建物の上(topY>2)に置かれるバグ対策=近くの地面(topY≤2)へ寄せる
-    let px=pos[0],pz=pos[1];
-    if(topY(Math.floor(px),Math.floor(pz))>2){
-      let done=false;
-      for(let r=1;r<=5&&!done;r++)for(let dz=-r;dz<=r&&!done;dz++)for(let dx=-r;dx<=r&&!done;dx++){
-        const gx=Math.floor(pos[0])+dx,gz=Math.floor(pos[1])+dz;
-        if(inWorld(gx,gz)&&topY(gx,gz)<=2){px=gx+0.5;pz=gz+0.5;done=true;}
-      }
-    }
-    const y=topY(Math.floor(px),Math.floor(pz))+1;
-    n.mesh.position.set(px,y,pz);
+    // v40: 屋根でなく床の高さに置く(建物の中の床にも立てる)
+    n.mesh.position.set(pos[0],standY(pos[0],pos[1]),pos[1]);
     n.mesh.rotation.y=0;
     if(n.wander)n.wi=0; // v21: 名前ラベルの常時/近距離表示は廃止(アイコン主体+会話で名前)
   }
@@ -2701,6 +2693,7 @@ function updateHUD(){
   document.getElementById('day').textContent=ymdLabel(); // v16: 年月日
   updateCareChip();
   updateQuest();
+  checkAchievements(); // v40
   updateMapBtn(); // v33
 }
 // クエスト（経営チュートリアル：1つずつ）
@@ -2735,6 +2728,52 @@ function showQuestInfo(){
   const i=state.questDone,q=QUESTS[i];
   const body='<b>▶ やること</b><br>'+q.t+(q.r?('<br><br>🎁 達成すると <b>協力金 '+man(q.r)+'</b> がもらえる！'):'')+'<br><br><small style="color:#8a6a45">目標 '+(i+1)+'／'+QUESTS.length+'。1つ達成すると自動で次の目標が出るよ。</small>';
   showIconInfo({t:'🎯 いまの目標 '+(i+1)+'／'+QUESTS.length,b:body});
+}
+// ---------- v40: 毎日ログインボーナス(実日付) と 実績 ----------
+function ymd(d){return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
+function checkDailyLogin(){
+  if(!state)return;
+  const today=ymd(new Date());
+  if(state.lastLogin===today)return; // 今日はもらった
+  const yest=ymd(new Date(Date.now()-86400000));
+  state.loginStreak=(state.lastLogin===yest)?(state.loginStreak||0)+1:1;
+  state.lastLogin=today;
+  const bonus=100000+Math.min((state.loginStreak-1),6)*50000; // 10万〜最大40万(7日連続以上)
+  addSale(bonus,'grant');
+  setTimeout(()=>{toast('🎁 ログインボーナス！'+state.loginStreak+'日連続 +'+man(bonus)+'（毎日ひらくと増える・最大40万）');fanfare();},1600);
+}
+const ACHIEVEMENTS=[
+  {id:'cow1',s:'🐄 はじめての牛',d:'牛を1頭飼う',c:()=>state.cows.length>=1,r:100000},
+  {id:'rice1',s:'🍚 米の初出荷',d:'米を出荷する',c:()=>state.soldRiceBags>0,r:100000},
+  {id:'grass',s:'🌿 牧草を自給',d:'牧草を収穫して在庫を持つ',c:()=>state.grassStock>0,r:100000},
+  {id:'calf',s:'🐮 仔牛が生まれる',d:'母牛が出産する',c:()=>state.cows.some(c=>(c.births||0)>0),r:200000},
+  {id:'cow5',s:'🐄 牛を5頭',d:'母牛が5頭',c:()=>state.cows.length>=5,r:200000},
+  {id:'shed',s:'🏭 堆肥舎を建てる',d:'本格堆肥舎を建設',c:()=>state.compostShed,r:300000},
+  {id:'newfarmer',s:'🎓 新規就農者',d:'農協で認定を受ける',c:()=>state.newFarmer,r:200000},
+  {id:'cow10',s:'🐄 牛を10頭',d:'母牛が10頭',c:()=>state.cows.length>=10,r:500000},
+  {id:'money2',s:'💰 現金2,000万',d:'現金2,000万円を突破',c:()=>state.money>=20000000,r:300000},
+  {id:'barn',s:'⛰ 牛舎を増築',d:'新築牛舎を建てる',c:()=>state.newBarns>=1,r:500000},
+  {id:'cert',s:'🏅 認定農業者',d:'認定農業者になる',c:()=>state.certFarmer,r:1000000},
+  {id:'cow20',s:'🐄 牛を20頭',d:'母牛が20頭',c:()=>state.cows.length>=20,r:1000000},
+];
+function checkAchievements(){
+  if(!state||!state.claimedAch)return;
+  for(const a of ACHIEVEMENTS){
+    if(!state.claimedAch[a.id]&&a.c()){
+      state.claimedAch[a.id]=1;addSale(a.r,'grant');
+      toast('🏆 実績「'+a.s+'」達成！ごほうび +'+man(a.r));fanfare();
+    }
+  }
+}
+function achHTML(){
+  let done=0;ACHIEVEMENTS.forEach(a=>{if(state.claimedAch&&state.claimedAch[a.id])done++;});
+  let h='<p>🏆 <b>実績</b>（達成 '+done+'／'+ACHIEVEMENTS.length+'）。達成するとごほうびの協力金がもらえるよ。</p>';
+  h+='<div class="row"><div class="em">🎁</div><div class="info"><b>毎日ログインボーナス</b><small>いま '+(state.loginStreak||0)+'日連続。毎日ひらくと10万〜最大40万円（連続でアップ）</small></div></div>';
+  for(const a of ACHIEVEMENTS){
+    const ok=state.claimedAch&&state.claimedAch[a.id];
+    h+='<div class="row"><div class="em">'+(ok?'✅':'⬜')+'</div><div class="info"><b>'+a.s+'</b><small>'+a.d+' → +'+man(a.r)+'</small></div>'+(ok?'<span class="prof">達成✨</span>':'')+'</div>';
+  }
+  return h;
 }
 
 // ---------- v10: かんたん文脈アクション ----------
@@ -4114,10 +4153,11 @@ function renderMenu(){
   const box=document.getElementById('menuBox');
   const tab=(id,label)=>'<div class="tab '+(menuTab===id?'on':'')+'" onclick="menuTab=\''+id+'\';renderMenu()">'+label+'</div>';
   let html='<h2>🌾 丹波農商 <span style="font-size:13px;color:#8a6a45">'+ymdLabel()+'・'+fmt(state.money)+'</span></h2>'+
-    '<div class="tabs">'+tab('ledger','📒 帳簿')+tab('wh','📦 倉庫')+tab('cows','🏚 牛舎')+tab('auction','🐂 セリ')+tab('bank','🏦 銀行')+tab('staff','🤝 指示')+tab('land','🏠 不動産屋')+
+    '<div class="tabs">'+tab('ach','🏆 実績')+tab('ledger','📒 帳簿')+tab('wh','📦 倉庫')+tab('cows','🏚 牛舎')+tab('auction','🐂 セリ')+tab('bank','🏦 銀行')+tab('staff','🤝 指示')+tab('land','🏠 不動産屋')+
     (menuTab==='yakuba'?tab('yakuba','🏛 役場'):'')+(menuTab==='ja'?tab('ja','🚜 農協'):'')+(menuTab==='repair'?tab('repair','🔧 修理屋'):'')+ // v19: 街の施設タブ(現地でだけ開く)
     tab('set','⚙')+'</div>';
-  if(menuTab==='ledger')html+=ledgerHTML();
+  if(menuTab==='ach')html+=achHTML();
+  else if(menuTab==='ledger')html+=ledgerHTML();
   else if(menuTab==='wh')html+=whHTML();
   else if(menuTab==='cows')html+=cowsHTML();
   else if(menuTab==='auction')html+=auctionHTML();
@@ -4539,18 +4579,31 @@ function genTown(){
 }
 // 建物ヘルパ: 壁3段(y3-5)+窓(y4に水ガラス)+屋根(y6)+石畳の床
 function townBuilding(x0,x1,z0,z1,wallB,roofB,doors){
+  // v40: 屋根なし(壁2段)にして、中の作り込み(内装)が上から見えるように
   for(let x=x0;x<=x1;x++)for(let z=z0;z<=z1;z++){
     for(let y=3;y<=WH;y++)gset(x,y,z,0);
     gset(x,2,z,B.PAVE);
     const wall=(x===x0||x===x1||z===z0||z===z1);
     if(wall){
-      for(let y=3;y<=5;y++)gset(x,y,z,wallB);
+      for(let y=3;y<=4;y++)gset(x,y,z,wallB);
       const corner=(x===x0||x===x1)&&(z===z0||z===z1);
       if(!corner&&(((z===z0||z===z1)&&x%2===0)||((x===x0||x===x1)&&z%2===0)))gset(x,4,z,B.WATER); // 窓
     }
-    gset(x,6,z,roofB);
+    // 屋根なし(y6は置かない)
   }
   for(const[dx,dz]of doors){gset(dx,3,dz,0);gset(dx,4,dz,0);} // 入口
+}
+// v40: 立てる「床」の高さ(屋根ではなく、頭上に2マス空きのある一番低い床)。NPCが建物の中の床に立てる。
+function standY(x,z){
+  const bx=Math.floor(x),bz=Math.floor(z);
+  for(let y=0;y<=WH;y++){
+    const t=getB(bx,y,bz);
+    if(t&&!BI[t].water){
+      const a1=getB(bx,y+1,bz),a2=getB(bx,y+2,bz);
+      if((!a1||BI[a1].water)&&(!a2||BI[a2].water))return y+1;
+    }
+  }
+  return topY(bx,bz)+1;
 }
 // 街灯(夜も光って見えるBasicマテリアル)
 function townLamp(x,z){
@@ -4596,6 +4649,27 @@ function buildTownInteriors(){
   tiBox(11,24.0,2.6,0.9,1.0,0x6a5a4a);addDecoCollider(11,24.0,1.2,3);
   tiBox(10.4,23.9,0.6,0.4,0.4,0xc23b22);
   (function(){const t=new THREE.Mesh(new THREE.CylinderGeometry(0.5,0.5,0.3,10),new THREE.MeshLambertMaterial({color:0x222222}));t.rotation.z=Math.PI/2;t.position.set(13.0,3.5,25.8);decoGroup.add(t);addDecoCollider(13.0,25.8,0.5,3);})();
+  // v40: 内装の作り込み(椅子・観葉植物・棚の品物・壁の掲示・床マット)
+  const plant=(x,z)=>{tiBox(x,z,0.3,0.4,0.3,0x8a5a3a);tiBox(x,z,0.56,0.56,0.56,0x2f8a4a);};
+  const chair=(x,z,col)=>{tiBox(x,z,0.5,0.42,0.5,col||0x8a6a3a);tiBox(x,z-0.22,0.5,0.55,0.14,col||0x8a6a3a);};
+  const rug=(cx,cz,w,d,col)=>tiBox(cx,cz,w,0.06,d,col); // 床マット(薄い板)
+  // 🏛役場: 待合の椅子3脚+観葉+掲示板+赤マット
+  rug(31,17,4.6,2.6,0xb0342a);chair(29.6,17.4);chair(30.6,17.4);chair(31.6,17.4);plant(35,14.3);tiBox(28.2,15.5,0.14,1.2,1.8,0xf2ede2);
+  // 🏦銀行: 金塊の山+観葉+受付椅子
+  tiBox(19.2,38.7,0.5,0.4,0.5,0xd8b84f);tiBox(19.8,38.7,0.5,0.4,0.5,0xd8b84f);tiBox(19.5,39.2,0.5,0.4,0.5,0xd8b84f);plant(20.4,37.2);chair(17.5,39.7,0x3a4148);
+  // 🏠不動産屋: ソファ+観葉+物件写真ボード
+  tiBox(25,39.4,1.6,0.5,0.7,0x9a6b5a);tiBox(25,39.05,1.6,0.5,0.15,0x7a5a4a);plant(28.2,39.2);tiBox(24.25,37.5,0.14,1.0,1.6,0xd8e8f0);
+  // 🚜農協: 肥料袋の山+工具+観葉
+  tiBox(45.0,41.2,0.55,0.55,0.55,0x7ec46a);tiBox(45.6,41.2,0.55,0.55,0.55,0xe8e0d0);tiBox(45.3,41.7,0.55,0.55,0.55,0x7ec46a);plant(38.7,37.2);tiBox(45.8,40.3,0.7,0.5,0.5,0xc9a86f);
+  // 🔧修理屋: 工具ラック+作業椅子+観葉
+  tiBox(9.2,23.6,0.14,1.1,1.8,0x5a4a3a);chair(13,24.6,0x4a4a4a);plant(9.4,26.2);
+  // v40: 民家にも生活感(テーブル+ベッド+観葉)
+  [[12.5,12.5],[21,10.5],[43,11],[53.5,23],[12,51],[23,51]].forEach(h=>{
+    const hx=h[0],hz=h[1];
+    tiBox(hx-0.6,hz,1.1,0.5,0.7,0x9a6b3a);chair(hx-0.6,hz+0.8,0xa88a5a); // テーブル+椅子
+    tiBox(hx+1.3,hz-1,1.5,0.4,0.85,0xd8cabf);tiBox(hx+1.3,hz-1.5,1.5,0.35,0.25,0xb0a090); // ベッド+枕
+    plant(hx-1.4,hz-1.4);
+  });
 }
 // 街の装飾(看板・街灯・ベンチ・農場への道・展示の牛)
 function buildTownDecor(){
@@ -5162,7 +5236,7 @@ function animate(ts){
       if(n.rig){rigPlay(n.rig,'walk',n.wspd*2.3);n.rig.mixer.update(Math.min(0.1,dt));}
       continue;
     }
-    const ngy=topY(Math.floor(n.mesh.position.x),Math.floor(n.mesh.position.z))+1;
+    const ngy=standY(n.mesh.position.x,n.mesh.position.z); // v40: 屋根でなく床に立つ(建物の中でもOK)
     if(n.rig){n.mesh.position.y=ngy;n.rig.mixer.update(Math.min(0.1,dt));}
     else n.mesh.position.y=ngy+Math.sin(n.t*2)*0.02;
     const d=Math.hypot(n.mesh.position.x-player.x,n.mesh.position.z-player.z);
@@ -5276,6 +5350,7 @@ function startGame(saveData){
     initAvatar();
     bindControls();
     updateHUD();
+    checkDailyLogin(); // v40: 毎日ログインボーナス
     // v15: ここではオーバーレイを外さない。主人公のMeshy GLB読込完了
     // (loadPlayerGLB→finishLoading)まで「よみこみちゅう…」で画面を覆い、
     // カクカクのボクセル代替キャラを見せない（20秒でフォールバック）。
