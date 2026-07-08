@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v43: 餌やり掃除を楽に(牛舎どこでもOK・全頭完了表示)・状態を左へ移動・にんじん/ねぎ(1ヶ月)追加・黒豆は6〜7月まき秋実り</title>
+<title>丹波農商 牧場物語 v43: 餌やり掃除を楽に・状態を左へ・青ネギ再収穫(何度も刈れる)・にんじん糖度/間引き/夏まき・黒豆6〜7月まき秋実り・稲は土づくり堆肥/元肥/追肥(倒伏あり)・連作障害</title>
 <link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -691,7 +691,10 @@ function freshState(){return{
   calves:[], // 子牛 {id,ageWeeks(週齢),motherId,bornWeekN,weaned}
   cowSeq:1,
   riceField:'none', // none=未作付け / planted=生育中 / ready=収穫待ち
-  riceFert:false, // v41: 今シーズン肥料をやったか(収量+15%。堆肥舎あれば自給でタダ)
+  riceFert:false, // v41: 今シーズン元肥をやったか(田植え時に散布=収量+15%。堆肥舎あれば自給でタダ)
+  riceJiryoku:0, // v43: 土づくり堆肥(冬)で永続的に上がる地力。1段ごとに収量+5%(最大3段)
+  riceTsuihi:false, // v43: 今シーズン出穂前(7月)に追肥したか=粒が大きく+10%
+  riceLodged:false, // v43: 出穂後の遅い追肥で倒伏→その年-15%
   riceBags:0,shipMonth:-1,soldRiceBags:0,
   riceMiss:0,waterWeek:-1, // v25: 水管理(夏の特定週に必要)。サボった回数で収量減
   grassSown:false,grassStock:0,grassProdLast:0,grassFedLast:0,
@@ -712,7 +715,7 @@ function freshState(){return{
   barnDung:0, // v35: 掃除で集めたフンが牛舎内に溜まる量。月1回「処理」で消す。満杯だと掃除できない
   fy:freshFy(), // v17: 勘定別+事業セグメント別の期中帳簿
   lastResult:null,history:[],
-  edits:{},crops:{},treeFruit:{},tuftDay:{},
+  edits:{},crops:{},treeFruit:{},tuftDay:{},plotHist:{}, // v43: plotHist=連作障害の履歴{"x,z":{last,streak}}
   planted:0,harvestN:0,soldN:0,
   sound:true,questDone:0,
   lastLogin:'',loginStreak:0,claimedAch:{}, // v40: 毎日ログインボーナス・実績
@@ -734,24 +737,42 @@ function riceBagsYield(){
   let mult=1-ECON.WATER_MISS_PENALTY*miss;
   if(state.ricePlanterBonus)mult+=ECON.PLANTER_BONUS; // v20: 田植え機で植えた年+10%
   if(state.machines&&state.machines.combine&&state.machines.combine.lvl&&!state.machines.combine.broken)mult+=ECON.COMBINE_BONUS; // v20: コンバイン+10%
-  if(state.riceFert)mult+=0.15; // v41: 肥料をやった年は+15%
+  if(state.riceFert)mult+=0.15; // v41: 元肥をやった年は+15%
+  mult+=0.05*Math.min(3,state.riceJiryoku||0); // v43: 土づくり(地力)1段ごと+5%(永続)
+  if(state.riceTsuihi)mult+=0.10; // v43: 出穂前の追肥で粒が大きく+10%
+  if(state.riceLodged)mult-=0.15; // v43: 遅い追肥で倒伏→-15%
   return Math.round(base*mult);
 }
-// v41: 田んぼ・畑に肥料をやる工程。🏭本格堆肥舎があれば自給の肥料でタダ、なければ購入。
-function doFertilizeField(){
-  if(state.riceField!=='planted'){toast('🌾 田植え後(生育中)に肥料をやろう');return;}
-  if(state.riceFert){toast('🌿 今シーズンはもう肥料をやったよ(収量+15%)');return;}
-  const bags=10;
-  if(state.compostShed&&state.fertStock>=bags){
-    state.fertStock-=bags;
-    toast('🌿 堆肥舎の肥料'+bags+'袋を田んぼに散布！(自給でタダ)今年の収量+15%✨');
-  }else{
-    const cost=bags*ECON.FERT_PRICE;
-    addExpense(cost,'other','rice');
-    toast('🌿 肥料'+bags+'袋を購入して散布 −'+man(cost)+'(🏭本格堆肥舎があれば自給でタダに)。今年の収量+15%');
+// v43: 土づくり堆肥=冬(11〜2月・作付け前オフシーズン)にまく。地力(ベース収量上限)が永続的に微増。
+// 春にまくとガス発生で苗が傷むので冬限定。堆肥舎の堆肥/牛糞があれば自給でタダ。
+function doRiceDozukuri(){
+  if(state.riceField!=='none'){toast('🌱 土づくりは作付け前のオフシーズン(冬)に。いまは稲を育てているよ');return;}
+  const mo=weekToMD(state.weekN).month;
+  if(![11,12,1,2].includes(mo)){toast('🌱 土づくり堆肥は冬(11〜2月)だけ。春にまくとガスで苗が傷むよ(いまは'+mo+'月)');return;}
+  if((state.riceJiryoku||0)>=3){toast('🌱 地力はもう十分高い(最大)。これ以上は上がらないよ');return;}
+  const need=5; // 堆肥5(牛糞由来)
+  if((state.res.compost||0)>=need){state.res.compost-=need;toast('🌱 自給の堆肥'+need+'を田んぼへ！土づくり完了→地力+1(永続・収量+5%)✨');}
+  else{const cost=5000;if(state.money<cost){toast('🌱 土づくりに堆肥'+need+'か'+man(cost)+'が必要('+'🟫堆肥場で牛糞→堆肥、または購入)');return;}addExpense(cost,'other','rice');toast('🌱 堆肥を購入して土づくり −'+man(cost)+'。地力+1(永続・収量+5%)✨');}
+  state.riceJiryoku=Math.min(3,(state.riceJiryoku||0)+1);
+  sfx(360,.08,'sine',.05);updateHUD();
+}
+// v43: 追肥=出穂前(7月)に。粒が大きくなり+10%。8月以降(出穂後)にやると倒伏して逆に-15%。
+function doRiceTsuihi(){
+  if(state.riceField!=='planted'){toast('🌿 追肥は生育中(田植え後)に。いまは稲がないよ');return;}
+  if(state.riceTsuihi){toast('🌿 今シーズンはもう追肥したよ(+10%)');return;}
+  if(state.riceLodged){toast('🌾 今年は倒伏しているのでこれ以上は…');return;}
+  const mo=weekToMD(state.weekN).month;
+  const bags=5;
+  const pay=()=>{if(state.compostShed&&state.fertStock>=bags){state.fertStock-=bags;return'(堆肥舎の肥料で自給タダ)';}const cost=bags*ECON.FERT_PRICE;addExpense(cost,'other','rice');return'−'+man(cost);};
+  if(mo>=8){ // 出穂後の遅い追肥→倒伏
+    const note=pay();state.riceLodged=true;state.riceTsuihi=true;
+    toast('🌾 追肥が遅すぎた…'+note+'。稲が倒伏(とうふく)して今年は-15%に😱(追肥は7月=出穂前に)');
+    sfx(200,.1,'sawtooth',.05);updateHUD();return;
   }
-  state.riceFert=true;sfx(500,.06,'sine',.05);
-  updateHUD();
+  if(mo!==7){toast('🌿 追肥は7月(出穂前)がベスト。いまは'+mo+'月。7月まで待とう(早すぎても効かない)');return;}
+  const note=pay();state.riceTsuihi=true;
+  toast('🌿 出穂前の追肥成功！'+note+'。米の粒が大きくなって収量+10%✨');
+  sfx(520,.06,'sine',.05);updateHUD();
 }
 function riceShipMax(){return Math.round(ECON.RICE_SHIP_MAX*riceScale());}
 function grassSowCost(){return ECON.GRASS_SOW_COST-(state.compostShed?ECON.FERT_SAVE_GRASS:0);}
@@ -1621,9 +1642,18 @@ function refreshCropMesh(k){removeCropMesh(k);if(state.crops[k])addCropMesh(k,st
 function plantCrop(x,y,z,type){
   const k=key(x,y,z);
   if(state.crops[k]){toast('ここにはもう植えてあるよ');return false;}
-  state.crops[k]={type,mon:0}; // v14: 月送りで成長
+  const c={type,mon:0}; // v14: 月送りで成長
+  // v43: 連作障害=同じマスに同じ作物を続けて作ると地力が落ちて収量ダウン。作物を変える(輪作)とリセット。
+  state.plotHist=state.plotHist||{};
+  const pk=x+','+z, h=state.plotHist[pk];
+  const streak=(h&&h.last===type)?((h.streak||1)+1):1;
+  state.plotHist[pk]={last:type,streak};
+  if(streak>=3){c.renraku=true;toast('⚠ このマスは'+CROPMETA[type].n+'の連作'+streak+'回目…連作障害で収量-1。別の作物に変える(輪作)と回復するよ');}
+  // v43: にんじんの夏まき(7〜8月)=秋冬どりの適期。順調に育って良品+1
+  if(type==='veg'&&[7,8].includes(weekToMD(state.weekN).month))c.summerSown=true;
+  state.crops[k]=c;
   state.planted++;
-  addCropMesh(k,state.crops[k]); return true;
+  addCropMesh(k,c); return true;
 }
 // v14: 月送り時の作物成長(堆肥入り耕地=2倍速)。リアルタイム成長は廃止。
 function growCropsMonthly(){
@@ -1676,7 +1706,8 @@ function doRicePlant(){
   state.riceField='planted';
   state.ricePlantWeekN=state.weekN; // v25: 街滞在中の見た目復元用
   state.ricePlanterBonus=!!(state.machines.planter.lvl&&!state.machines.planter.broken); // v20: 田植え機で+10%
-  state.riceMiss=0;state.waterWeek=-1;state.riceFert=false; // v25: 水管理カウンタ / v41: 肥料フラグ
+  state.riceMiss=0;state.waterWeek=-1;state.riceFert=false; // v25: 水管理カウンタ / v41: 元肥フラグ
+  state.riceTsuihi=false;state.riceLodged=false; // v43: 追肥/倒伏は毎シーズンリセット(地力riceJiryokuは永続なので保持)
   // v42: 元肥(基肥)を田植えと同時に散布。🏭堆肥舎があれば自給でタダ、なければ肥料代。収量+15%。
   {const need=10;
    if(state.compostShed&&state.fertStock>=need){state.fertStock-=need;state.riceFert=true;}
@@ -2153,8 +2184,12 @@ function buildDecor(){
   updateBarnSign();
   updateBarnDungMesh(); // v35: 溜まったフンの山
   addSign(13.5,36.2,'🌾',{t:'🌾 棚田(米づくり)',
-    b:()=>'米は年1サイクル: 🌾4月に田植え(元肥もこの時に散布=収量+15%)→🚿5〜9月は3〜4週おきに水管理→🌾10月に収穫→🍚精米出荷。<br>いまの状態: '+riceFieldLabel()+(state.riceField==='planted'?('・元肥'+(state.riceFert?'済✅':'なし')+(waterDue()?'・🚿水管理そろそろ':'')):'')+'<br>棚田(この稲マーク)をタップして操作。',
-    btns:()=>[[riceFieldLabel(),()=>riceFieldAction()]]});
+    b:()=>'米は年1サイクル: 🌱冬(11〜2月)に土づくり堆肥(地力↑永続)→🌾4月に田植え(元肥も同時=+15%)→🚿5〜9月は3〜4週おきに水管理→🌿7月に追肥(出穂前=粒大+10%/8月以降は倒伏-15%)→🌾10月に収穫→🍚精米出荷。<br>いまの状態: '+riceFieldLabel()+'・地力'+(state.riceJiryoku||0)+'/3(収量+'+(5*(state.riceJiryoku||0))+'%)'+(state.riceField==='planted'?('・元肥'+(state.riceFert?'済✅':'なし')+'・追肥'+(state.riceLodged?'倒伏😱':state.riceTsuihi?'済✅':'まだ')+(waterDue()?'・🚿水管理そろそろ':'')):'')+'<br>棚田(この稲マーク)をタップ、または下のボタンで操作。',
+    btns:()=>{const a=[[riceFieldLabel(),()=>riceFieldAction()]];
+      const mo=weekToMD(state.weekN).month;
+      if(state.riceField==='none'&&[11,12,1,2].includes(mo)&&(state.riceJiryoku||0)<3)a.push(['🌱 土づくり(堆肥)で地力+1',()=>doRiceDozukuri()]);
+      if(state.riceField==='planted'&&!state.riceTsuihi&&!state.riceLodged&&mo>=7)a.push(['🌿 追肥する'+(mo===7?'(7月=適期)':'(⚠8月以降は倒伏)'),()=>doRiceTsuihi()]);
+      return a;}});
   addSign(36.5,29.4,'🟫',{t:'🟫 堆肥場',
     b:()=>'🏭本格堆肥舎('+man(ECON.SHED_COST)+'・🏛補助で半額)を建てると、牛糞→肥料(頭数×'+ECON.FERT_PER_COW+'袋/月・1袋'+fmt(ECON.FERT_PRICE)+')を製造販売できるよ。<br>牛糞は🧹掃除して牛舎に溜め、月1回「🟤溜まった糞を処理する」(1頭'+ECON.DUNG_PROC_FEE+'円)で片付く。<br>いま: '+(state.compostShed?'🏭本格堆肥舎が稼働中(肥料在庫'+state.fertStock+'袋)':'未整備(牛糞は処理で1頭'+ECON.DUNG_PROC_FEE+'円)'), // v36
     btns:()=>{const a=[];
@@ -2836,15 +2871,31 @@ function actCrop(k){
   const meta=CROPMETA[c.type];
   const p=k.split(',').map(Number);
   if(cropMature(c)){ // しゅうかく
-    addRes(meta.yield,meta.num);
+    let num=meta.num,extra='';
+    if(c.type==='veg'){ // v43: にんじん=遅どり(寒さ)で糖度up・間引き・夏まきで良品が増える
+      const mo=weekToMD(state.weekN).month;
+      if([11,12,1,2].includes(mo)){num+=1;extra+='寒さで糖度up🍯+1 ';}
+      if(c.thinned){num+=1;extra+='間引き+1 ';}
+      if(c.summerSown){num+=1;extra+='夏まき適期+1 ';}
+    }
+    if(c.renraku){num=Math.max(1,num-1);extra+='連作障害-1 ';} // v43
+    addRes(meta.yield,num);
     state.harvestN++;
     burst(p[0],p[1],p[2],meta.stages[2]);
-    toast('🎉 '+meta.em+' '+RES[meta.yield].n+'を'+meta.num+'個収穫！(📦倉庫で売れるよ)');
+    if(c.type==='negi'){ // v43: 青ネギ=根元を残して刈れば何度も生えてくる(序盤の日銭・救済作物)
+      c.cuts=(c.cuts||0)+1;
+      if(c.cuts>=3){toast('✂ 🌱ねぎを収穫(3回目・'+num+'個)！株が弱ったのでおしまい。また種をまこう');delete state.crops[k];removeCropMesh(k);}
+      else{c.mon=0;c.d=0;toast('✂ 🌱ねぎを刈り取り収穫('+num+'個・'+c.cuts+'/3回目)！根元を残したので約1ヶ月でまた収穫🔁');refreshCropMesh(k);}
+    }else{
+      toast('🎉 '+meta.em+' '+RES[meta.yield].n+'を'+num+'個収穫！'+(extra?'('+extra.trim()+')':'')+'(📦倉庫で売れるよ)');
+      delete state.crops[k];removeCropMesh(k);
+    }
     sfxSeq([[620,.08,'triangle'],[880,.1,'triangle']]);
-    delete state.crops[k];removeCropMesh(k);
     updateHUD();
   }else{
-    toast('🌱 '+meta.n+'は育て中(あと'+(meta.months-c.mon)+'ヶ月。⏭で月を進めてね)');
+    if(c.type==='veg'&&!c.thinned&&c.mon>=1){ // v43: にんじんは生育途中に間引き(任意)→収穫+1
+      c.thinned=true;toast('🌱 にんじんを間引きした！栄養が集中して良品が増える(収穫+1・遅どりでさらに糖度up)');sfx(500,.06);
+    }else toast('🌱 '+meta.n+'は育て中(あと'+(meta.months-c.mon)+'ヶ月。⏭で月を進めてね)'+(c.type==='veg'?'。寒い時期(11〜2月)まで置くと糖度が上がって良品に':c.type==='negi'?'。刈っても根元からまた生える':''));
   }
 }
 let pendingPlot=null;
