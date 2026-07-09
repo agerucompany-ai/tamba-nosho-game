@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v51: 栗の瓶詰め加工事業(秋に一括収穫→外注400万 or 加工機1500万で外注費タダ→1年かけて出荷し年800万)。豚の放牧事業・連作回復も継続</title>
+<title>丹波農商 牧場物語 v52: 不動産屋で南の畑・南の棚田を拡張／栗園を南の丘へ移設。豚の放牧・栗の瓶詰め加工・連作回復も継続</title>
 <link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -720,7 +720,7 @@ function freshState(){return{
   care:{fedWeek:-1,cleanWeek:-1,dirt:0,health:100}, // v25: 牛の週次世話
   cowFree:false, // v24: 牛の放し飼い(🚶散歩)状態。falseなら各牛は牛舎の定位置に繋留
   compostShed:false,fertStock:0, // v16: 堆肥舎と肥料在庫
-  land:{pasture1:false,grass2:false,rice2:false,barn2:false,orchard:false},   // v16: 購入した区画 / v22: pasture1=西の牧草地(基本。デフォルト無し) / v27: orchard=栗園(デフォルト無し)
+  land:{pasture1:false,grass2:false,rice2:false,barn2:false,orchard:false,field2:false,rice3:false},   // v16: 購入した区画 / v50: field2=南の畑拡張, rice3=南の棚田拡張
   bankLoan:0,
   // ---- v28: 資格と制度融資 ----
   newFarmer:false,certFarmer:false, // 新規就農者 / 認定農業者 の認定
@@ -749,7 +749,7 @@ function freshState(){return{
   vetVisitDay:-1,ricePlantWeekN:-1,
 };}
 // ---- v16: 規模ヘルパ(土地・堆肥舎の効果) ----
-function riceScale(){return state.land.rice2?ECON.RICE_SCALE2:1;}
+function riceScale(){return (state.land.rice2?ECON.RICE_SCALE2:1)+(state.land.rice3?0.5:0);} // v50: 南の棚田拡張で+50%
 function riceSeedCost(){return Math.round(ECON.RICE_SEED_COST*riceScale())-(state.compostShed?ECON.FERT_SAVE_RICE:0);}
 function riceBagsYield(){
   const base=ECON.RICE_BAGS*riceScale();const miss=Math.min(5,state.riceMiss||0);
@@ -1551,11 +1551,27 @@ const PARCELS={
   grass2:{n:'東の牧草地(拡張)',em:'🌿',price:ECON.LAND_GRASS_PRICE,desc:'牧草の収穫が2倍(72→144束/回)になる拡張区画。荒れ地を開拓して西の牧草地とつなげる(先に西の牧草地が必要)。'},
   rice2:{n:'東の棚田',em:'🌾',price:ECON.LAND_RICE_PRICE,desc:'米の規模が1.5倍(苗代450万・収穫450袋・年商1,350万円)に。水管理と出荷の作業量も増える。'},
   barn2:{n:'北の第二牛舎(大牛舎)',em:'🏠',price:ECON.LAND_BARN_PRICE,desc:'古い牛舎の北の山を大きく切り開いて、古い牛舎の約3倍の横長な大牛舎(屋根なし)を増築。両側に繋ぎ列+中央通路+通路脇に採食槽+東の奥に子牛個室2つ。収容枠が母牛+'+ECON.BARN2_ADD+'頭・子牛+'+ECON.BARN2_ADD+'頭。牛の世話担当は第一・第二を歩いて巡回。'},
-  orchard:{n:'栗園',em:'🌰',price:ECON.LAND_ORCHARD_PRICE,desc:'牛舎の北東の丘に栗の木が植わる。秋に🌰栗を収穫して出荷・加工できる(栗の渋皮煮などの原料)。'}, // v27
+  orchard:{n:'栗園(南の丘)',em:'🌰',price:ECON.LAND_ORCHARD_PRICE,desc:'農場の南の丘に栗の木が植わる。秋に🌰栗を一括収穫して瓶詰め加工できる(渋皮煮などの原料)。'}, // v27/v50: 北東→南へ
+  field2:{n:'南の畑(拡張)',em:'🥕',price:1000000,desc:'南に野菜畑を拡張。にんじん/ねぎ/黒枝豆などを植える面積が増える(🥕野菜担当がいれば自動で作付け・収穫)。'}, // v50
+  rice3:{n:'南の棚田(拡張)',em:'🌾',price:2000000,desc:'南に棚田を拡張して米の規模がさらに拡大(収量+50%)。水管理・出荷の作業も増える。'}, // v50
 };
 // v27: 栗園(北東の丘 x33-47,z3-8)。牛舎と離れた場所。購入で植樹。
 function terraformOrchard(){
-  [[34,4],[38,3],[42,5],[46,4],[35,7],[40,7],[44,6],[47,7]].forEach(p=>{if(inWorld(p[0],p[1]))chestnutTree(p[0],p[1]);});
+  // v50: 栗園を北東→南の丘へ移設。南西(棚田の南)を平地にして栗の木を植える
+  flatten(4,22,50,60,2);
+  for(let x=4;x<=22;x++)for(let z=50;z<=60;z++)if(inWorld(x,z))gset(x,2,z,B.GRASS);
+  [[6,52],[10,51],[14,53],[18,52],[8,57],[12,58],[16,57],[20,58]].forEach(p=>{if(inWorld(p[0],p[1]))chestnutTree(p[0],p[1]);});
+}
+// v50: 南の畑(拡張)=既存の野菜畑(z36-42)の南に耕した畑を追加(x26-33,z44-49)
+function terraformField2(){
+  flatten(25,34,43,50,2);
+  for(let x=26;x<=33;x++)for(let z=44;z<=49;z++)if(inWorld(x,z))gset(x,2,z,(x%2===0)?B.TILLED:B.SOIL);
+}
+// v50: 南の棚田(拡張)=南に水を張った棚田を追加(x24-34,z50-56)。riceScaleで収量+50%
+function terraformRice3(){
+  flatten(23,35,49,57,2);
+  for(let x=24;x<=34;x++)for(let z=50;z<=56;z++){if(!inWorld(x,z))continue;gset(x,1,z,B.TILLED);gset(x,2,z,B.WATER);}
+  for(let x=23;x<=35;x++){gset(x,2,49,B.PATH);gset(x,2,57,B.PATH);} // あぜ道
 }
 // v22: 西の牧草地(基本区画)。開始時は柵のない空き地→購入で柵付きの牧草地に
 function terraformPasture1(){
@@ -1611,6 +1627,8 @@ function applyLandParcels(){
   if(state.land.rice2)terraformRice2();
   if(state.land.barn2)terraformBarn2();
   if(state.land.orchard)terraformOrchard(); // v27: 栗園
+  if(state.land.field2)terraformField2(); // v50: 南の畑拡張
+  if(state.land.rice3)terraformRice3();   // v50: 南の棚田拡張
   for(let i=0;i<state.newBarns;i++)terraformNewBarn(i); // v20: 山を切り開いた新築牛舎
   if(state.abandonedLand>0)terraformPigLand(); // v50: 豚の放牧地(耕作放棄地)
 }
@@ -1624,13 +1642,16 @@ function buyLandCore(k){
   if(state.land[k])return;
   const p=PARCELS[k];
   if(state.money<p.price){toast('💸 '+p.n+'は'+man(p.price)+'。現金が足りないよ');return;}
-  addExpense(p.price,'land',(k==='grass2'||k==='pasture1'||k==='orchard')?'grass':(k==='rice2'?'rice':'cow')); // v17: 土地は用途の事業へ配賦 / v27: 栗園→grass事業
+  addExpense(p.price,'land',(k==='grass2'||k==='pasture1'||k==='orchard')?'grass':((k==='rice2'||k==='rice3')?'rice':(k==='field2'?'other':'cow'))); // v17/v50: 土地は用途の事業へ配賦
   state.land[k]=true;
   if(curMap==='farm'){ // v19: 街で購入した時は帰農時にapplyLandParcelsで開拓される
     if(k==='pasture1'){terraformPasture1();buildPastureDecor();} // v22
     else if(k==='grass2')terraformGrass2();
     else if(k==='rice2')terraformRice2();
     else if(k==='orchard')terraformOrchard(); // v27
+    else if(k==='field2')terraformField2(); // v50: 南の畑拡張
+    else if(k==='rice3')terraformRice3();   // v50: 南の棚田拡張
+    else if(k==='barn2')terraformBarn2();
     else terraformBarn2();
     rebuildAll();
     if(k==='orchard'&&typeof initTreeFruits==='function')initTreeFruits(); // v27: 栗の実メッシュを作る
@@ -2283,7 +2304,7 @@ function buildDecor(){
       if(!state.compostShed)a.push(['🏭 本格堆肥舎を建てる('+man(shedPriceNow())+')',()=>buildShed()]);
       else a.push(['🟫 肥料を出荷する('+state.fertStock+'袋)',()=>sellFert(false)]);
       return a;}});
-  if(state.land.orchard)addSign(40,6.5,'🌰',{t:'🌰 栗園',b:()=>'北東の丘の栗園。木に近づいて「使う」で栗を拾える(少量→倉庫で売却)。<br><b>秋(10〜11月)は一括収穫して瓶詰め加工</b>に出せる: 外注加工'+man(ECON.CHESTNUT_OUTSOURCE)+'(🏭瓶詰め加工機'+man(ECON.CHESTNUT_MACHINE)+'・補助で半額を買えば外注費タダ)→1年かけて出荷して年間'+man(ECON.CHESTNUT_REVENUE)+'の売上。<br>いま: '+(state.chestnutBizYear===state.year?('今年は加工済(出荷残'+man(state.chestnutShip)+')'):(isChestnutSeason()?'✅一括収穫・加工できる':'加工は秋'))+'・瓶詰め機'+(state.chestnutMachine?'あり✅':'なし(外注)'),
+  if(state.land.orchard)addSign(13,54,'🌰',{t:'🌰 栗園(南の丘)',b:()=>'南の丘の栗園。木に近づいて「使う」で栗を拾える(少量→倉庫で売却)。<br><b>秋(10〜11月)は一括収穫して瓶詰め加工</b>に出せる: 外注加工'+man(ECON.CHESTNUT_OUTSOURCE)+'(🏭瓶詰め加工機'+man(ECON.CHESTNUT_MACHINE)+'・補助で半額を買えば外注費タダ)→1年かけて出荷して年間'+man(ECON.CHESTNUT_REVENUE)+'の売上。<br>いま: '+(state.chestnutBizYear===state.year?('今年は加工済(出荷残'+man(state.chestnutShip)+')'):(isChestnutSeason()?'✅一括収穫・加工できる':'加工は秋'))+'・瓶詰め機'+(state.chestnutMachine?'あり✅':'なし(外注)'),
     btns:()=>{const a=[];
       if(isChestnutSeason()&&state.chestnutBizYear!==state.year)a.push(['🌰 栗を一括収穫して加工に出す',()=>harvestChestnutBiz(null)]);
       if(!state.chestnutMachine)a.push(['🏭 瓶詰め加工機を買う('+man(ECON.CHESTNUT_MACHINE)+'・補助で半額)',()=>buyChestnutMachine()]);
@@ -4174,7 +4195,8 @@ function staffMonthlyJobs(notes){
     // 種まき: 空いた畑ににんじんを植える(種が無ければ購入)
     if((state.res.veg_seed||0)<2&&state.money>=SEED_PRICE.veg_seed*3){addExpense(SEED_PRICE.veg_seed*3,'other','other');addRes('veg_seed',3);}
     let plt=0;
-    for(let z=36;z<=42&&(state.res.veg_seed||0)>0;z++)for(let x=26;x<=33&&(state.res.veg_seed||0)>0;x++){
+    const zEnd=state.land.field2?49:42; // v50: 南の畑拡張ぶんも作付け
+    for(let z=36;z<=zEnd&&(state.res.veg_seed||0)>0;z++)for(let x=26;x<=33&&(state.res.veg_seed||0)>0;x++){
       const t=getB(x,2,z);
       if((t===B.TILLED||t===B.TILLFERT)&&!getB(x,3,z)&&!state.crops[key(x,3,z)]){
         if(plantCrop(x,3,z,'veg')){state.res.veg_seed--;plt++;}
@@ -4753,6 +4775,9 @@ function landHTML(){
     ['pasture1','🌿',PARCELS.pasture1], // v22: 基本の牧草地(開始時は持っていない)
     ['grass2','🌿',PARCELS.grass2],
     ['rice2','🌾',PARCELS.rice2],
+    ['rice3','🌾',PARCELS.rice3],
+    ['field2','🥕',PARCELS.field2],
+    ['orchard','🌰',PARCELS.orchard],
     ['barn2','🏠',PARCELS.barn2],
   ];
   for(const[k,em,p]of rows){
