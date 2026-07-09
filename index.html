@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v50: 豚の放牧事業を追加(耕作放棄地ほぼタダ+電柵30万+子豚2万・月ごと隣地へローテーション・余り野菜栗で早く育ち12〜24ヶ月で1頭50万で出荷・従業員に依頼可)。堆肥担当が連作の畑を回復</title>
+<title>丹波農商 牧場物語 v51: 栗の瓶詰め加工事業(秋に一括収穫→外注400万 or 加工機1500万で外注費タダ→1年かけて出荷し年800万)。豚の放牧事業・連作回復も継続</title>
 <link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -599,6 +599,11 @@ const ECON={
   CALF_SHIP_WEEKS:32,    // 子牛の出荷可能週齢(≈8ヶ月)
   NURSE_WEEKS:4,         // 仔牛の授乳期間(週) ≈1ヶ月
   MAX_BIRTHS:8,          // 母牛の最大産子数
+  // ---- v50: 栗の瓶詰め加工事業 ----
+  CHESTNUT_OUTSOURCE:4000000,  // 外注加工費(秋一括・年1)
+  CHESTNUT_REVENUE:8000000,    // 加工品を1年かけて売る年間売上
+  CHESTNUT_MACHINE:15000000,   // 瓶詰め加工機械(補助で半額)→外注費タダ
+  CHESTNUT_SHIP_WEEKS:40,      // 1年かけて徐々に出荷する週数
   // ---- v50: 豚の放牧事業(耕作放棄地のローテーション放牧) ----
   ABANDONED_PRICE:10000, // 耕作放棄地(1反)=ほぼタダ
   PIG_FENCE:300000,      // 電柵(1反ぶん)
@@ -728,6 +733,7 @@ function freshState(){return{
   fy:freshFy(), // v17: 勘定別+事業セグメント別の期中帳簿
   lastResult:null,history:[],weekLog:[], // v44: weekLog=毎週の出来事の記録(見返し用)
   abandonedLand:0,pigPlots:0,pigs:[],pigSeq:1,pigRotWeek:-99, // v50: 豚の放牧(耕作放棄地の反数・電柵済み反数・豚・ローテーション週)
+  chestnutMachine:false,chestnutShip:0,chestnutBizYear:0, // v50: 栗の瓶詰め(加工機・出荷残・今年加工したか)
   edits:{},crops:{},treeFruit:{},tuftDay:{},plotHist:{}, // v43: plotHist=連作障害の履歴{"x,z":{last,streak}}
   planted:0,harvestN:0,soldN:0,
   sound:true,questDone:0,
@@ -2277,7 +2283,11 @@ function buildDecor(){
       if(!state.compostShed)a.push(['🏭 本格堆肥舎を建てる('+man(shedPriceNow())+')',()=>buildShed()]);
       else a.push(['🟫 肥料を出荷する('+state.fertStock+'袋)',()=>sellFert(false)]);
       return a;}});
-  if(state.land.orchard)addSign(40,6.5,'🌰',{t:'🌰 栗園',b:'北東の丘の栗園。栗の木に近づいて「使う」で栗を拾えるよ(翌週また実る)。拾った栗は📦出荷箱/倉庫メニューで売れる(🍱加工機があれば1.5倍)。'}); // v29: 牛舎内の旧位置(17,11.8)から北東の栗園へ移設＋購入時のみ表示(増築の邪魔を解消)
+  if(state.land.orchard)addSign(40,6.5,'🌰',{t:'🌰 栗園',b:()=>'北東の丘の栗園。木に近づいて「使う」で栗を拾える(少量→倉庫で売却)。<br><b>秋(10〜11月)は一括収穫して瓶詰め加工</b>に出せる: 外注加工'+man(ECON.CHESTNUT_OUTSOURCE)+'(🏭瓶詰め加工機'+man(ECON.CHESTNUT_MACHINE)+'・補助で半額を買えば外注費タダ)→1年かけて出荷して年間'+man(ECON.CHESTNUT_REVENUE)+'の売上。<br>いま: '+(state.chestnutBizYear===state.year?('今年は加工済(出荷残'+man(state.chestnutShip)+')'):(isChestnutSeason()?'✅一括収穫・加工できる':'加工は秋'))+'・瓶詰め機'+(state.chestnutMachine?'あり✅':'なし(外注)'),
+    btns:()=>{const a=[];
+      if(isChestnutSeason()&&state.chestnutBizYear!==state.year)a.push(['🌰 栗を一括収穫して加工に出す',()=>harvestChestnutBiz(null)]);
+      if(!state.chestnutMachine)a.push(['🏭 瓶詰め加工機を買う('+man(ECON.CHESTNUT_MACHINE)+'・補助で半額)',()=>buyChestnutMachine()]);
+      return a;}}); // v50: 栗の瓶詰め加工事業
   if(state.abandonedLand>0)addSign(50,49,'🐖',{t:'🐖 豚の放牧地(耕作放棄地)',b:()=>'耕作放棄地に電柵を張って豚を放牧する事業。雑草を1ヶ月で食べ尽くすので毎月🔄隣の反へローテーション。余った野菜/栗をやると早く育ち、'+ECON.PIG_SHIP_MIN+'〜'+ECON.PIG_SHIP_MAX+'ヶ月で1頭'+man(ECON.PIG_SELL)+'で出荷。<br>いま: 耕作放棄地'+state.abandonedLand+'反(電柵'+state.pigPlots+'反)・豚'+pigCount()+'頭。従業員に🐖豚の放牧を指示すれば自動。',btns:[['🐖 豚メニューを開く',()=>{menuTab='pig';openMenu();}]]}); // v50
   buildPastureDecor(); // v22: 牧草地の看板・干し草・草むらは区画を持っている時だけ
   buildShipBox(); // v22: 🛒購買屋台(机みたいな屋台)は撤去。種は📦出荷箱/倉庫メニューで買う
@@ -3742,6 +3752,42 @@ function progressPigs(notes){
   const ready=state.pigs.filter(pg=>(pg.age||0)>=pigShipAge(pg)).length;
   if(ready>0&&!staffWithJob('pig'))notes.push('🐖 出荷できる豚が'+ready+'頭に！🐖豚メニューで出荷(1頭'+man(ECON.PIG_SELL)+')');
 }
+// ---------- v50: 栗の瓶詰め加工事業(秋に一括拾い→加工→1年かけて出荷) ----------
+function isChestnutSeason(){const m=weekToMD(state.weekN).month;return m===10||m===11;} // 秋
+function harvestChestnutBiz(who){
+  if(!state.land.orchard){if(!who)toast('🌰 先に🏠不動産屋で栗園を買おう');return false;}
+  if(!isChestnutSeason()){if(!who)toast('🌰 栗の一括収穫・加工は秋(10〜11月)だけ。いまは待とう');return false;}
+  if(state.chestnutBizYear===state.year){if(!who)toast('🌰 今年の栗はもう加工に出したよ(1年かけて出荷中・残'+man(state.chestnutShip)+')');return false;}
+  // 全部の木から一括で栗を拾う(見た目もリセット)
+  for(let i=0;i<chestnutTrees.length;i++){state.treeFruit[i]=false;if(treeFruitMeshes[i])treeFruitMeshes[i].visible=false;}
+  state.chestnutBizYear=state.year;
+  let costNote='';
+  if(state.chestnutMachine){costNote='🏭自社の瓶詰め加工機で加工(外注費タダ)';}
+  else{addExpense(ECON.CHESTNUT_OUTSOURCE,'other','other');costNote='外注加工に出した(−'+man(ECON.CHESTNUT_OUTSOURCE)+')';}
+  state.chestnutShip=ECON.CHESTNUT_REVENUE; // 1年かけて出荷する売上
+  if(!who){toast('🌰 秋の栗を一括収穫して加工！'+costNote+'。これから1年かけて徐々に出荷して年間'+man(ECON.CHESTNUT_REVENUE)+'の売上に(週'+man(Math.round(ECON.CHESTNUT_REVENUE/ECON.CHESTNUT_SHIP_WEEKS))+'ずつ)');sfx(560,.07);fanfare();}
+  updateHUD();renderMenu();
+  return true;
+}
+// 毎週の栗加工品の出荷(chestnutShipから少しずつ売上に)
+function shipChestnutWeekly(notes){
+  if((state.chestnutShip||0)<=0)return;
+  const per=Math.round(ECON.CHESTNUT_REVENUE/ECON.CHESTNUT_SHIP_WEEKS);
+  const n=Math.min(per,state.chestnutShip);
+  state.chestnutShip-=n;addSale(n,'proc');
+  if(state.weekN%8===0)notes.push('🌰 栗の瓶詰めを出荷 +'+man(n)+'(今年の残り'+man(state.chestnutShip)+')');
+}
+function buyChestnutMachine(){
+  if(state.chestnutMachine){toast('🏭 瓶詰め加工機はもうあるよ');return;}
+  const pr=priceWithSub(ECON.CHESTNUT_MACHINE,'machine');
+  facilityPay(pr.price,'栗の瓶詰め加工機',()=>{
+    if(state.money<pr.price){toast('💸 瓶詰め加工機は'+man(pr.price)+'。現金が足りないよ'+(pr.sub?'':'(🏛役場で申請すると半額)'));return;}
+    addExpense(pr.price,'machine','other');state.chestnutMachine=true;
+    if(pr.sub)consumeSub('machine');
+    fanfare();toast('🏭 栗の瓶詰め加工機を導入('+man(pr.price)+')！これで外注費('+man(ECON.CHESTNUT_OUTSOURCE)+'/年)がタダに。栗事業の利益がぐっと増える');
+    updateHUD();renderMenu();
+  });
+}
 // v50: 豚の放牧地(耕作放棄地)を南の空き地に開拓。各6×6の反、電柵済みは柵付き。
 const PIG_PLOT_SPOTS=[[42,50],[50,50],[58,50],[42,58],[50,58],[58,58]];
 const pigGroup=new THREE.Group();
@@ -4143,6 +4189,7 @@ function staffMonthlyJobs(notes){
   if(pk){
     const nm=STAFF_META[pk].name;
     if(state.procWeek!==state.weekN&&doProcess('staff'))notes.push('🥔 '+nm+': 食品加工場でポテサラを作って売った(+'+man(ECON.FOOD_PROC_SALE)+')');
+    if(state.land.orchard&&isChestnutSeason()&&state.chestnutBizYear!==state.year&&harvestChestnutBiz('staff'))notes.push('🌰 '+nm+': 栗を一括収穫して瓶詰め加工に出した'+(state.chestnutMachine?'(自社機でタダ)':'(外注−'+man(ECON.CHESTNUT_OUTSOURCE)+')')+'→1年かけて出荷'); // v50
     let g=0;for(const kk of['veg','negi','bean','edamame','chestnut']){const n=state.res[kk]||0;if(n>0){g+=n*PRICE[kk];state.res[kk]=0;}}
     if(g>0){const gp=Math.round(g*procMult());addSale(gp,'proc');notes.push('🥔 '+nm+': 農産物を加工して'+fmt(gp)+'で売却'+(procMult()>1?'(🍱加工機で1.5倍)':''));}
   }
@@ -4431,6 +4478,7 @@ function weekEnd(notes){
   // 5) 牛の週次進行(妊娠/出産/週齢。健康40未満は妊娠が進まない)
   progressCows(notes);
   progressPigs(notes); // v50: 豚の月次成長(ローテーションできていれば)
+  shipChestnutWeekly(notes); // v50: 栗の瓶詰めを1年かけて徐々に出荷
   // 6) 年度末決算(3月末=4月の田植え直前の週。会計年度は4月〜翌3月) v44
   if(state.week===ECON.RICE_PLANT_WEEK-1){
     doFiscalClose();
