@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v49: 北の第二牛舎を古い牛舎の約3倍に大型化(母牛+20頭)・北の山を大きく切り開いて広い平地に。牧草は西と東の2面とも刈り取り→両方にロールが残る(2倍収穫)</title>
+<title>丹波農商 牧場物語 v50: 豚の放牧事業を追加(耕作放棄地ほぼタダ+電柵30万+子豚2万・月ごと隣地へローテーション・余り野菜栗で早く育ち12〜24ヶ月で1頭50万で出荷・従業員に依頼可)。堆肥担当が連作の畑を回復</title>
 <link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -599,6 +599,14 @@ const ECON={
   CALF_SHIP_WEEKS:32,    // 子牛の出荷可能週齢(≈8ヶ月)
   NURSE_WEEKS:4,         // 仔牛の授乳期間(週) ≈1ヶ月
   MAX_BIRTHS:8,          // 母牛の最大産子数
+  // ---- v50: 豚の放牧事業(耕作放棄地のローテーション放牧) ----
+  ABANDONED_PRICE:10000, // 耕作放棄地(1反)=ほぼタダ
+  PIG_FENCE:300000,      // 電柵(1反ぶん)
+  PIG_BUY:20000,         // 子豚(雑種)1頭
+  PIG_SELL:500000,       // 出荷(1頭)
+  PIG_PER_PLOT:2,        // 1反=2頭
+  PIG_SHIP_MIN:12,       // 出荷できる最短月齢(たっぷり給餌時)
+  PIG_SHIP_MAX:24,       // 給餌なしでも出荷できる月齢
   BARN_CAP:10,           // v20: 古い牛舎(レンタル)の母牛収容数
   BARN_CAP_CALF:10,      // v20: 古い牛舎(レンタル)の子牛収容数
   BARN2_ADD:20,          // v49: 北の大第二牛舎の追加収容(母+20/子+20。古い牛舎の約3倍)
@@ -719,6 +727,7 @@ function freshState(){return{
   barnDung:0, // v35: 掃除で集めたフンが牛舎内に溜まる量。月1回「処理」で消す。満杯だと掃除できない
   fy:freshFy(), // v17: 勘定別+事業セグメント別の期中帳簿
   lastResult:null,history:[],weekLog:[], // v44: weekLog=毎週の出来事の記録(見返し用)
+  abandonedLand:0,pigPlots:0,pigs:[],pigSeq:1,pigRotWeek:-99, // v50: 豚の放牧(耕作放棄地の反数・電柵済み反数・豚・ローテーション週)
   edits:{},crops:{},treeFruit:{},tuftDay:{},plotHist:{}, // v43: plotHist=連作障害の履歴{"x,z":{last,streak}}
   planted:0,harvestN:0,soldN:0,
   sound:true,questDone:0,
@@ -1044,6 +1053,7 @@ const JOBS={
   cow:{n:'牛の世話',em:'🐂',desc:'毎週の餌やり＋牛舎掃除＋糞の待避舎への運搬、種付け・子牛/親牛のセリ、病気なら獣医も自動'},
   veg:{n:'野菜',em:'🥕',desc:'畑の野菜(にんじん/ねぎ/黒豆/黒枝豆)の種まき・世話・収穫・売却を自動でやる'}, // v46
   proc:{n:'加工(ポテサラ)',em:'🥔',desc:'食品加工場でポテサラを毎週作って売る＋収穫した農産物を加工販売する'}, // v46
+  pig:{n:'豚の放牧',em:'🐖',desc:'耕作放棄地の豚を毎月ローテーション(隣へ移動)＋余った野菜/栗を給餌＋育った豚を出荷'}, // v50
   compost:{n:'堆肥',em:'🟫',desc:'牛ふんの回収と堆肥化、肥料の出荷を自動でやる'},
 };
 // v46: 従業員が「その仕事をしに歩いて行く」作業場所(farm座標)。担当ジョブぶんを巡回する
@@ -1053,6 +1063,7 @@ const WORK_SPOTS={
   grass:[[39,14],[43,16],[41,18]],             // 西〜北の牧草地
   veg:[[28,38],[31,40],[29,42]],               // 南の野菜畑
   proc:[[44,31],[46,29]],                       // 倉庫手前のポテサラ加工場
+  pig:[[45,53],[53,53],[45,61],[53,61]],        // 南の豚の放牧地(耕作放棄地)
   compost:[[33,28],[30,26],[35,29]],            // 堆肥場まわり
 };
 // v44: 1人が複数の仕事を持てる。staffJobs[k]は配列(旧セーブのnull/文字列も吸収)
@@ -1595,6 +1606,7 @@ function applyLandParcels(){
   if(state.land.barn2)terraformBarn2();
   if(state.land.orchard)terraformOrchard(); // v27: 栗園
   for(let i=0;i<state.newBarns;i++)terraformNewBarn(i); // v20: 山を切り開いた新築牛舎
+  if(state.abandonedLand>0)terraformPigLand(); // v50: 豚の放牧地(耕作放棄地)
 }
 function buyLand(k){
   if(state.land[k]){toast('🗺 その区画はもう持っているよ');return;}
@@ -2266,6 +2278,7 @@ function buildDecor(){
       else a.push(['🟫 肥料を出荷する('+state.fertStock+'袋)',()=>sellFert(false)]);
       return a;}});
   if(state.land.orchard)addSign(40,6.5,'🌰',{t:'🌰 栗園',b:'北東の丘の栗園。栗の木に近づいて「使う」で栗を拾えるよ(翌週また実る)。拾った栗は📦出荷箱/倉庫メニューで売れる(🍱加工機があれば1.5倍)。'}); // v29: 牛舎内の旧位置(17,11.8)から北東の栗園へ移設＋購入時のみ表示(増築の邪魔を解消)
+  if(state.abandonedLand>0)addSign(50,49,'🐖',{t:'🐖 豚の放牧地(耕作放棄地)',b:()=>'耕作放棄地に電柵を張って豚を放牧する事業。雑草を1ヶ月で食べ尽くすので毎月🔄隣の反へローテーション。余った野菜/栗をやると早く育ち、'+ECON.PIG_SHIP_MIN+'〜'+ECON.PIG_SHIP_MAX+'ヶ月で1頭'+man(ECON.PIG_SELL)+'で出荷。<br>いま: 耕作放棄地'+state.abandonedLand+'反(電柵'+state.pigPlots+'反)・豚'+pigCount()+'頭。従業員に🐖豚の放牧を指示すれば自動。',btns:[['🐖 豚メニューを開く',()=>{menuTab='pig';openMenu();}]]}); // v50
   buildPastureDecor(); // v22: 牧草地の看板・干し草・草むらは区画を持っている時だけ
   buildShipBox(); // v22: 🛒購買屋台(机みたいな屋台)は撤去。種は📦出荷箱/倉庫メニューで買う
   buildWarehouseInterior(); // v21: 巨大倉庫の内装(米袋の棚・農機庫・加工場・事務所・照明)
@@ -2641,6 +2654,7 @@ function placeNPCs(){
     if(n.wander)n.wi=0; // v21: 名前ラベルの常時/近距離表示は廃止(アイコン主体+会話で名前)
   }
   updateStaffWander(); // v46: 雇用中の従業員は担当の作業場所を巡回(farmに配置し直すたびに設定)
+  refreshPigs(); // v50: 豚のメッシュを配置
 }
 
 // ---------- 牛 ----------
@@ -3666,6 +3680,102 @@ function doProcess(who){
   updateHUD();
   return true;
 }
+// ---------- v50: 豚の放牧事業(耕作放棄地のローテーション放牧) ----------
+function pigCap(){return state.pigPlots*ECON.PIG_PER_PLOT;}
+function pigCount(){return (state.pigs||[]).length;}
+function buyAbandoned(){ // 耕作放棄地を1反(ほぼタダ)
+  addExpense(ECON.ABANDONED_PRICE,'land','other');state.abandonedLand++;
+  if(curMap==='farm'){terraformPigLand();rebuildAll();refreshPigs();}
+  toast('🌾 耕作放棄地を1反 取得(−'+man(ECON.ABANDONED_PRICE)+')！⚡電柵を張れば豚を放牧できる(いま'+state.abandonedLand+'反)。ローテーション用に2反以上あると安心');
+  updateHUD();renderMenu();
+}
+function buyPigFence(){ // 電柵を1反ぶん
+  if(state.pigPlots>=state.abandonedLand){toast('⚡ 電柵を張れる耕作放棄地がないよ(先に耕作放棄地を買おう)');return;}
+  if(state.money<ECON.PIG_FENCE){toast('💸 電柵は1反'+man(ECON.PIG_FENCE)+'。現金が足りないよ');return;}
+  addExpense(ECON.PIG_FENCE,'other','other');state.pigPlots++;
+  if(curMap==='farm')refreshPigs();
+  toast('⚡ 電柵を張った(−'+man(ECON.PIG_FENCE)+')！この反に豚を'+ECON.PIG_PER_PLOT+'頭まで放牧できる(電柵済み'+state.pigPlots+'反)');
+  updateHUD();renderMenu();
+}
+function buyPig(){ // 子豚1頭
+  if(pigCount()>=pigCap()){toast('🐖 放牧地が満杯('+pigCount()+'/'+pigCap()+'頭)。⚡電柵を増やそう');return;}
+  if(state.money<ECON.PIG_BUY){toast('💸 子豚は1頭'+man(ECON.PIG_BUY)+'。現金が足りないよ');return;}
+  addExpense(ECON.PIG_BUY,'other','other');
+  state.pigs.push({id:state.pigSeq++,age:0,fed:0,plot:pigCount()%Math.max(1,state.pigPlots)});
+  if(curMap==='farm')refreshPigs();
+  toast('🐖 子豚(雑種)を1頭 導入(−'+man(ECON.PIG_BUY)+')！余った野菜や栗をやると早く育つ。'+ECON.PIG_SHIP_MIN+'〜'+ECON.PIG_SHIP_MAX+'ヶ月で1頭'+man(ECON.PIG_SELL)+'で出荷');
+  updateHUD();renderMenu();
+}
+function rotatePigs(who){ // 月1回・隣の反へ
+  if(pigCount()===0){if(!who)toast('🐖 豚がいないよ');return false;}
+  if(state.pigPlots<2){if(!who)toast('⚠ 電柵済みの反が1つだけ。ローテーションには2反以上必要(隣の草地に移せない=豚が育たない)');return false;}
+  if(state.weekN-state.pigRotWeek<4){if(!who)toast('🔄 ローテーションは月1回でOK');return false;}
+  state.pigRotWeek=state.weekN;
+  for(const pg of state.pigs)pg.plot=(pg.plot+1)%state.pigPlots;
+  if(curMap==='farm')refreshPigs();
+  if(!who)toast('🔄 豚を隣の耕作放棄地へ移動！新しい雑草を食べる(1ヶ月でまた食べ尽くすのでローテーション)');
+  return true;
+}
+function feedPigsScraps(who){ // 余った野菜/栗→早く育つ
+  const boost=(state.res.veg||0)+(state.res.negi||0)+(state.res.chestnut||0);
+  if(boost<=0){if(!who)toast('🐖 余った野菜や栗がないよ(あれば豚にやると早く育つ)');return 0;}
+  state.res.veg=0;state.res.negi=0;state.res.chestnut=0;
+  for(const pg of state.pigs)pg.fed=(pg.fed||0)+boost/Math.max(1,state.pigs.length);
+  if(!who)toast('🌰 余った野菜と栗を豚に給餌！たくさん食べた豚は早く出荷できる(最短'+ECON.PIG_SHIP_MIN+'ヶ月)');
+  updateHUD();return boost;
+}
+function pigShipAge(pg){return ECON.PIG_SHIP_MAX-Math.min(ECON.PIG_SHIP_MAX-ECON.PIG_SHIP_MIN,Math.floor((pg.fed||0)/2));} // 余り野菜/栗を計24食べさせると最短12ヶ月
+function shipPigs(who){
+  let n=0,g=0;
+  for(let i=state.pigs.length-1;i>=0;i--){const pg=state.pigs[i];if((pg.age||0)>=pigShipAge(pg)){addSale(ECON.PIG_SELL,'pig');n++;g+=ECON.PIG_SELL;state.pigs.splice(i,1);}}
+  if(n>0){if(curMap==='farm')refreshPigs();if(!who)toast('🐖 育った豚'+n+'頭を出荷！+'+man(g));updateHUD();renderMenu();}
+  else if(!who)toast('🐖 まだ出荷できる豚('+ECON.PIG_SHIP_MIN+'〜'+ECON.PIG_SHIP_MAX+'ヶ月)がいないよ');
+  return n;
+}
+// 月次(4週ごと)の豚の進行: ローテーションできていれば成長。できていないと育たない。
+function progressPigs(notes){
+  if(!state.pigs||state.pigs.length===0)return;
+  if(state.weekN%4!==0)return; // 月1回
+  const rotated=state.pigPlots>=2&&(state.weekN-state.pigRotWeek<=5); // 直近1ヶ月でローテーション済み
+  if(!rotated){notes.push('⚠ 豚の放牧地の雑草が足りない！耕作放棄地を2反以上にして毎月🔄ローテーション(隣へ移動)しないと豚が育たない(いま電柵'+state.pigPlots+'反)');return;}
+  for(const pg of state.pigs)pg.age=(pg.age||0)+1;
+  const ready=state.pigs.filter(pg=>(pg.age||0)>=pigShipAge(pg)).length;
+  if(ready>0&&!staffWithJob('pig'))notes.push('🐖 出荷できる豚が'+ready+'頭に！🐖豚メニューで出荷(1頭'+man(ECON.PIG_SELL)+')');
+}
+// v50: 豚の放牧地(耕作放棄地)を南の空き地に開拓。各6×6の反、電柵済みは柵付き。
+const PIG_PLOT_SPOTS=[[42,50],[50,50],[58,50],[42,58],[50,58],[58,58]];
+const pigGroup=new THREE.Group();
+let pigMeshes=[];
+function terraformPigLand(){
+  for(let i=0;i<state.abandonedLand&&i<PIG_PLOT_SPOTS.length;i++){
+    const[px,pz]=PIG_PLOT_SPOTS[i];
+    flatten(px,px+5,pz,pz+5,2);
+    for(let x=px;x<=px+5;x++)for(let z=pz;z<=pz+5;z++)if(inWorld(x,z))gset(x,2,z,i<state.pigPlots?B.GRASS:B.SOIL);
+    if(i<state.pigPlots){ // 電柵済み=柵で囲う
+      for(let x=px;x<=px+5;x++){gset(x,3,pz,B.FENCE);gset(x,3,pz+5,B.FENCE);}
+      for(let z=pz;z<=pz+5;z++){gset(px,3,z,B.FENCE);gset(px+5,3,z,B.FENCE);}
+      gset(px+2,3,pz,0);gset(px+3,3,pz,0); // 出入口
+    }
+  }
+}
+function refreshPigs(){
+  if(scene&&pigGroup.parent!==scene)scene.add(pigGroup);
+  while(pigGroup.children.length)pigGroup.remove(pigGroup.children[0]);
+  pigMeshes=[];
+  if(curMap!=='farm'||!(state.pigs||[]).length)return;
+  const mat=new THREE.MeshLambertMaterial({color:0xf0a8b0});
+  for(const pg of state.pigs){
+    const spot=PIG_PLOT_SPOTS[Math.min(pg.plot||0,PIG_PLOT_SPOTS.length-1)];if(!spot)continue;
+    const g=new THREE.Group();
+    const body=new THREE.Mesh(new THREE.BoxGeometry(0.8,0.55,1.1),mat);body.position.y=0.4;g.add(body);
+    const head=new THREE.Mesh(new THREE.BoxGeometry(0.55,0.5,0.45),mat);head.position.set(0,0.45,0.68);g.add(head);
+    const snout=new THREE.Mesh(new THREE.BoxGeometry(0.28,0.24,0.14),new THREE.MeshLambertMaterial({color:0xe08890}));snout.position.set(0,0.42,0.92);g.add(snout);
+    g.scale.setScalar(0.6+Math.min(1,(pg.age||0)/ECON.PIG_SHIP_MAX)*0.7); // 月齢で大きく
+    const ox=spot[0]+1+((pg.id*2)%4),oz=spot[1]+1+((pg.id*3)%4);
+    g.position.set(ox,topY(Math.floor(ox),Math.floor(oz))+1,oz);g.rotation.y=(pg.id%4)*1.4;
+    pigGroup.add(g);pigMeshes.push(g);
+  }
+}
 // 農協: 新規就農者の認定(創業支援)→ 銀行の新規就農資金3000万が解禁
 function certifyNewFarmer(){
   if(state.newFarmer){toast('🎓 もう新規就農者に認定されているよ');return;}
@@ -4036,6 +4146,15 @@ function staffMonthlyJobs(notes){
     let g=0;for(const kk of['veg','negi','bean','edamame','chestnut']){const n=state.res[kk]||0;if(n>0){g+=n*PRICE[kk];state.res[kk]=0;}}
     if(g>0){const gp=Math.round(g*procMult());addSale(gp,'proc');notes.push('🥔 '+nm+': 農産物を加工して'+fmt(gp)+'で売却'+(procMult()>1?'(🍱加工機で1.5倍)':''));}
   }
+  // 🐖 豚の放牧(v50): 月1ローテーション＋余り野菜/栗を給餌＋育った豚を出荷
+  const pgk=staffWithJob('pig');
+  if(pgk&&pigCount()>0){
+    const nm=STAFF_META[pgk].name;
+    if(state.pigPlots<2)notes.push('🐖 '+nm+': ローテーションできる耕作放棄地が足りない(2反以上＋電柵が必要)。豚が育たないよ');
+    else if(rotatePigs('staff')&&state.weekN%4===0)notes.push('🐖 '+nm+': 豚を隣の放牧地へローテーションした');
+    const boost=feedPigsScraps('staff');if(boost>0)notes.push('🐖 '+nm+': 余った野菜/栗を豚に給餌(早く育つ)');
+    const shipped=shipPigs('staff');if(shipped>0)notes.push('🐖 '+nm+': 育った豚'+shipped+'頭を出荷(+'+man(shipped*ECON.PIG_SELL)+')');
+  }
   // 🟫 堆肥: 堆肥化・肥料出荷(v46: 農産物の売却は🥕野菜/🥔加工の担当へ移した)
   const ck=staffWithJob('compost');
   if(ck){
@@ -4311,6 +4430,7 @@ function weekEnd(notes){
   }
   // 5) 牛の週次進行(妊娠/出産/週齢。健康40未満は妊娠が進まない)
   progressCows(notes);
+  progressPigs(notes); // v50: 豚の月次成長(ローテーションできていれば)
   // 6) 年度末決算(3月末=4月の田植え直前の週。会計年度は4月〜翌3月) v44
   if(state.week===ECON.RICE_PLANT_WEEK-1){
     doFiscalClose();
@@ -4358,7 +4478,7 @@ function doFiscalClose(){
   if(tax>0)toast('🏛 税金'+fmt(tax)+'を納付した(牛の利益は非課税)');
   if(r.profit>=0)fanfare();
 }
-const SD_LABEL={rice:'米の出荷',calf:'子牛の売却',mother:'親牛の売却',grass:'牧草の売却',fert:'肥料の売却(堆肥舎)',proc:'加工品・農産物',grant:'協力金・補助'};
+const SD_LABEL={rice:'米の出荷',calf:'子牛の売却',mother:'親牛の売却',grass:'牧草の売却',fert:'肥料の売却(堆肥舎)',proc:'加工品・農産物',pig:'🐖 豚の出荷',grant:'協力金・補助'};
 const ED_LABEL={owner:'自分の給与(役員報酬)',emp:'従業員の給与',rent:'牛舎の家賃',feed:'牛の餌代',manure:'牛糞の処分費',seed:'苗代(米の作付け)',grassSow:'牧草の作付け',shed:'本格堆肥舎の建設',dung:'糞置き場の建設',land:'土地の購入',other:'その他(種代等)',
   machine:'機械の購入(新品)',barn:'新築牛舎の建設',repair:'機械の修理代',vet:'獣医の往診・治療費',loss:'牛の死亡損失(与信精算)',breed:'種付け代(人工授精)'}; // v19/v20 v38
 function plRows(obj,labels){
@@ -4536,7 +4656,7 @@ function renderMenu(){
   const box=document.getElementById('menuBox');
   const tab=(id,label)=>'<div class="tab '+(menuTab===id?'on':'')+'" onclick="menuTab=\''+id+'\';renderMenu()">'+label+'</div>';
   let html='<h2>🌾 丹波農商 <span style="font-size:13px;color:#8a6a45">'+ymdLabel()+'・'+fmt(state.money)+'</span></h2>'+
-    '<div class="tabs">'+tab('ach','🏆 実績')+tab('ledger','📒 帳簿')+tab('wh','📦 倉庫')+tab('cows','🏚 牛舎')+tab('herd','🐂 牛')+tab('auction','🐂 セリ')+tab('bank','🏦 銀行')+tab('staff','🤝 指示')+tab('land','🏠 不動産屋')+
+    '<div class="tabs">'+tab('ach','🏆 実績')+tab('ledger','📒 帳簿')+tab('wh','📦 倉庫')+tab('cows','🏚 牛舎')+tab('herd','🐂 牛')+((state.abandonedLand>0||state.pigs.length>0)?tab('pig','🐖 豚'):'')+tab('auction','🐂 セリ')+tab('bank','🏦 銀行')+tab('staff','🤝 指示')+tab('land','🏠 不動産屋')+
     (menuTab==='yakuba'?tab('yakuba','🏛 役場'):'')+(menuTab==='ja'?tab('ja','🚜 農協'):'')+(menuTab==='repair'?tab('repair','🔧 修理屋'):'')+ // v19: 街の施設タブ(現地でだけ開く)
     tab('set','⚙')+'</div>';
   if(menuTab==='ach')html+=achHTML();
@@ -4547,6 +4667,7 @@ function renderMenu(){
   else if(menuTab==='auction')html+=auctionHTML();
   else if(menuTab==='bank')html+=bankHTML();
   else if(menuTab==='staff')html+=staffHTML();
+  else if(menuTab==='pig')html+=pigHTML();
   else if(menuTab==='land')html+=landHTML();
   else if(menuTab==='yakuba')html+=yakubaHTML();   // v19
   else if(menuTab==='ja')html+=jaHTML();           // v19
@@ -4558,8 +4679,27 @@ function renderMenu(){
   box.innerHTML=html;
 }
 // v16: 土地(区画)の購入=ワールド拡張
+// v50: 豚の放牧事業メニュー
+function pigHTML(){
+  let h='<p>🐖 <b>豚の放牧事業</b>（耕作放棄地のローテーション放牧）。ほぼタダの耕作放棄地に⚡電柵を張り、子豚を放牧。雑草を1ヶ月で食べ尽くすので、毎月🔄隣の反へ移動(ローテーション)。余った野菜や栗をやると早く育ち、'+ECON.PIG_SHIP_MIN+'〜'+ECON.PIG_SHIP_MAX+'ヶ月で1頭'+man(ECON.PIG_SELL)+'で出荷。</p>';
+  h+='<div class="row"><div class="em">🌾</div><div class="info"><b>耕作放棄地 '+state.abandonedLand+'反(電柵済み'+state.pigPlots+'反)</b><small>1反='+man(ECON.ABANDONED_PRICE)+'(ほぼタダ)。ローテーションには2反以上。豚は電柵済み1反に'+ECON.PIG_PER_PLOT+'頭</small></div><button class="buy" onclick="buyAbandoned()">'+man(ECON.ABANDONED_PRICE)+'で買う</button></div>';
+  h+='<div class="row"><div class="em">⚡</div><div class="info"><b>電柵を張る</b><small>耕作放棄地1反に電柵('+man(ECON.PIG_FENCE)+')。張ると豚'+ECON.PIG_PER_PLOT+'頭まで放牧できる</small></div><button class="buy" '+(state.pigPlots<state.abandonedLand&&(state.money>=ECON.PIG_FENCE||state.certFarmer)?'':'disabled')+' onclick="buyPigFence()">'+man(ECON.PIG_FENCE)+'</button></div>';
+  h+='<div class="row"><div class="em">🐖</div><div class="info"><b>子豚(雑種) '+pigCount()+'/'+pigCap()+'頭</b><small>1頭'+man(ECON.PIG_BUY)+'。育てて出荷</small></div><button class="buy" '+(pigCount()<pigCap()&&state.money>=ECON.PIG_BUY?'':'disabled')+' onclick="buyPig()">'+man(ECON.PIG_BUY)+'で買う</button></div>';
+  if(pigCount()>0){
+    const ready=state.pigs.filter(pg=>(pg.age||0)>=pigShipAge(pg)).length;
+    const ages=state.pigs.map(pg=>pg.age||0);
+    h+='<div class="row"><div class="em">📋</div><div class="info"><b>いる豚: '+pigCount()+'頭</b><small>月齢 '+Math.min(...ages)+'〜'+Math.max(...ages)+'ヶ月／出荷できる豚 '+ready+'頭。ローテーション: '+(state.pigPlots>=2?'可(2反以上)':'⚠不可(2反以上必要)')+'</small></div></div>';
+    h+='<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:4px">'+
+      '<button class="minibtn" onclick="rotatePigs(null);renderMenu()">🔄 ローテーション</button>'+
+      '<button class="minibtn" onclick="feedPigsScraps(null);renderMenu()">🌰 余り野菜/栗を給餌</button>'+
+      '<button class="minibtn" onclick="shipPigs(null)">🐖 出荷('+ready+'頭)</button></div>';
+  }
+  h+='<p class="sub2" style="font-size:11.5px;color:#8a6a45">💡 「🤝指示」で従業員に🐖豚の放牧を任せると、ローテーション・給餌・出荷を毎月自動でやるよ。</p>';
+  return h;
+}
 function landHTML(){
   let h='<p>🏠 不動産屋。土地(区画)を買うと荒れ地が開拓されて<b>世界が広がり、生産規模が拡大</b>するよ。作業量も増えるので従業員の配置を考えよう。</p>';
+  h+='<div class="row"><div class="em">🌾</div><div class="info"><b>耕作放棄地(豚の放牧用)</b><small>ほぼタダ('+man(ECON.ABANDONED_PRICE)+'/反)。電柵を張って豚を放牧できる荒れ地。詳しくは🐖豚メニューで(いま'+state.abandonedLand+'反)</small></div><button class="buy" onclick="buyAbandoned()">'+man(ECON.ABANDONED_PRICE)+'</button></div>';
   if(!state.land.pasture1)h+='<p style="color:#c03030;font-weight:bold;font-size:12.5px">🌿 牧草地はまだ持っていないよ！「西の牧草地(基本)」を買うと牧草を自給できる(餌代がタダに)。</p>';
   const rows=[
     ['pasture1','🌿',PARCELS.pasture1], // v22: 基本の牧草地(開始時は持っていない)
