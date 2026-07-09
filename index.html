@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v44: 従業員は話しかけて雇用/指示・1人に複数の仕事OK・牛担当は獣医も自動・牧草は年2回まき直し・解雇不可+毎年3万昇給の注意・決算は3月末・大倉庫の屋根撤去。黒枝豆や青ネギ等も継続</title>
+<title>丹波農商 牧場物語 v45: 毎週の出来事をタップで確認するモーダル＋📋で見返し・牧草は種まき/刈り取りを明確化(東の拡張=2倍を看板で説明)・牧草担当は牛なしでも播種・餌は不足分を自動仕入れ(止まらない)と明記</title>
 <link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -109,7 +109,7 @@
 <div id="game"></div>
 <div id="top">
   <div class="panel stat" id="money">￥10,000,000</div>
-  <div class="panel stat" id="day">1年目 4月1週目</div>
+  <div class="panel stat" id="day" onclick="showWeekLog&&showWeekLog()" style="cursor:pointer">1年目 4月1週目 📋</div>
   <div class="panel stat" id="place">丹波の里</div>
 </div>
 <div id="quest">🎯 …</div>
@@ -716,7 +716,7 @@ function freshState(){return{
   carryHay:false, // v34: 牧草をかかえているか(餌やりの運搬工程)
   barnDung:0, // v35: 掃除で集めたフンが牛舎内に溜まる量。月1回「処理」で消す。満杯だと掃除できない
   fy:freshFy(), // v17: 勘定別+事業セグメント別の期中帳簿
-  lastResult:null,history:[],
+  lastResult:null,history:[],weekLog:[], // v44: weekLog=毎週の出来事の記録(見返し用)
   edits:{},crops:{},treeFruit:{},tuftDay:{},plotHist:{}, // v43: plotHist=連作障害の履歴{"x,z":{last,streak}}
   planted:0,harvestN:0,soldN:0,
   sound:true,questDone:0,
@@ -2239,9 +2239,12 @@ function buildPastureDecor(){
     return;
   }
   hayRoll(38.5,11.5);hayRoll(41,17.2);hayRoll(45.5,10.3);hayRoll(44,19.5);
-  addSign(37,14.5,'🌿',{t:'🌿 牧草地',
-    b:()=>'牧草を作付け('+man(grassSowCost())+')すると育成が始まり、🌸春(5月1週目)と🍂秋(9月3週目)の年2回✂収穫できる(1回'+grassCutYield()+'束)。牛1頭は週1束消費、余りは1束1万円で売れる(自給できれば餌代タダ)。<br>いま: '+(state.grassSown?('作付け済み・在庫'+state.grassStock+'束・'+(isGrassHarvestWeek()?(state.grassCutWeek===state.weekN?'今シーズンの収穫✅済':'✂収穫できる週！'):'育成中(次の収穫は'+nextGrassHarvestLabel()+')')):'未作付け'), // v25: 週ベース
-    btns:()=>state.grassSown?(isGrassHarvestWeek()&&state.grassCutWeek!==state.weekN?[['✂ 牧草を収穫する(春・秋の年2回)',()=>doGrassCut(null)]]:[]):[['🌿 牧草を育てる('+man(grassSowCost())+')',()=>sowGrass()]]});
+  addSign(37,14.5,'🌿',{t:'🌿 牧草地'+(state.land.grass2?'(東の拡張つき=収穫2倍)':''),
+    b:()=>'牧草は<b>年2回タネをまいて刈り取る</b>畑。作付け('+man(grassSowCost())+')→育成→🌸春(5月1週目)/🍂秋(9月3週目)に✂刈り取り(1回'+grassCutYield()+'束'+(state.land.grass2?'・東の拡張で2倍':'')+')。<b>刈ったらその作付けは終了→次のシーズンにまた種まき</b>(勝手には生え続けない)。牛1頭は週1束消費、余りは1束1万円で売却。🌿担当を雇えば播種も刈り取りも売却も自動。<br>いま: '+(state.grassSown?('🌱作付け済み・在庫'+state.grassStock+'束・'+(isGrassHarvestWeek()?(state.grassCutWeek===state.weekN?'今シーズンは刈り取り✅済':'✂刈り取りできる週！'):'育成中(次の刈り取りは'+nextGrassHarvestLabel()+')')):'⛔未作付け(種まきしよう)'), // v25/v44
+    btns:()=>state.grassSown?(isGrassHarvestWeek()&&state.grassCutWeek!==state.weekN?[['✂ 牧草を刈り取る(春・秋の年2回)',()=>doGrassCut(null)]]:[]):[['🌱 牧草を種まきする('+man(grassSowCost())+')',()=>sowGrass()]]});
+  // v44: 東の牧草地(拡張)にも看板=「拡張ぶんは西の牧草地から一緒に刈り取る」ことを明示(何もできないと誤解されるため)
+  if(state.land.grass2)addSign(57,14.5,'🌿',{t:'🌿 東の牧草地(拡張区画)',
+    b:()=>'ここは牧草の拡張区画。西の牧草地とつながっていて、<b>操作は西の🌿看板からまとめて行う</b>(種まき・刈り取り)。この拡張のおかげで1回の刈り取り量が2倍('+grassCutYield()+'束)になっているよ。'});
   buildTufts();updateTufts();
 }
 // v21: 新牛舎の看板(アイコン+クリック説明)
@@ -2771,7 +2774,7 @@ function updateHUD(){
   const m=document.getElementById('money');
   m.textContent=fmt(state.money);
   m.style.color=state.money<0?'#c03030':'#b5651d';
-  document.getElementById('day').textContent=ymdLabel(); // v16: 年月日
+  document.getElementById('day').textContent=ymdLabel()+' 📋'; // v16: 年月日 / v44: 📋タップで記録
   updateCareChip();
   updateQuest();
   checkAchievements(); // v40
@@ -3867,9 +3870,10 @@ function staffMonthlyJobs(notes){
   const gk=staffWithJob('grass');
   if(gk){
     const nm=STAFF_META[gk].name;
-    if(!state.land.pasture1)notes.push('🌿 '+nm+': 牧草地がない！🏘街の🏠不動産屋で「西の牧草地」を買おう');
-    if(!state.grassSown&&state.land.pasture1&&state.money>=grassSowCost()&&herdCount()>0){sowGrass();notes.push('🌿 '+nm+': 牧草を作付けした');}
-    if(state.grassSown&&isGrassHarvestWeek()&&doGrassCut('staff'))notes.push('🌿 '+nm+': '+(state.week===18?'🌸春(5月1週目)':'🍂秋(9月3週目)')+'の牧草を収穫した(+'+state.grassProdLast+'束)');
+    if(!hasPasture())notes.push('🌿 '+nm+': 牧草地がない！🏘街の🏠不動産屋で「西の牧草地」を買おう');
+    // v44: 牛がいなくても播種する(余剰は売却)。刈り取り後の未作付けを毎シーズン自動でまき直し
+    else if(!state.grassSown&&state.money>=grassSowCost()){sowGrass();notes.push('🌿 '+nm+': 牧草を作付け(播種)した(−'+man(grassSowCost())+')');}
+    if(state.grassSown&&isGrassHarvestWeek()&&doGrassCut('staff'))notes.push('🌿 '+nm+': '+(state.week===18?'🌸春(5月1週目)':'🍂秋(9月3週目)')+'の牧草を刈り取った(+'+state.grassProdLast+'束)');
     if(state.grassSown){const s=sellGrassSurplus(true);if(s>0)notes.push('🌿 '+nm+': 余剰牧草'+s+'束を売却');}
   }
   // 🟫 堆肥: 堆肥化・肥料出荷・農産物売却
@@ -4017,7 +4021,44 @@ function do4WeekBatch(){
   }
   finishAdvance();
 }
-function flashNotes(notes){notes.forEach((t,i)=>setTimeout(()=>toast(t),380+i*450));}
+// v44: 毎週の通知はトーストで流さず、タップして進むモーダルにまとめる(見返しも可)
+function flashNotes(notes){ // 互換用エイリアス
+  if(document.getElementById('fiscal').style.display==='flex'){pushWeekLog(notes);return;} // 決算画面が出ている時はログだけ残す
+  showWeekReport(notes);
+}
+function pushWeekLog(notes){
+  if(!state.weekLog)state.weekLog=[];
+  state.weekLog.push({label:ymdLabel(),notes:(notes||[]).slice()});
+  if(state.weekLog.length>60)state.weekLog.shift();
+}
+function showWeekReport(notes){
+  pushWeekLog(notes);
+  const box=document.getElementById('fiscalBox');
+  let h='<h2>📅 '+ymdLabel()+' の出来事</h2>';
+  if(notes&&notes.length){
+    h+='<div style="max-height:52vh;overflow:auto;margin:6px 0">';
+    notes.forEach(t=>{h+='<p style="background:rgba(255,253,245,.75);border:1px solid #d8c7a0;border-radius:8px;padding:7px 10px;margin:5px 0;font-size:12.5px;color:#5a3714">'+t+'</p>';});
+    h+='</div>';
+  }else h+='<p>特に変わったことはなかったよ。次の週へどうぞ。</p>';
+  h+='<button class="close" style="background:#3a8a3a;border-color:#1f5a1f;box-shadow:0 3px 0 #1f5a1f" onclick="closeFiscal()">✅ 確認して進む</button>';
+  h+='<button class="close" onclick="showWeekLog()">📋 過去の記録を見る</button>';
+  box.innerHTML=h;
+  document.getElementById('fiscal').style.display='flex';
+}
+function showWeekLog(){
+  const box=document.getElementById('fiscalBox');
+  const log=(state.weekLog||[]).slice().reverse();
+  let h='<h2>📋 これまでの記録(最近'+log.length+'週)</h2>';
+  if(!log.length)h+='<p>まだ記録がないよ。「次の週へ」を押すと、その週の出来事がここに残るよ。</p>';
+  else{h+='<div style="max-height:64vh;overflow:auto">';
+    for(const e of log){h+='<p style="font-weight:bold;color:#5a3714;margin-top:9px;border-bottom:1px solid #e0d2b0">'+e.label+'</p>';
+      if(e.notes&&e.notes.length)e.notes.forEach(t=>{h+='<p style="font-size:12px;padding-left:6px;margin:2px 0;color:#6a4a25">・'+t+'</p>';});
+      else h+='<p style="font-size:12px;padding-left:6px;color:#aaa">(特になし)</p>';}
+    h+='</div>';}
+  h+='<button class="close" onclick="closeFiscal()">閉じる</button>';
+  box.innerHTML=h;
+  document.getElementById('fiscal').style.display='flex';
+}
 function finishAdvance(){
   updateHUD();updateCareChip();
   if(!isGameOver)saveGame(false);
@@ -4061,7 +4102,7 @@ function advanceWeek(notes,silent){
   if(state.grassSown){
     if(isGrassHarvestWeek())notes.push('✂ '+wkLabel(state.week)+'は'+(state.week===18?'🌸春':'🍂秋')+'の牧草の収穫週！今週中に収穫しよう(+'+grassCutYield()+'束)'+(staffWithJob('grass')?'(🌿担当が自動収穫)':''));
     const herd=herdCount();
-    if(herd>0&&!isGrassHarvestWeek()&&state.grassStock<herd*ECON.GRASS_EAT*4)notes.push('⚠ 牧草の在庫が残り'+state.grassStock+'束(牛'+herd+'頭で週'+herd*ECON.GRASS_EAT+'束消費)。次の収穫は'+nextGrassHarvestLabel()+'。切れると餌代が上がるよ');
+    if(herd>0&&!isGrassHarvestWeek()&&state.grassStock<herd*ECON.GRASS_EAT*4)notes.push('🌿 自給の牧草が残り'+state.grassStock+'束(牛'+herd+'頭で週'+herd*ECON.GRASS_EAT+'束)。足りない分は自動で市販の牧草を仕入れる(1頭15千)ので餌やりは止まりません。次の刈り取りは'+nextGrassHarvestLabel()+'。自給が多いほど餌代が安くなるよ');
   }
   // 9) 週次の従業員仕事(種まき/収穫/出荷/種付け等)
   staffMonthlyJobs(notes);
