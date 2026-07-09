@@ -3,18 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v47: 設備投資(牛舎/堆肥舎/機械/土地)は建設時に『銀行に連絡→設備資金で融資(スーパーL・無利息10年)』を選べる・牛担当がいれば獣医は自動なので治療メニューは出ない旨を明記</title>
+<title>丹波農商 牧場物語 v47b: 上部パラメータの被り解消(1行固定+クエスト2行)・設備投資ボタンは現金不足でも認定農業者なら融資で押せる・大倉庫の壁を低く・牛担当は全部の牛舎を歩いて巡回</title>
 <link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{width:100%;height:100%;overflow:hidden;font-family:'Hiragino Maru Gothic ProN','Yu Gothic',sans-serif;touch-action:none;background:#8ecbe6;user-select:none;-webkit-user-select:none;}
   #game{position:fixed;inset:0;} canvas{display:block;}
   .panel{background:rgba(255,253,245,.94);border:3px solid #8a5a2b;border-radius:14px;box-shadow:0 4px 0 rgba(90,55,20,.35);}
-  #top{position:fixed;top:calc(6px + env(safe-area-inset-top));left:8px;right:8px;display:flex;gap:5px;align-items:center;z-index:10;flex-wrap:wrap;pointer-events:none;}
+  #top{position:fixed;top:calc(6px + env(safe-area-inset-top));left:8px;right:8px;display:flex;gap:5px;align-items:center;z-index:10;flex-wrap:nowrap;overflow:hidden;pointer-events:none;} /* v47: 折り返してクエストと被るのを防ぐ=1行固定 */
+  #money,#day{flex-shrink:0;white-space:nowrap;} /* 所持金と日付は必ず全表示 */
+  #place{flex-shrink:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;} /* 場所は狭ければ省略 */
   #top>div{pointer-events:auto;}
   .stat{padding:4px 10px;font-size:13px;font-weight:bold;color:#5a3714;}
   #money{color:#b5651d;}
-  #quest{position:fixed;top:calc(44px + env(safe-area-inset-top));left:8px;z-index:10;padding:5px 10px;font-size:12px;color:#3a5a2a;max-width:70vw;pointer-events:auto;cursor:pointer;background:rgba(255,253,245,.85);border:2px solid #7aa35a;border-radius:10px;font-weight:bold;}
+  #quest{position:fixed;top:calc(44px + env(safe-area-inset-top));left:8px;z-index:10;padding:5px 10px;font-size:12px;color:#3a5a2a;max-width:70vw;pointer-events:auto;cursor:pointer;background:rgba(255,253,245,.85);border:2px solid #7aa35a;border-radius:10px;font-weight:bold;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;} /* v47: 最大2行(タップで詳細)=下のチップと被らない */
   #joy{position:fixed;width:118px;height:118px;border-radius:50%;background:rgba(255,253,245,.18);border:3px solid rgba(255,253,245,.5);z-index:11;display:none;pointer-events:none;transform:translate(-50%,-50%);}
   #joyKnob{position:absolute;left:50%;top:50%;width:50px;height:50px;border-radius:50%;background:rgba(255,253,245,.85);border:3px solid #8a5a2b;transform:translate(-50%,-50%);}
   .abtn{position:fixed;z-index:12;border-radius:50%;font-weight:bold;color:#fff;user-select:none;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.15;}
@@ -78,7 +80,7 @@
   #weekBtn:active{transform:translateY(2px);box-shadow:0 1px 0 #1f3f8a;}
   #week4Btn{background:#7a5fd8;border-color:#4a3a8a;box-shadow:0 4px 0 #4a3a8a;font-size:12px;padding:6px 11px;}
   #week4Btn:active{transform:translateY(2px);box-shadow:0 1px 0 #4a3a8a;}
-  #careChip{position:fixed;top:calc(80px + env(safe-area-inset-top));left:8px;z-index:12;padding:5px 10px;font-size:12px;font-weight:bold;color:#5a3714;display:none;background:rgba(255,253,245,.94);border:2px solid #c9a86f;border-radius:10px;pointer-events:none;max-width:70vw;} /* v43: 右のボタン群と被るので左(クエストの下)へ */
+  #careChip{position:fixed;top:calc(104px + env(safe-area-inset-top));left:8px;z-index:12;padding:5px 10px;font-size:12px;font-weight:bold;color:#5a3714;display:none;background:rgba(255,253,245,.94);border:2px solid #c9a86f;border-radius:10px;pointer-events:none;max-width:70vw;} /* v43左へ移動 / v47: クエスト(最大2行)の下へ下げて被り解消 */
   /* v24: 牛の🚶散歩(放し飼い)⇄🏠戻す(繋留)トグルボタン */
   #mapBtn{position:fixed;top:calc(90px + env(safe-area-inset-top));right:8px;z-index:13;background:#7a5fd8;border-color:#4a3a8a;box-shadow:0 4px 0 #4a3a8a;font-size:13px;}
   #mapBtn:active{transform:translateY(2px);box-shadow:0 1px 0 #4a3a8a;}
@@ -1069,13 +1071,23 @@ function toggleJob(k,job){
   sfx(660,.07,'sine',.05);updateStaffWander();updateHUD();renderMenu();
 }
 // v46: 雇って仕事を指示した従業員は、その作業場所を歩いて巡回する(止まらず働きに行く)。無職/未雇用は定位置。
+// v47: 牛の世話担当は「持っている全部の牛舎」を巡回する(第一牛舎+第二牛舎+新築牛舎を歩いて移動)
+function cowWorkSpots(){
+  const pts=WORK_SPOTS.cow.slice(); // 第一牛舎(古い牛舎)
+  if(state.land.barn2)pts.push([27,57],[27,55]); // 第二牛舎
+  for(let i=0;i<state.newBarns;i++){const p=NEW_BARN_PLOTS[i];if(p)pts.push([p[0]+5,p[1]+5],[p[0]+6,p[1]+3]);} // 新築牛舎
+  return pts;
+}
 function updateStaffWander(){
   if(typeof npcs==='undefined'||!npcs)return;
   for(const n of npcs){
     if(!isStaffNpc(n.key))continue;
     const jobs=state.staff[n.key]?jobsOf(n.key):[];
     let pts=[];
-    for(const j of jobs)if(WORK_SPOTS[j])pts=pts.concat(WORK_SPOTS[j]);
+    for(const j of jobs){
+      if(j==='cow')pts=pts.concat(cowWorkSpots()); // 全牛舎を巡回
+      else if(WORK_SPOTS[j])pts=pts.concat(WORK_SPOTS[j]);
+    }
     if(pts.length){if(!n.wander||n.wander.pts.length!==pts.length){n.wi=0;}n.wander={pts};}
     else n.wander=null; // 未雇用/指示なしは自分の持ち場で待機
   }
@@ -1457,20 +1469,20 @@ function buildWarehouseComplexBlocks(){
     gset(x,2,z,x>=71?B.PLANK:(x<=54?B.PATH:B.PAVE)); // 床のゾーン分け: 農機庫=土間/事務所=板張り/他=コンクリ
     const wall=(x===WHX0||x===WHX1||z===WHZ0||z===WHZ1);
     if(wall){
-      for(let y=3;y<=9;y++)gset(x,y,z,x>=71?B.PLANK:B.WHITE);
+      for(let y=3;y<=5;y++)gset(x,y,z,x>=71?B.PLANK:B.WHITE); // v47: 壁を7段→3段に低くして中が見やすく
       const corner=(x===WHX0||x===WHX1)&&(z===WHZ0||z===WHZ1);
-      if(!corner&&(((z===WHZ0||z===WHZ1)&&x%3===1)||((x===WHX0||x===WHX1)&&z%3===1))){gset(x,6,z,B.WATER);gset(x,7,z,B.WATER);gset(x,8,z,B.WATER);} // 高窓3段
+      if(!corner&&(((z===WHZ0||z===WHZ1)&&x%3===1)||((x===WHX0||x===WHX1)&&z%3===1)))gset(x,4,z,B.WATER); // 窓(低い壁に1段)
     }
     gset(x,10,z,0); // v44: 大倉庫の屋根も撤去(牛舎と同じく屋根なし=上から中が見える)
   }
-  // 事務所の間仕切り(x=70・全高)と通用口(z=28,29)
-  for(let z=WHZ0+1;z<WHZ1;z++)for(let y=3;y<=9;y++)gset(70,y,z,B.PLANK);
+  // 事務所の間仕切り(x=70)と通用口(z=28,29) v47: 低く
+  for(let z=WHZ0+1;z<WHZ1;z++)for(let y=3;y<=5;y++)gset(70,y,z,B.PLANK);
   for(const z of[28,29])for(let y=3;y<=4;y++)gset(70,y,z,0);
-  // 屋根を支える木の柱(倉庫らしい内観。中央の通路と米の貯蔵棚の前は空ける)
-  for(const px of[46,52,64])for(let y=3;y<=9;y++)gset(px,y,25,B.WOOD);
-  for(const px of[46,52,58,64])for(let y=3;y<=9;y++)gset(px,y,33,B.WOOD);
-  // 入口: 西の大搬入口(5マス幅×4段)+北の通用口+南の加工場口/事務所口
-  for(let z=25;z<=29;z++)for(let y=3;y<=6;y++)gset(WHX0,y,z,0);
+  // 柱(低い壁に合わせて低く) v47
+  for(const px of[46,52,64])for(let y=3;y<=5;y++)gset(px,y,25,B.WOOD);
+  for(const px of[46,52,58,64])for(let y=3;y<=5;y++)gset(px,y,33,B.WOOD);
+  // 入口: 西の大搬入口+北の通用口+南の加工場口/事務所口
+  for(let z=25;z<=29;z++)for(let y=3;y<=5;y++)gset(WHX0,y,z,0);
   for(const x of[47,48])for(let y=3;y<=4;y++)gset(x,y,WHZ0,0);
   for(const x of[65,66])for(let y=3;y<=4;y++)gset(x,y,WHZ1,0);
   for(const x of[72,73])for(let y=3;y<=4;y++)gset(x,y,WHZ1,0);
@@ -4521,7 +4533,7 @@ function landHTML(){
     const locked=(k==='grass2'&&!state.land.pasture1); // v22: 東の牧草地は西の牧草地が先
     h+='<div class="row"><div class="em">'+em+'</div><div class="info"><b>'+p.n+(owned?' ✅所有':'')+'</b><small>'+p.desc+(locked?'<br><span style="color:#c03030">🔒 先に「西の牧草地(基本)」の購入が必要</span>':'')+'</small></div>'+
       (owned?'<span style="font-size:12px;color:#1f7a1f;font-weight:bold">開拓済み</span>'
-      :'<button class="buy orange" '+(state.money>=p.price&&!locked?'':'disabled')+' onclick="buyLand(\''+k+'\')">'+man(p.price)+'</button>')+'</div>';
+      :'<button class="buy orange" '+((state.money>=p.price||state.certFarmer)&&!locked?'':'disabled')+' onclick="buyLand(\''+k+'\')">'+(state.money>=p.price?man(p.price):'🏦融資')+'</button>')+'</div>'; // v47: 認定農業者は設備資金で購入可
   }
   h+='<p class="sub2" style="font-size:11.5px;color:#8a6a45">💡 牧草地=自給で牧草代タダ／東の棚田=米1.5倍／南の牧場=母牛16頭。</p>';
   return h;
@@ -4568,8 +4580,8 @@ function jaHTML(){
     const status=(st.lvl==='new'?(st.size==='small'?'小型・新品✅':'中型・新品✅'):'中古の中型(故障しやすい)')+(st.broken?' <span class="loss">⚠故障中</span>':'');
     h+='<div class="row"><div class="em">🚜</div><div class="info"><b>新品のトラクター</b><small>田植え(4月)と収穫(10月)に必要 / いま: '+status+'<br>小型'+man(ECON.MACH_TRACTOR_S)+'=基本の棚田まで。中型'+man(ECON.MACH_TRACTOR_M)+'=🌾東の棚田(規模1.5倍)も対応<br>'+(prS.sub?'<span class="prof">🏛補助済 半額 小型'+man(prS.price)+'/中型'+man(prM.price)+'</span>':'<span style="color:#c03030">未申請 定価(申請で半額)</span>')+'</small></div>'+
       '<div style="display:flex;flex-direction:column;gap:4px">'+
-      '<button class="buy" '+(state.money>=prS.price&&!(st.lvl==='new'&&st.size==='small'&&!st.broken)?'':'disabled')+' onclick="buyMachine(\'tractor\',\'small\')">小型 '+man(prS.price)+'</button>'+
-      '<button class="buy" '+(state.money>=prM.price&&!(st.lvl==='new'&&st.size==='mid'&&!st.broken)?'':'disabled')+' onclick="buyMachine(\'tractor\',\'mid\')">中型 '+man(prM.price)+'</button></div></div>';
+      '<button class="buy" '+((state.money>=prS.price||state.certFarmer)&&!(st.lvl==='new'&&st.size==='small'&&!st.broken)?'':'disabled')+' onclick="buyMachine(\'tractor\',\'small\')">小型 '+man(prS.price)+'</button>'+
+      '<button class="buy" '+((state.money>=prM.price||state.certFarmer)&&!(st.lvl==='new'&&st.size==='mid'&&!st.broken)?'':'disabled')+' onclick="buyMachine(\'tractor\',\'mid\')">中型 '+man(prM.price)+'</button></div></div>';
   }
   for(const k of['planter','combine','polisher','processor']){
     const m=MACH_META[k],st=state.machines[k];
@@ -4578,14 +4590,14 @@ function jaHTML(){
     const status=owned?((st.lvl==='new'?'新品✅':'中古(故障しやすい)')+(st.broken?' <span class="loss">⚠故障中</span>':'')):'未保有';
     const canBuy=!owned||st.lvl!=='new';
     h+='<div class="row"><div class="em">'+m.em+'</div><div class="info"><b>新品の'+m.n+'('+man(m.price)+')</b><small>'+m.desc+' / いま: '+status+'<br>'+(pr.sub?'<span class="prof">🏛補助済 半額 '+man(pr.price)+'</span>':'<span style="color:#c03030">未申請 定価 '+man(pr.price)+'</span>')+'</small></div>'+
-      (canBuy?'<button class="buy" '+(state.money>=pr.price?'':'disabled')+' onclick="buyMachine(\''+k+'\')">'+man(pr.price)+'</button>':'')+'</div>';
+      (canBuy?'<button class="buy" '+(state.money>=pr.price||state.certFarmer?'':'disabled')+' onclick="buyMachine(\''+k+'\')">'+(state.money>=pr.price?man(pr.price):'🏦融資')+'</button>':'')+'</div>'; // v47: 認定農業者は設備資金で購入可
   }
   // v20: 新築牛舎(3000万・補助で1500万)。🟤糞置き場が必須。山を切り開いて増築
   const bp=priceWithSub(ECON.NEW_BARN,'barn');
   const plotsLeft=NEW_BARN_PLOTS.length-state.newBarns;
   h+='<div class="row"><div class="em">🏠</div><div class="info"><b>新築牛舎を建てる(1棟'+man(ECON.NEW_BARN)+')</b><small>⛰山を切り開いて増築。1棟で母牛+'+ECON.NEW_BARN_MO+'頭・子牛+'+ECON.NEW_BARN_CALF+'頭。いま'+state.newBarns+'棟(開拓地の残り'+plotsLeft+')<br>'+
     (bp.sub?'<span class="prof">🏛補助済 半額 '+man(bp.price)+'</span>':'<span style="color:#c03030">未申請 定価 '+man(bp.price)+'(申請で'+man(ECON.NEW_BARN/2)+')</span>')+'</small></div>'+
-    (plotsLeft>0?'<button class="buy" '+(state.money>=bp.price?'':'disabled')+' onclick="buyNewBarn()">'+man(bp.price)+'</button>':'')+'</div>';
+    (plotsLeft>0?'<button class="buy" '+(state.money>=bp.price||state.certFarmer?'':'disabled')+' onclick="buyNewBarn()">'+(state.money>=bp.price?man(bp.price):'🏦融資して建てる')+'</button>':'')+'</div>'; // v47: 現金不足でも認定農業者なら設備資金で建てられる
   h+='<p class="sub2" style="font-size:11.5px;color:#8a6a45">💡 🏭本格堆肥舎(補助で半額)は農場の🟫堆肥場で建設。中古の牛舎レンタル(月3万)は補助対象外。</p>';
   return h;
 }
