@@ -4042,6 +4042,13 @@ function staffMonthlyJobs(notes){
     const nm=STAFF_META[ck].name;
     if((state.res.manure||0)>0){const n=state.res.manure;state.res.manure=0;state.res.compost+=n;notes.push('🟫 '+nm+': 堆肥を'+n+'個作った');}
     if(state.compostShed){const n=sellFert(true);if(n>0)notes.push('🟫 '+nm+': 肥料'+n+'袋を出荷('+fmt(n*ECON.FERT_PRICE)+')');}
+    // v49: 連作で弱った畑に堆肥をまいて回復(売る前に畑の手当てを優先)。堆肥が無ければ購入してでも直す
+    let healed=0;
+    for(const kk in state.crops){const c=state.crops[kk];if(!c.renraku)continue;
+      if((state.res.compost||0)<=0&&state.money>=PRICE.compost){addExpense(PRICE.compost,'other','other');state.res.compost=(state.res.compost||0)+1;}
+      if((state.res.compost||0)>0){state.res.compost--;c.renraku=false;const pp=kk.split(',');const pk=pp[0]+','+pp[2];if(state.plotHist&&state.plotHist[pk])state.plotHist[pk].streak=0;healed++;}
+    }
+    if(healed>0)notes.push('🟫 '+nm+': 連作で弱った畑'+healed+'マスに堆肥をまいて回復させた(収量ダウンを解消)');
     let g=0;for(const kk of['chestnut','compost']){const n=state.res[kk]||0;if(n>0){g+=n*PRICE[kk];state.res[kk]=0;}}
     if(g>0){const gp=Math.round(g*procMult());addSale(gp,'proc');notes.push('🟫 '+nm+': 栗・堆肥を'+fmt(gp)+'で売却');}
   }
