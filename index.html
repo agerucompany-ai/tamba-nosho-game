@@ -139,7 +139,7 @@
 <div id="seedPick"><div class="panel" id="seedPickBox"></div></div>
 <div id="title">
   <h1>🌾 丹波農商<br>牧場物語 <span style="font-size:16px">放置経営編</span></h1>
-  <div class="sub">現金1,000万円と棚田から始める農業経営シム。<br>🌾米・🐄牛・🌿牧草を育てて、丹波農商を大きくしよう！<br><span style="font-size:12px;opacity:.8">🎯画面の「目標」に沿って進めればOK。⏭で1週間ずつ進む。</span></div>
+  <div class="sub">現金1,000万円と棚田から始める農業経営シム。<br>🌾米・🐂牛・🌿牧草を育てて、丹波農商を大きくしよう！<br><span style="font-size:12px;opacity:.8">🎯画面の「目標」に沿って進めればOK。⏭で1週間ずつ進む。</span></div>
   <button class="bigbtn" id="newBtn">▶ はじめる</button>
   <button class="bigbtn orange" id="contBtn">💾 続きから</button>
 </div>
@@ -2827,18 +2827,18 @@ function checkDailyLogin(){
   setTimeout(()=>{toast('🎁 ログインボーナス！'+state.loginStreak+'日連続 +'+man(bonus)+'（毎日ひらくと増える・最大40万）');fanfare();},1600);
 }
 const ACHIEVEMENTS=[
-  {id:'cow1',s:'🐄 はじめての牛',d:'牛を1頭飼う',c:()=>state.cows.length>=1,r:100000},
+  {id:'cow1',s:'🐂 はじめての牛',d:'牛を1頭飼う',c:()=>state.cows.length>=1,r:100000},
   {id:'rice1',s:'🍚 米の初出荷',d:'米を出荷する',c:()=>state.soldRiceBags>0,r:100000},
   {id:'grass',s:'🌿 牧草を自給',d:'牧草を収穫して在庫を持つ',c:()=>state.grassStock>0,r:100000},
   {id:'calf',s:'🐮 仔牛が生まれる',d:'母牛が出産する',c:()=>state.cows.some(c=>(c.births||0)>0),r:200000},
-  {id:'cow5',s:'🐄 牛を5頭',d:'母牛が5頭',c:()=>state.cows.length>=5,r:200000},
+  {id:'cow5',s:'🐂 牛を5頭',d:'母牛が5頭',c:()=>state.cows.length>=5,r:200000},
   {id:'shed',s:'🏭 堆肥舎を建てる',d:'本格堆肥舎を建設',c:()=>state.compostShed,r:300000},
   {id:'newfarmer',s:'🎓 新規就農者',d:'農協で認定を受ける',c:()=>state.newFarmer,r:200000},
-  {id:'cow10',s:'🐄 牛を10頭',d:'母牛が10頭',c:()=>state.cows.length>=10,r:500000},
+  {id:'cow10',s:'🐂 牛を10頭',d:'母牛が10頭',c:()=>state.cows.length>=10,r:500000},
   {id:'money2',s:'💰 現金2,000万',d:'現金2,000万円を突破',c:()=>state.money>=20000000,r:300000},
   {id:'barn',s:'⛰ 牛舎を増築',d:'新築牛舎を建てる',c:()=>state.newBarns>=1,r:500000},
   {id:'cert',s:'🏅 認定農業者',d:'認定農業者になる',c:()=>state.certFarmer,r:1000000},
-  {id:'cow20',s:'🐄 牛を20頭',d:'母牛が20頭',c:()=>state.cows.length>=20,r:1000000},
+  {id:'cow20',s:'🐂 牛を20頭',d:'母牛が20頭',c:()=>state.cows.length>=20,r:1000000},
 ];
 function checkAchievements(){
   if(!state||!state.claimedAch)return;
@@ -3289,7 +3289,7 @@ function nearestAction(wx,wz){
   if(herdCount()>0){
     if(state.care.fedWeek!==state.weekN){
       // v43: 半径を大きく=牛舎のどこからでも届く。かかえる→餌箱に入れると全頭に給餌(1箇所でOK)
-      if(!state.carryHay)cand(23,10.5,6.5,'🌾 牧草をかかえる',()=>{if(!removeHayPileBlock()){toast('🌾 牧草の山が空っぽ！次の週になると補充されるよ(🌿牧草地を持っていると豊富)');return;}state.carryHay=true;toast('🌾 牧草を一束かかえた！🐄牛の前の餌箱まで運んで「入れる」と全頭に餌やり');sfx(500,.06,'sine',.05);updateActHint&&updateActHint();});
+      if(!state.carryHay)cand(23,10.5,6.5,'🌾 牧草をかかえる',()=>{if(!removeHayPileBlock()){toast('🌾 牧草の山が空っぽ！次の週になると補充されるよ(🌿牧草地を持っていると豊富)');return;}state.carryHay=true;toast('🌾 牧草を一束かかえた！🐂牛の前の餌箱まで運んで「入れる」と全頭に餌やり');sfx(500,.06,'sine',.05);updateActHint&&updateActHint();});
       else cand(18,15,7.5,'🌾 餌箱に入れる(全'+herdCount()+'頭に餌やり)',()=>{doFeed(null);state.carryHay=false;});
     }
     if(state.care.cleanWeek!==state.weekN)cand(16,15,8,'🧹 フンを撤去する(掃除)',()=>doClean(null)); // v43: 半径を大きく=牛舎内どこでも掃除OK
@@ -4369,7 +4369,7 @@ function renderMenu(){
   const box=document.getElementById('menuBox');
   const tab=(id,label)=>'<div class="tab '+(menuTab===id?'on':'')+'" onclick="menuTab=\''+id+'\';renderMenu()">'+label+'</div>';
   let html='<h2>🌾 丹波農商 <span style="font-size:13px;color:#8a6a45">'+ymdLabel()+'・'+fmt(state.money)+'</span></h2>'+
-    '<div class="tabs">'+tab('ach','🏆 実績')+tab('ledger','📒 帳簿')+tab('wh','📦 倉庫')+tab('cows','🏚 牛舎')+tab('herd','🐄 牛')+tab('auction','🐂 セリ')+tab('bank','🏦 銀行')+tab('staff','🤝 指示')+tab('land','🏠 不動産屋')+
+    '<div class="tabs">'+tab('ach','🏆 実績')+tab('ledger','📒 帳簿')+tab('wh','📦 倉庫')+tab('cows','🏚 牛舎')+tab('herd','🐂 牛')+tab('auction','🐂 セリ')+tab('bank','🏦 銀行')+tab('staff','🤝 指示')+tab('land','🏠 不動産屋')+
     (menuTab==='yakuba'?tab('yakuba','🏛 役場'):'')+(menuTab==='ja'?tab('ja','🚜 農協'):'')+(menuTab==='repair'?tab('repair','🔧 修理屋'):'')+ // v19: 街の施設タブ(現地でだけ開く)
     tab('set','⚙')+'</div>';
   if(menuTab==='ach')html+=achHTML();
@@ -4602,14 +4602,14 @@ function cowsHTML(){
     h+='<div class="row"><div class="em">'+(state.cowFree?'🚶':'⛓')+'</div><div class="info"><b>'+(state.cowFree?'いま: 散歩中(放し飼い)':'いま: 定位置に繋留中')+'</b><small>ふだんは各牛が牛舎の床の定位置に繋がれている(餌やり・なでるがやりやすい)。🚶散歩で牛舎の床を放し飼い→🏠戻すで全頭が定位置へ整列。どちらでも世話・種付け・売却はできるよ</small></div>'+
     '<button class="buy'+(state.cowFree?' orange':'')+'" onclick="toggleCowMode();renderMenu()">'+(state.cowFree?'🏠 戻す':'🚶 散歩')+'</button></div>';
   }
-  h+='<div class="row"><div class="em">🐄</div><div class="info"><b>牛の一覧（母牛'+state.cows.length+'・仔牛'+state.calves.length+'頭）</b><small>1頭ずつの状態・種付け・売却は「🐄 牛」メニューで(頭数が多くても見やすい)。</small></div><button class="buy" onclick="menuTab=\'herd\';renderMenu()">🐄 牛メニューへ</button></div>';
+  h+='<div class="row"><div class="em">🐂</div><div class="info"><b>牛の一覧（母牛'+state.cows.length+'・仔牛'+state.calves.length+'頭）</b><small>1頭ずつの状態・種付け・売却は「🐂 牛」メニューで(頭数が多くても見やすい)。</small></div><button class="buy" onclick="menuTab=\'herd\';renderMenu()">🐂 牛メニューへ</button></div>';
   h+='<p class="sub2" style="font-size:11.5px;color:#8a6a45">🌾餌=牧草15千+配合5千=月2万/頭(牧草は自給なら無料)。💉種付け1万→40週で出産→仔牛は4週で離乳。</p>';
   return h;
 }
 // v41: 牛の一覧(1頭ずつ)。牛が増えても見やすいよう牛舎メニューから分離。
 function cowListHTML(){
   if(!hasBarn())return '<p>まず🏚牛舎が必要だよ(牛舎メニューで借りる/建てる)。</p>';
-  let h='<p>🐄 <b>牛の一覧</b>（母牛 '+state.cows.length+'/'+barnCapNow()+'・仔牛 '+state.calves.length+'/'+calfCapNow()+'頭）</p>';
+  let h='<p>🐂 <b>牛の一覧</b>（母牛 '+state.cows.length+'/'+barnCapNow()+'・仔牛 '+state.calves.length+'/'+calfCapNow()+'頭）</p>';
   const skN=sickAnimals().length;
   if(skN>0)h+='<p class="loss" style="font-weight:bold">🤒 病気の牛が'+skN+'頭！🚜農協で獣医を</p>';
   if(!state.cows.length&&!state.calves.length)h+='<p style="color:#8a6a45">牛はまだいないよ。🐂セリ市場でメス牛を買おう(与信100万円)。</p>';
