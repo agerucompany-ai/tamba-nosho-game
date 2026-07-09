@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v48: 第二牛舎を北へ=山を切り開いて両側繋ぎ+中央通路+奥に採食槽+子牛個室2つの横長牛舎(屋根なし)。上部パラメータ被り解消・設備資金融資ボタン・倉庫の壁低く・牛担当は全牛舎を巡回</title>
+<title>丹波農商 牧場物語 v49: 北の第二牛舎を古い牛舎の約3倍に大型化(母牛+20頭)・北の山を大きく切り開いて広い平地に。牧草は西と東の2面とも刈り取り→両方にロールが残る(2倍収穫)</title>
 <link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -601,7 +601,7 @@ const ECON={
   MAX_BIRTHS:8,          // 母牛の最大産子数
   BARN_CAP:10,           // v20: 古い牛舎(レンタル)の母牛収容数
   BARN_CAP_CALF:10,      // v20: 古い牛舎(レンタル)の子牛収容数
-  BARN2_ADD:5,           // v20: 南の牧場(第二牛舎)の追加収容(母+5/子+5)
+  BARN2_ADD:20,          // v49: 北の大第二牛舎の追加収容(母+20/子+20。古い牛舎の約3倍)
   NEW_BARN:30000000,     // v20: 新築牛舎1棟(補助で1500万)。山を切り開いて増築
   NEW_BARN_MO:15,        // v20: 新築牛舎1棟の母牛収容数
   NEW_BARN_CALF:15,      // v20: 新築牛舎1棟の子牛収容数
@@ -1074,7 +1074,7 @@ function toggleJob(k,job){
 // v47: 牛の世話担当は「持っている全部の牛舎」を巡回する(第一牛舎+第二牛舎+新築牛舎を歩いて移動)
 function cowWorkSpots(){
   const pts=WORK_SPOTS.cow.slice(); // 第一牛舎(古い牛舎)
-  if(state.land.barn2)pts.push([22,4],[30,4],[16,4]); // 第二牛舎(北・横長=通路を東西に歩く)
+  if(state.land.barn2)pts.push([12,4],[26,4],[40,4],[26,9]); // 第二牛舎(北の大牛舎=通路を東西に歩いて世話)
   for(let i=0;i<state.newBarns;i++){const p=NEW_BARN_PLOTS[i];if(p)pts.push([p[0]+5,p[1]+5],[p[0]+6,p[1]+3]);} // 新築牛舎
   return pts;
 }
@@ -1533,7 +1533,7 @@ const PARCELS={
   pasture1:{n:'西の牧草地(基本)',em:'🌿',price:ECON.LAND_PASTURE_PRICE,desc:'牛舎の東の空き地を柵付きの牧草地に開拓。作付け(10万)すると🌸春(5月)と🍂秋(9月)の年2回、牧草を収穫できる(1回72束〜。牛が多い時は頭数×9ヶ月分まで増える)。牧草を自給できれば牛の餌代がタダに(市販の牧草を買わずに済む)。'},
   grass2:{n:'東の牧草地(拡張)',em:'🌿',price:ECON.LAND_GRASS_PRICE,desc:'牧草の収穫が2倍(72→144束/回)になる拡張区画。荒れ地を開拓して西の牧草地とつなげる(先に西の牧草地が必要)。'},
   rice2:{n:'東の棚田',em:'🌾',price:ECON.LAND_RICE_PRICE,desc:'米の規模が1.5倍(苗代450万・収穫450袋・年商1,350万円)に。水管理と出荷の作業量も増える。'},
-  barn2:{n:'北の第二牛舎(増築)',em:'🏠',price:ECON.LAND_BARN_PRICE,desc:'古い牛舎の北の山を切り開いて、両側繋ぎ+中央通路+奥に採食槽+子牛個室2つの横長な第二牛舎(屋根なし)を増築。収容枠が母牛+5頭・子牛+5頭。牛の世話担当は第一・第二を歩いて巡回。'},
+  barn2:{n:'北の第二牛舎(大牛舎)',em:'🏠',price:ECON.LAND_BARN_PRICE,desc:'古い牛舎の北の山を大きく切り開いて、古い牛舎の約3倍の横長な大牛舎(屋根なし)を増築。両側に繋ぎ列+中央通路+通路脇に採食槽+東の奥に子牛個室2つ。収容枠が母牛+'+ECON.BARN2_ADD+'頭・子牛+'+ECON.BARN2_ADD+'頭。牛の世話担当は第一・第二を歩いて巡回。'},
   orchard:{n:'栗園',em:'🌰',price:ECON.LAND_ORCHARD_PRICE,desc:'牛舎の北東の丘に栗の木が植わる。秋に🌰栗を収穫して出荷・加工できる(栗の渋皮煮などの原料)。'}, // v27
 };
 // v27: 栗園(北東の丘 x33-47,z3-8)。牛舎と離れた場所。購入で植樹。
@@ -1565,29 +1565,28 @@ function terraformRice2(){
 }
 // v47: 第二牛舎を「北」へ移設。山を切り開いて古い牛舎の上(北)に、屋根なし・両側繋ぎ+中央通路(横長)。
 // 構造: 中央にE-Wの通路、通路の南北に牛の繋ぎ列(顔は通路向き)、通路脇に採食槽、東の奥に子牛個室2つ。
-const BARN2={X0:11,X1:37,Z0:1,Z1:7,MIDZ:4,COWX0:12,COWX1:32,ROWN:2,ROWS:6}; // 座標定数
+// v49: 北の第二牛舎を大幅拡大(古い牛舎の約3倍・横長)。北の山を大きく切り開いた広い平地に。z0-7で古い牛舎(z8-)には被らない。
+const BARN2={X0:6,X1:52,Z0:0,Z1:7,MIDZ:3.5,COWX0:8,COWX1:44,ROWN:1,ROWS:6}; // 47×8=約3倍
 function terraformBarn2(){
   const B2=BARN2;
-  flatten(9,39,0,9,2); // 北の山を切り開いて平地に
-  for(let x=9;x<=39;x++)for(let z=0;z<=9;z++)if(inWorld(x,z))gset(x,2,z,B.GRASS);
+  flatten(2,56,0,8,2); // 北の山を大きく切り開いて広い平地に(牛舎+前庭)。z8は古い牛舎の壁行→ensureBarnBuiltで再建される
+  for(let x=2;x<=56;x++)for(let z=0;z<=8;z++)if(inWorld(x,z))gset(x,2,z,B.GRASS);
   for(let x=B2.X0;x<=B2.X1;x++)for(let z=B2.Z0;z<=B2.Z1;z++){
     if(!inWorld(x,z))continue;
-    for(let y=3;y<=8;y++)gset(x,y,z,0); // 旧ブロック/屋根を撤去(屋根なし)
+    for(let y=3;y<=8;y++)gset(x,y,z,0); // 屋根なし
     const wall=(x===B2.X0||x===B2.X1||z===B2.Z0||z===B2.Z1);
     if(wall){
-      const door=(z===B2.Z1&&x>=22&&x<=25); // 南の入口(古い牛舎/農場側)
-      if(!door){gset(x,3,z,B.PLANK);gset(x,4,z,B.PLANK);} // 壁は2段(屋根なし=中が見える)
+      const door=(z===B2.Z1&&x>=24&&x<=28); // 南の入口(古い牛舎/農場側)
+      if(!door){gset(x,3,z,B.PLANK);gset(x,4,z,B.PLANK);} // 壁は2段(中が見える)
       continue;
     }
-    if(z===B2.MIDZ)gset(x,2,z,B.PATH);                       // 中央のE-W通路
-    if((z===3||z===5)&&x>=B2.COWX0&&x<=B2.COWX1)gset(x,3,z,B.HAY); // 通路脇の採食槽(北z3/南z5)
-    if((z===2||z===6)&&x>=B2.COWX0&&x<=B2.COWX1&&(x%3!==0))gset(x,3,z,B.FENCE); // 繋ぎ柵(牛の後ろ・3マスごとに隙間)
+    if(z===3||z===4)gset(x,2,z,B.PATH);                        // 中央のE-W通路(2マス幅)
+    if((z===2||z===5)&&x>=B2.COWX0&&x<=B2.COWX1)gset(x,3,z,B.HAY); // 通路脇の採食槽(北z2/南z5)
   }
-  // 東の奥=子牛の個室2つ(北室 z1-3 / 南室 z5-7)。通路(z4)を挟んで上下に分かれる
-  for(let z=B2.Z0;z<=B2.Z1;z++)if(z!==B2.MIDZ)gset(33,3,z,B.FENCE); // 個室の西壁(通路側)
-  for(let x=33;x<=36;x++){gset(x,3,3,B.FENCE);gset(x,3,5,B.FENCE);} // 北室と南室の仕切り
-  // 通路の東の突き当り(奥)に牧草の山=餌置き場
-  gset(35,3,B2.MIDZ,B.HAY);gset(36,3,B2.MIDZ,B.HAY);
+  // 東の奥=子牛の個室2つ(北室 z1-2 / 南室 z5-6)
+  for(let z=B2.Z0+1;z<B2.Z1;z++)if(z!==3&&z!==4)gset(45,3,z,B.FENCE); // 個室の西壁(通路の口は開ける)
+  for(let x=45;x<=51;x++){gset(x,3,2,B.FENCE);gset(x,3,5,B.FENCE);}    // 北室と南室の仕切り
+  gset(50,3,3,B.HAY);gset(51,3,4,B.HAY);                               // 奥の採食槽
 }
 function applyLandParcels(){
   if(state.land.pasture1)terraformPasture1(); // v22: 西の牧草地(基本区画)
@@ -1869,7 +1868,7 @@ function doGrassCut(who){
   state.grassStock+=y;
   state.grassProdLast=y;
   state.grassSown=false; // v44: 刈り取ったら畑は終わり=次のシーズンにまた種まき(年2回タネまき→刈り取り)。勝手に生え続けない
-  state.grassRolls=Math.min(6,Math.max(3,Math.round(y/24))); // v46: 刈り取った牧草を大きなロールにして牧草地に残す(毎週1つずつ牛舎へ運搬)
+  state.grassRolls=state.land.grass2?10:5; // v46/v49: 刈った牧草を大きなロールに(2面あれば両方の牧草地に残る)
   if(!who){toast('✂ '+(state.week===18?'🌸春(5月1週目)':'🍂秋(9月3週目)')+'の牧草を刈り取った！+'+y+'束(在庫'+state.grassStock+'束)。刈った牧草は🟨大きなロールにして牧草地に置いた→毎週すこしずつ牛舎へ運ばれるよ。畑は次のシーズンにまた種まき');sfx(420,.07);}
   updateGrassRolls(); // v46: 刈り取り後にロールを牧草地へ出現(看板は関数で自動反映なので再ビルド不要)
   updateHUD();
@@ -2283,14 +2282,17 @@ function buildDecor(){
 let pastureVacantSign=null;
 // v46: 刈り取った牧草のロールを専用グループで管理(毎回クリア→再描画=重複しない)。farmのみ。
 const grassRollGroup=new THREE.Group();decoGroup.add(grassRollGroup);
-const GRASS_ROLL_SPOTS=[[38.5,11.5],[41,17.2],[45.5,10.3],[44,19.5],[40,13.5],[47,15.5]];
+const GRASS_ROLL_SPOTS_W=[[38.5,11.5],[41,17.2],[45.5,10.3],[44,19.5],[40,13.5],[47,15.5]]; // 西の牧草地
+const GRASS_ROLL_SPOTS_E=[[53,11.5],[57,17.2],[61,10.3],[59,19.5],[55,13.5],[63,15.5]];     // v49: 東の牧草地(拡張)
+function grassRollSpots(){return state.land.grass2?GRASS_ROLL_SPOTS_W.concat(GRASS_ROLL_SPOTS_E):GRASS_ROLL_SPOTS_W;}
 function updateGrassRolls(){
   while(grassRollGroup.children.length)grassRollGroup.remove(grassRollGroup.children[0]);
   if(curMap!=='farm')return;
   if(grassRollGroup.parent!==decoGroup)decoGroup.add(grassRollGroup); // v46: マップ再構築でdecoGroupがクリアされるため付け直す
-  const n=Math.min(6,state.grassRolls||0);
+  const spots=grassRollSpots();
+  const n=Math.min(spots.length,state.grassRolls||0);
   for(let i=0;i<n;i++){
-    const[x,z]=GRASS_ROLL_SPOTS[i];const y=topY(Math.floor(x),Math.floor(z))+1;
+    const[x,z]=spots[i];const y=topY(Math.floor(x),Math.floor(z))+1;
     const g=new THREE.Group();
     const c=new THREE.Mesh(new THREE.CylinderGeometry(0.6,0.6,0.9,10),new THREE.MeshLambertMaterial({color:0xd9b84e}));
     c.rotation.z=Math.PI/2;c.position.y=0.6;g.add(c);
@@ -2311,9 +2313,12 @@ function buildPastureDecor(){
   addSign(37,14.5,'🌿',{t:'🌿 牧草地'+(state.land.grass2?'(東の拡張つき=収穫2倍)':''),
     b:()=>'牧草は<b>年2回タネをまいて刈り取る</b>畑。作付け('+man(grassSowCost())+')→育成→🌸春(5月1週目)/🍂秋(9月3週目)に✂刈り取り(1回'+grassCutYield()+'束'+(state.land.grass2?'・東の拡張で2倍':'')+')。<b>刈ったらその作付けは終了→次のシーズンにまた種まき</b>(勝手には生え続けない)。牛1頭は週1束消費、余りは1束1万円で売却。🌿担当を雇えば播種も刈り取りも売却も自動。<br>いま: '+(state.grassSown?('🌱作付け済み・在庫'+state.grassStock+'束・'+(isGrassHarvestWeek()?(state.grassCutWeek===state.weekN?'今シーズンは刈り取り✅済':'✂刈り取りできる週！'):'育成中(次の刈り取りは'+nextGrassHarvestLabel()+')')):'⛔未作付け(種まきしよう)'), // v25/v44
     btns:()=>state.grassSown?(isGrassHarvestWeek()&&state.grassCutWeek!==state.weekN?[['✂ 牧草を刈り取る(春・秋の年2回)',()=>doGrassCut(null)]]:[]):[['🌱 牧草を種まきする('+man(grassSowCost())+')',()=>sowGrass()]]});
-  // v44: 東の牧草地(拡張)にも看板=「拡張ぶんは西の牧草地から一緒に刈り取る」ことを明示(何もできないと誤解されるため)
-  if(state.land.grass2)addSign(57,14.5,'🌿',{t:'🌿 東の牧草地(拡張区画)',
-    b:()=>'ここは牧草の拡張区画。西の牧草地とつながっていて、<b>操作は西の🌿看板からまとめて行う</b>(種まき・刈り取り)。この拡張のおかげで1回の刈り取り量が2倍('+grassCutYield()+'束)になっているよ。'});
+  // v44/v49: 東の牧草地(拡張)にも干し草ロールの装飾＋看板=2面とも使われていることを見せる
+  if(state.land.grass2){
+    hayRoll(52.5,11.5);hayRoll(56,17.2);hayRoll(61.5,10.3);hayRoll(59,19.5); // 東の牧草地にも干し草
+    addSign(57,14.5,'🌿',{t:'🌿 東の牧草地(拡張区画)',
+      b:()=>'西の牧草地とつながった拡張区画。<b>2面まとめて種まき・刈り取り</b>され、1回の収穫量が2倍('+grassCutYield()+'束)になるよ。刈り取ると両方の牧草地に🟨ロールが残り、毎週すこしずつ牛舎へ運ばれる。'});
+  }
   buildTufts();updateTufts();
 }
 // v21: 新牛舎の看板(アイコン+クリック説明)
@@ -2663,9 +2668,9 @@ function barnAreas(){
   const list=[{type:'oneside',cx:21,cz:16,x0:15.6,x1:16.4,z0:10,z1:23,   // v34: 母牛の繋ぎ列(x16,z10-23。尻の西x15=掃除アイスル)
     rowsX:[16], faceMid:19, calf:{x0:25.6,x1:27.4,z0:14,z1:20},
     inner:{x0:16,x1:24,z0:9,z1:25}}];                                    // 放し飼い=繋ぎ列の両端から中央スペース(x19-24)へ
-  if(state.land.barn2)list.push({type:'centralEW',cx:22,cz:4,x0:BARN2.COWX0,x1:BARN2.COWX1,z0:1.6,z1:6.4,
-    rowsZ:[BARN2.ROWN,BARN2.ROWS], faceMidZ:BARN2.MIDZ, calf:{x0:33.6,x1:36.4,z0:1.6,z1:6.4},
-    inner:{x0:BARN2.COWX0,x1:32.4,z0:1.6,z1:6.4}}); // v47: 第二牛舎(北・横長・両側繋ぎ+中央通路)
+  if(state.land.barn2)list.push({type:'centralEW',cx:26,cz:3.5,x0:BARN2.COWX0,x1:BARN2.COWX1,z0:0.6,z1:6.9,
+    rowsZ:[BARN2.ROWN,BARN2.ROWS], faceMidZ:BARN2.MIDZ, calf:{x0:46,x1:51,z0:1,z1:6},
+    inner:{x0:BARN2.COWX0,x1:44.4,z0:0.6,z1:6.9}}); // v49: 北の大第二牛舎(横長・両側繋ぎ+中央通路)
   for(let i=0;i<state.newBarns;i++){const p=NEW_BARN_PLOTS[i];if(!p)continue;
     list.push({type:'central',cx:p[0]+5.5,cz:p[1]+5,x0:p[0]+1.4,x1:p[0]+10.6,z0:p[1]+1.4,z1:p[1]+9.6,
       rowsX:[p[0]+3,p[0]+8], faceMid:p[0]+5.5, calf:{x0:p[0]+1.6,x1:p[0]+10.4,z0:p[1]+8.5,z1:p[1]+9.4},
@@ -5437,7 +5442,7 @@ function areaName(x,z){
   // v16: 拡張区画
   if(x>=50&&x<=66&&z>=8&&z<=21)return state.land.grass2?'🌿 東の牧草地':'🧱 販売中の区画(荒れ地)';
   if(x>=47&&x<=66&&z>=37&&z<=47)return state.land.rice2?'🌾 東の棚田':'🧱 販売中の区画(荒れ地)';
-  if(x>=9&&x<=39&&z>=0&&z<=9&&state.land.barn2)return '🏠 第二牛舎(北)'; // v47: 第二牛舎を北へ移設
+  if(x>=2&&x<=56&&z>=0&&z<=10&&state.land.barn2)return '🏠 第二牛舎(北・大牛舎)'; // v49: 北の大第二牛舎
   if(x>=BASE_WS||z>=BASE_WS)return'🌲 未開拓の荒れ地';
   if(x>=35&&x<=49&&z>=8&&z<=21)return state.land.pasture1?'🌿 牧草地':'🧱 空き地(牧草地の予定地・販売中)'; // v22
   if(x<=3&&z>=18&&z<=25)return'🏘 街の入口(橋の西)'; // v22
