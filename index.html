@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v46: 従業員は指示した仕事の作業場所へ歩いて働きに行く・野菜/ポテサラ加工も任せられる・牧草は刈ると大きなロールになり毎週牛舎へ運搬(年2回の刈り取り)</title>
+<title>丹波農商 牧場物語 v47: 設備投資(牛舎/堆肥舎/機械/土地)は建設時に『銀行に連絡→設備資金で融資(スーパーL・無利息10年)』を選べる・牛担当がいれば獣医は自動なので治療メニューは出ない旨を明記</title>
 <link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -1578,6 +1578,11 @@ function applyLandParcels(){
 function buyLand(k){
   if(state.land[k]){toast('🗺 その区画はもう持っているよ');return;}
   if(k==='grass2'&&!state.land.pasture1){toast('🌿 先に「西の牧草地(基本)」('+man(ECON.LAND_PASTURE_PRICE)+')を買って牧草地を作ろう');return;} // v22
+  const p=PARCELS[k];
+  facilityPay(p.price,p.n+'(土地)',()=>buyLandCore(k)); // v46: 現金 or 設備資金の融資
+}
+function buyLandCore(k){
+  if(state.land[k])return;
   const p=PARCELS[k];
   if(state.money<p.price){toast('💸 '+p.n+'は'+man(p.price)+'。現金が足りないよ');return;}
   addExpense(p.price,'land',(k==='grass2'||k==='pasture1'||k==='orchard')?'grass':(k==='rice2'?'rice':'cow')); // v17: 土地は用途の事業へ配賦 / v27: 栗園→grass事業
@@ -3254,6 +3259,10 @@ function buyDungYard(){
 function buildShed(){
   if(state.compostShed){toast('🏭 本格堆肥舎はもうあるよ');return;}
   const pr=priceWithSub(ECON.SHED_COST,'shed'); // v19: 役場の補助が承認済みなら半額
+  facilityPay(pr.price,'本格堆肥舎',()=>buildShedCore(pr)); // v46: 現金 or 設備資金の融資
+}
+function buildShedCore(pr){
+  if(state.compostShed)return;
   if(state.money<pr.price){toast('💸 本格堆肥舎の建設に'+man(pr.price)+'必要だよ'+(pr.sub?'(補助済 半額)':'(🏛役場で申請すると半額の'+man(ECON.SHED_COST/2)+')'));return;}
   addExpense(pr.price,'shed'); // v17: 堆肥事業の経費(BSでは建物=取得原価)
   state.compostShed=true;
@@ -3460,6 +3469,10 @@ function ensureBarnBuilt(){
 function buyNewBarn(){
   if(state.newBarns>=NEW_BARN_PLOTS.length){toast('⛰ 山の開拓地はもう満杯だよ(新築牛舎'+state.newBarns+'棟)');return;} // v30: 糞置き場の必須条件を撤廃
   const pr=priceWithSub(ECON.NEW_BARN,'barn');
+  facilityPay(pr.price,'新築牛舎(牛舎の増築)',()=>buyNewBarnCore(pr)); // v46: 現金 or 設備資金の融資
+}
+function buyNewBarnCore(pr){
+  if(state.newBarns>=NEW_BARN_PLOTS.length)return;
   if(state.money<pr.price){toast('💸 新築牛舎は1棟'+man(pr.price)+'。現金が足りないよ'+(pr.sub?'(補助済 半額)':'(🏛役場で申請すると半額の'+man(ECON.NEW_BARN/2)+')'));return;}
   addExpense(pr.price,'barn','cow');
   state.newBarns++;state.newBarnCosts.push(pr.price);
@@ -3651,6 +3664,29 @@ function borrowSuperL(amount){
   toast('🏦 スーパーL資金'+man(a)+'を借入(無利息)。残高'+man(state.superL.remain)+'・年返済'+man(state.superL.annual));
   updateHUD();renderMenu();
 }
+// v46: 設備投資(牛舎/堆肥舎/機械/土地)は建設のこのタイミングだけ「銀行に連絡→設備資金の融資」を選べる。
+// 融資=スーパーL資金(認定農業者・無利息・10年均等)。融資金を入金してから通常建設が同額を支払う=現金増減ゼロで施設が建ち負債が残る。
+function facilityPay(cost,name,buildCore){
+  if(!state||isGameOver)return;
+  const box=document.getElementById('fiscalBox');
+  const canCash=state.money>=cost, cert=!!state.certFarmer;
+  window.__facCash=()=>{closeFiscal();buildCore();};
+  window.__facFin=()=>{closeFiscal();
+    if(!state.certFarmer){toast('🏦 設備資金の融資は🚜農協で「認定農業者」の認定を受けると使えるよ(スーパーL資金)');return;}
+    state.superL.remain+=cost;if(!state.superL.startYear)state.superL.startYear=state.year;
+    state.superL.annual=Math.ceil(state.superL.remain/10);
+    state.money+=cost; // 融資金を入金→buildCoreが同額を支払う(現金は増減ゼロ・負債が増える)
+    buildCore();
+    toast('🏦 銀行に連絡→設備資金'+man(cost)+'を融資して建設(スーパーL・無利息・10年均等 年'+man(state.superL.annual)+'返済/残高'+man(state.superL.remain)+')');
+  };
+  const box2=document.getElementById('fiscalBox');
+  let h='<h2>🏦 '+name+' の設備投資 '+man(cost)+'</h2>';
+  h+='<p>支払い方法を選んでね。<b>設備資金の融資</b>は、施設を建てるこのタイミングだけ銀行に相談できる特別な資金だよ(スーパーL資金・無利息・10年均等返済)。'+(cert?'':'<br><span style="color:#c03030">※融資は「認定農業者」になると使えます(🚜農協で認定)。</span>')+'</p>';
+  h+='<button class="close" style="background:#3a8a3a;border-color:#1f5a1f;box-shadow:0 3px 0 #1f5a1f'+(canCash?'':';opacity:.45')+'" '+(canCash?'onclick="window.__facCash()"':'disabled')+'>💴 現金で建てる（−'+man(cost)+(canCash?'':'・現金不足')+'）</button>';
+  h+='<button class="close" style="background:#3a6fd8;border-color:#1f3f8a;box-shadow:0 3px 0 #1f3f8a'+(cert?'':';opacity:.55')+'" onclick="window.__facFin()">🏦 銀行に連絡→設備資金で融資して建てる'+(cert?'':'（要・認定農業者）')+'</button>';
+  h+='<button class="close" onclick="closeFiscal()">やめる</button>';
+  box2.innerHTML=h;document.getElementById('fiscal').style.display='flex';
+}
 // 年度末: 制度融資の返済(無利息・現金から)。据置/均等を処理し notes に記載。
 function repayInstitutionalLoans(notes){
   const sl=state.startupLoan;
@@ -3732,6 +3768,9 @@ function buyMachine(k,size){
     if(st.lvl==='new'&&st.size===size&&!st.broken){toast('✨ '+label+'はもう新品だよ');return;}
   }else if(machineOwned(k)&&st.lvl==='new'&&!st.broken){toast('✨ '+m.n+'はもう新品だよ');return;}
   const pr=priceWithSub(base,'machine');
+  facilityPay(pr.price,'新品の'+label,()=>buyMachineCore(k,size,m,st,base,label,pr)); // v46: 現金 or 設備資金の融資
+}
+function buyMachineCore(k,size,m,st,base,label,pr){
   if(state.money<pr.price){toast('💸 新品の'+label+'は'+man(pr.price)+'。現金が足りないよ'+(pr.sub?'(補助済 半額)':'(役場で申請すると半額の'+man(base/2)+')'));return;}
   addExpense(pr.price,'machine',m.seg);
   st.lvl='new';st.broken=false;st.cost=(st.cost||0)+pr.price;
@@ -4515,7 +4554,7 @@ function jaHTML(){
     (state.certFarmer?'<span class="prof">認定済✅</span>':(cok?'<button class="buy orange" onclick="certifyCertFarmer()">認定を受ける</button>':'<span style="color:#c03030">条件未達</span>'))+'</div>';
   h+='<p><b>🩺 獣医の往診(担当: 犬飼先生)</b></p>';
   if(herdCount()===0)h+='<p style="color:#8a6a45">牛はまだいないよ(牛を飼うと病気のリスクがある。その時はここで獣医を呼ぼう)。</p>';
-  else if(sick.length===0)h+='<p style="color:#1f7a1f;font-weight:bold">✅ いま牛はみんな元気！(発病したらここで獣医を呼ぼう。放置は悪化→最悪死亡)</p>';
+  else if(sick.length===0)h+='<p style="color:#1f7a1f;font-weight:bold">✅ いま牛はみんな元気！(発病したらここで獣医を呼べる)'+(staffWithJob('cow')?'<br><span style="color:#8a6a45;font-weight:normal">🐂牛の世話担当('+STAFF_META[staffWithJob('cow')].name+')がいるので、病気が出ても<b>自動で獣医を呼んで治療</b>します。だからこの治療メニューはめったに出ません(記録に「獣医を呼んで全快」と残る)。</span>':'')+'</p>';
   else{
     const cost=ECON.VET_CALL+ECON.VET_TREAT*sick.length;
     h+='<div class="row"><div class="em">🤒</div><div class="info"><b>病気の牛が'+sick.length+'頭いる！</b><small>病気の牛は成長・繁殖が止まり、放置すると死んでしまう。往診料'+man(ECON.VET_CALL)+'＋治療費'+man(ECON.VET_TREAT)+'×'+sick.length+'頭＝'+man(cost)+'</small></div>'+
