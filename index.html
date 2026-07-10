@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v53: 3月8週バグ修正(各月4〜5週に均等)・外周の灰色の壁(山)を撤去して世界を開放・北を平地に開拓・新築牛舎も屋根なしに・北の第二牛舎を古い牛舎の構造そのままに約3倍拡大して作り直し(南入口から通路で農場と接続)</title>
+<title>丹波農商 牧場物語 v54: 上限を厳守(枠を超えたら買えない/産ませられない・妊娠ぶんも計上)・世話係1人は母牛60頭子牛50頭まで(超えたら要増員)・外周を平地+地平線の板で行き止まり感を解消</title>
 <link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -612,6 +612,8 @@ const ECON={
   PIG_PER_PLOT:2,        // 1反=2頭
   PIG_SHIP_MIN:12,       // 出荷できる最短月齢(たっぷり給餌時)
   PIG_SHIP_MAX:24,       // 給餌なしでも出荷できる月齢
+  COW_CARE_MO:60,        // v53: 世話係1人が見られる母牛の上限(自分+牛担当ごと)
+  COW_CARE_CALF:50,      // v53: 世話係1人が見られる子牛の上限
   BARN_CAP:10,           // v20: 古い牛舎(レンタル)の母牛収容数
   BARN_CAP_CALF:10,      // v20: 古い牛舎(レンタル)の子牛収容数
   BARN2_ADD:20,          // v49: 北の大第二牛舎の追加収容(母+20/子+20。古い牛舎の約3倍)
@@ -838,6 +840,17 @@ function nextGrassHarvestLabel(){const w=((state.week-1+weeksToNextGrassHarvest(
 // v20: 牛舎の収容枠(母牛/子牛)。古い牛舎=10+10、南の牧場=+5+5、新築牛舎=1棟につき15+15
 function barnCapNow(){return (state.barnRented?ECON.BARN_CAP:0)+(state.land.barn2?ECON.BARN2_ADD:0)+state.newBarns*ECON.NEW_BARN_MO;}
 function calfCapNow(){return (state.barnRented?ECON.BARN_CAP_CALF:0)+(state.land.barn2?ECON.BARN2_ADD:0)+state.newBarns*ECON.NEW_BARN_CALF;}
+// v53: 世話係の人数(自分+牛担当) と、世話できる上限(母牛60/子牛50 ×人数)。牛舎の枠と世話の枠、少ない方が実際の上限。
+function cowCaretakers(){let n=1;for(const k in state.staff)if(state.staff[k]&&jobsOf(k).includes('cow'))n++;return n;}
+function careMoCap(){return cowCaretakers()*ECON.COW_CARE_MO;}
+function careCalfCap(){return cowCaretakers()*ECON.COW_CARE_CALF;}
+function moCap(){return Math.min(barnCapNow(),careMoCap());}   // 母牛の実上限
+function calfCap(){return Math.min(calfCapNow(),careCalfCap());} // 子牛の実上限
+function pregCount(){return state.cows.filter(c=>c.preg>=0).length;} // 妊娠中(将来生まれる子牛)
+function committedCalves(){return state.calves.length+pregCount();} // 現在+妊娠ぶん
+// 上限に達した時のメッセージ(牛舎の枠か世話の枠か)
+function capMsgMo(){return barnCapNow()<=careMoCap()?('🏚 母牛の牛舎の枠が満員('+barnCapNow()+'頭)。牛舎を増築しよう'):('👤 世話係1人で見られる母牛は'+ECON.COW_CARE_MO+'頭まで。もう1人「🐂牛の世話」を任せるか、頭数を減らそう');}
+function capMsgCalf(){return calfCapNow()<=careCalfCap()?('🐮 子牛の牛舎の枠が満員('+calfCapNow()+'頭)。牛舎を増築しよう'):('👤 世話係1人で見られる子牛は'+ECON.COW_CARE_CALF+'頭まで。もう1人「🐂牛の世話」を任せよう');}
 function isWaterSeason(){return state.week>=18&&state.week<=35;}
 // ---------- v19: 牛舎・機械・補助金・病気のヘルパ / v20: 実売価格・糞置き場 ----------
 function hasBarn(){return state.barnRented||state.newBarns>0||state.land.barn2;}
@@ -1117,7 +1130,11 @@ let scene,camera,renderer,sun,hemi,moonL,worldGroup;
 const SKY_DAY=new THREE.Color(0x8ecbe6),SKY_EVE=new THREE.Color(0xe8956a),SKY_NIGHT=new THREE.Color(0x101a38);
 function initThree(){
   scene=new THREE.Scene(); scene.background=SKY_DAY.clone();
-  scene.fog=new THREE.Fog(0x9fd4ea,50,130);
+  scene.fog=new THREE.Fog(0x9fd4ea,55,150); // v53: 遠くはフォグで地平線に溶ける
+  // v53: 世界の外周に広大な平原(地平線)=行き止まり感をなくす。ワールドの端の下に大きな緑の板を敷く
+  const horizon=new THREE.Mesh(new THREE.PlaneGeometry(1600,1600),new THREE.MeshLambertMaterial({color:0x93cf63}));
+  horizon.rotation.x=-Math.PI/2;horizon.position.set(WS/2,1.98,WS/2);horizon.receiveShadow=false;horizon.renderOrder=-1;
+  scene.add(horizon);
   camera=new THREE.PerspectiveCamera(62,innerWidth/innerHeight,0.1,400);
   renderer=new THREE.WebGLRenderer({antialias:true});
   renderer.setPixelRatio(Math.min(devicePixelRatio,2));
@@ -1343,8 +1360,8 @@ function genWorld(){
   const cx0=BASE_WS/2,cz0=BASE_WS/2; // v16: 地形の中心は旧世界のまま(既存マップを維持)
   for(let x=0;x<WS;x++)for(let z=0;z<WS;z++){
     if(x>=BASE_WS||z>=BASE_WS){ // v16: 拡張ゾーン=未開拓の荒れ地(区画を買うと開拓される)
-      let h=2+Math.round(0.8*Math.sin(x*0.35)+0.8*Math.cos(z*0.3)+h2(x,z)*1.0); // v53: 起伏を抑えて開けた荒れ地に
-      // v53: 外周の「灰色の大きな壁(山)」を撤去=開けた世界に
+      let h=2+Math.round(0.6*Math.sin(x*0.35)+0.6*Math.cos(z*0.3)+h2(x,z)*0.6); // v53: 起伏を抑えて開けた荒れ地に
+      if(x>=WS-10||z>=WS-10)h=1; // v53: 外周10マスは平地(core地面と同じ高さ)=地平線となめらかにつながる
       h=Math.max(1,Math.min(WH-6,h));
       for(let y=0;y<=h;y++){
         let t=B.SOIL;
@@ -3601,7 +3618,7 @@ function rentBarn(){
 // ---------- v14: セリ市場（与信購入・子牛/親牛の売却） ----------
 function buyCowCredit(){
   if(!hasBarn()){toast('🏚 まず牛舎が必要だよ(古い牛舎を借りる 月3万円 / 農協で新築牛舎を建てる)');return;} // v19
-  if(state.cows.length>=barnCapNow()){toast('🏚 母牛の枠が満員だよ('+barnCapNow()+'頭まで)。⛰新築牛舎(農協・3000万/補助1500万)で増築するか、引退牛を売却しよう');return;} // v20
+  if(state.cows.length>=moCap()){toast(capMsgMo()+'。これ以上は買えないよ');return;} // v53: 牛舎の枠 or 世話の枠の少ない方を厳守
   const id=state.cowSeq++;
   const cow={id,name:'牛'+id,preg:-1,births:0,debt:ECON.COW_PRICE,retired:false,bredMonth:-1,sick:false,sickDays:0,fat:60,sickCount:0}; // v19: 病気 v20: 肥育度・病歴
   state.cows.push(cow);
@@ -3617,7 +3634,7 @@ function breedCow(id){
   if(c.sick){toast('🤒 '+c.name+'は病気だよ。🚜街の農協で獣医を呼んで治してから');return;} // v19
   if(c.retired){toast(c.name+'は繁殖終了(8産)だよ');return;}
   if(c.preg>=0){toast(c.name+'は妊娠中('+c.preg+'/'+ECON.PREG_WEEKS+'週)');return;}
-  if(state.calves.length>=calfCapNow()){toast('🐮 子牛の枠が満員('+calfCapNow()+'頭)で種付けできないよ。子牛を出荷するか⛰新築牛舎で増築しよう');return;} // v20
+  if(committedCalves()>=calfCap()){toast(capMsgCalf()+'(妊娠中'+pregCount()+'頭ぶん含めて上限)。産ませられないよ');return;} // v53: 妊娠ぶんも含めて上限を厳守
   if(c.bredWeek===state.weekN){toast(c.name+'は今週種付け済み。⏭で翌週に再挑戦');return;}
   c.bredWeek=state.weekN;
   addExpense(ECON.BREED_COST,'breed','cow'); // v38: 種付け代(人工授精)1回1万円
@@ -4136,7 +4153,7 @@ function staffMonthlyJobs(notes){
     }
     for(const c of state.cows){
       if(!c.retired&&!c.sick&&c.preg<0&&c.bredWeek!==state.weekN){ // v19: 病気の牛は種付けしない
-        if(state.calves.length>=calfCapNow()){notes.push('⚠ '+nm+': 子牛の枠が満員で種付けを見送り(⛰増築か出荷を)');break;} // v20: 収容枠
+        if(committedCalves()>=calfCap()){notes.push('⚠ '+nm+': '+capMsgCalf()+'ので種付けを見送り(妊娠中'+pregCount()+'頭ぶん含む)');break;} // v53: 妊娠ぶんも含めて厳守
         c.bredWeek=state.weekN;
         addExpense(ECON.BREED_COST,'breed','cow'); // v38: 自動種付けも種付け代1万
         if(Math.random()<ECON.BREED_RATE){c.preg=0;notes.push('🐂 '+nm+': '+c.name+'の種付け成功(種付け代−'+man(ECON.BREED_COST)+')');}
@@ -4147,7 +4164,7 @@ function staffMonthlyJobs(notes){
       const cf=state.calves[i];
       if((cf.ageWeeks||0)>=ECON.CALF_SHIP_WEEKS&&!cf.sick){ // v19: 病気の子牛は売らない
         // v20: ♀メスは母牛の枠が空いていれば母牛候補として自動昇格(次世代の親牛)。♂オスは売却
-        if(cf.sex==='F'&&state.cows.length<barnCapNow()){
+        if(cf.sex==='F'&&state.cows.length<moCap()){
           notes.push('🐂 '+nm+': ♀メス子牛'+cf.id+'を母牛として残した(自家育成・与信なし)');
           keepAsMother(cf.id);
           continue;
