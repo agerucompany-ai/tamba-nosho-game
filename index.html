@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v59: DIYモードに↩戻る(直前の設置/撤去を取り消して材料も復元・複数手さかのぼりOK)・牛の繋ぎ柵を銀色の金属スタンチョンに・第二牛舎を実在の畜舎型(中央通路+両側繋ぎ+奥に仔牛個室)に作り直し・DIYモード(材料費だけで柵/壁/餌箱/電柵を自分で設置&撤去)・電柵20本で放牧エリア/豚の電柵も材料で安く・南の棚田は繰り返し購入で南へ拡張(最大4)</title>
+<title>丹波農商 牧場物語 v60: 年度末で週が進まなくなる致命バグ修正(従業員給与の事業別記帳でveg/proc/pig担当がいると例外)・牛の世話を第一牛舎/第二牛舎の担当制に分割(上限も牛舎ごと・巡回も担当牛舎のみ)・田んぼを棚田から平地の1枚水田に(南のリピート購入でそのままつながる)</title>
 <link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -141,7 +141,7 @@
 <div id="seedPick"><div class="panel" id="seedPickBox"></div></div>
 <div id="title">
   <h1>🌾 丹波農商<br>牧場物語 <span style="font-size:16px">放置経営編</span></h1>
-  <div class="sub">現金1,000万円と棚田から始める農業経営シム。<br>🌾米・🐂牛・🌿牧草を育てて、丹波農商を大きくしよう！<br><span style="font-size:12px;opacity:.8">🎯画面の「目標」に沿って進めればOK。⏭で1週間ずつ進む。</span></div>
+  <div class="sub">現金1,000万円と田んぼから始める農業経営シム。<br>🌾米・🐂牛・🌿牧草を育てて、丹波農商を大きくしよう！<br><span style="font-size:12px;opacity:.8">🎯画面の「目標」に沿って進めればOK。⏭で1週間ずつ進む。</span></div>
   <button class="bigbtn" id="newBtn">▶ はじめる</button>
   <button class="bigbtn orange" id="contBtn">💾 続きから</button>
 </div>
@@ -483,7 +483,7 @@ const CHARS={
     line2:'僕を雇って「堆肥」を指示すれば、ふん回収も肥料の出荷も自動だよ(事務所で雇用・月給30万円)'},
   ryunosuke:{name:'りゅうのすけさん',urls:['char_min/mnaoto_walk.glb'],role:'牛と豚のお兄さん',skin:'#e0aa7c',cheek:'#e07a5a',hair:'#0f0d0a',cap:'#7a1f1f',shirt:'#2f6a3a',pants:'#2a2a30',shoe:'#3a2a1a',spot:'barn2', // v56
     line:'牛も豚も任せて！増えた頭数はもう1人で見きれないから、僕みたいな世話係を増やすといいよ🐂🐖',
-    line2:'僕を雇って「牛の世話」や「豚の放牧」を指示すれば全部自動！世話係を増やすと母牛60頭ずつ見られる枠が増えるよ(事務所で雇用・月給30万円)'},
+    line2:'僕を雇って「牛の世話(第一牛舎/第二牛舎)」や「豚の放牧」を指示すれば全部自動！世話係は牛舎ごとに1人ずつ(1人で母牛60頭まで)。どっちの牛舎を任せるか決めてね(事務所で雇用・月給30万円)'},
   ami:{name:'あみちゃん',urls:['char_min/shufu_walk.glb'],role:'食品加工のお姉さん',skin:'#f3d2b6',cheek:'#f0a0a8',hair:'#4a2c18',ponytail:true,shirt:'#d76a8a',pants:'#5a4a6a',shoe:'#b04a6a',spot:'proc', // v56
     line:'丹波の野菜でポテサラや加工品を作るのが得意！加工は毎週コツコツが大事だよ🥔',
     line2:'私を雇って「加工(ポテサラ)」を指示すれば、ポテサラ作りも農産物の加工販売も自動でやるよ(事務所で雇用・月給30万円)'},
@@ -851,17 +851,34 @@ function nextGrassHarvestLabel(){const w=((state.week-1+weeksToNextGrassHarvest(
 // v20: 牛舎の収容枠(母牛/子牛)。古い牛舎=10+10、南の牧場=+5+5、新築牛舎=1棟につき15+15
 function barnCapNow(){return (state.barnRented?ECON.BARN_CAP:0)+(state.land.barn2?ECON.BARN2_ADD:0)+state.newBarns*ECON.NEW_BARN_MO;}
 function calfCapNow(){return (state.barnRented?ECON.BARN_CAP_CALF:0)+(state.land.barn2?ECON.BARN2_ADD:0)+state.newBarns*ECON.NEW_BARN_CALF;}
-// v53: 世話係の人数(自分+牛担当) と、世話できる上限(母牛60/子牛50 ×人数)。牛舎の枠と世話の枠、少ない方が実際の上限。
-function cowCaretakers(){let n=1;for(const k in state.staff)if(state.staff[k]&&jobsOf(k).includes('cow'))n++;return n;}
-function careMoCap(){return cowCaretakers()*ECON.COW_CARE_MO;}
-function careCalfCap(){return cowCaretakers()*ECON.COW_CARE_CALF;}
-function moCap(){return Math.min(barnCapNow(),careMoCap());}   // 母牛の実上限
-function calfCap(){return Math.min(calfCapNow(),careCalfCap());} // 子牛の実上限
+// v53: 世話係1人が見られる上限は母牛60/子牛50。牛舎の枠と世話の枠、少ない方が実際の上限。
+// v60: 牛の世話は「第一牛舎(cow)」「第二牛舎(cow2)」の担当制に分割。上限も牛舎ごとに効く。
+//      自分(プレイヤー)は第一牛舎の世話係1人ぶん(第一が無ければ第二)としてカウント。
+function cowStaffN(job){let n=0;for(const k in state.staff)if(state.staff[k]&&jobsOf(k).includes(job))n++;return n;}
+function barn1MoPhys(){return state.barnRented?ECON.BARN_CAP:0;}                                  // 第一牛舎(古い牛舎)の母牛枠
+function barn1CalfPhys(){return state.barnRented?ECON.BARN_CAP_CALF:0;}
+function barn2MoPhys(){return state.land.barn2?ECON.BARN2_ADD+state.newBarns*ECON.NEW_BARN_MO:0;} // 第二牛舎(増築ぶん込み)の母牛枠
+function barn2CalfPhys(){return state.land.barn2?ECON.BARN2_ADD+state.newBarns*ECON.NEW_BARN_CALF:0;}
+function caretakers1(){return (state.barnRented?1:0)+cowStaffN('cow');}                            // 第一の世話係(自分+担当)
+function caretakers2(){return ((!state.barnRented&&state.land.barn2)?1:0)+cowStaffN('cow2');}      // 第二の世話係(担当。第一が無い時だけ自分も)
+function cowCaretakers(){return caretakers1()+caretakers2();} // 互換(合計人数)
+function careMoCap(){return caretakers1()*ECON.COW_CARE_MO+(state.land.barn2?caretakers2()*ECON.COW_CARE_MO:0);}
+function careCalfCap(){return caretakers1()*ECON.COW_CARE_CALF+(state.land.barn2?caretakers2()*ECON.COW_CARE_CALF:0);}
+function moCap(){return Math.min(barn1MoPhys(),caretakers1()*ECON.COW_CARE_MO)+Math.min(barn2MoPhys(),caretakers2()*ECON.COW_CARE_MO);}   // 母牛の実上限(牛舎ごとにmin)
+function calfCap(){return Math.min(barn1CalfPhys(),caretakers1()*ECON.COW_CARE_CALF)+Math.min(barn2CalfPhys(),caretakers2()*ECON.COW_CARE_CALF);} // 子牛の実上限
 function pregCount(){return state.cows.filter(c=>c.preg>=0).length;} // 妊娠中(将来生まれる子牛)
 function committedCalves(){return state.calves.length+pregCount();} // 現在+妊娠ぶん
-// 上限に達した時のメッセージ(牛舎の枠か世話の枠か)
-function capMsgMo(){return barnCapNow()<=careMoCap()?('🏚 母牛の牛舎の枠が満員('+barnCapNow()+'頭)。牛舎を増築しよう'):('👤 世話係1人で見られる母牛は'+ECON.COW_CARE_MO+'頭まで。もう1人「🐂牛の世話」を任せるか、頭数を減らそう');}
-function capMsgCalf(){return calfCapNow()<=careCalfCap()?('🐮 子牛の牛舎の枠が満員('+calfCapNow()+'頭)。牛舎を増築しよう'):('👤 世話係1人で見られる子牛は'+ECON.COW_CARE_CALF+'頭まで。もう1人「🐂牛の世話」を任せよう');}
+// 上限に達した時のメッセージ(牛舎の枠か世話の枠か・どの牛舎か)
+function capMsgMo(){
+  if(barn2MoPhys()>caretakers2()*ECON.COW_CARE_MO)return '👤 第二牛舎の世話係が足りない(1人で母牛'+ECON.COW_CARE_MO+'頭まで)。「🐂牛の世話(第二牛舎)」を任せよう';
+  if(barn1MoPhys()>caretakers1()*ECON.COW_CARE_MO)return '👤 第一牛舎の世話係が足りない(1人で母牛'+ECON.COW_CARE_MO+'頭まで)。「🐂牛の世話(第一牛舎)」を任せよう';
+  return '🏚 母牛の牛舎の枠が満員('+barnCapNow()+'頭)。牛舎を増築しよう';
+}
+function capMsgCalf(){
+  if(barn2CalfPhys()>caretakers2()*ECON.COW_CARE_CALF)return '👤 第二牛舎の世話係が足りない(1人で子牛'+ECON.COW_CARE_CALF+'頭まで)。「🐂牛の世話(第二牛舎)」を任せよう';
+  if(barn1CalfPhys()>caretakers1()*ECON.COW_CARE_CALF)return '👤 第一牛舎の世話係が足りない(1人で子牛'+ECON.COW_CARE_CALF+'頭まで)。「🐂牛の世話(第一牛舎)」を任せよう';
+  return '🐮 子牛の牛舎の枠が満員('+calfCapNow()+'頭)。牛舎を増築しよう';
+}
 function isWaterSeason(){return state.week>=18&&state.week<=35;}
 // ---------- v19: 牛舎・機械・補助金・病気のヘルパ / v20: 実売価格・糞置き場 ----------
 function hasBarn(){return state.barnRented||state.newBarns>0||state.land.barn2;}
@@ -1007,6 +1024,10 @@ const SEG_META={
 const SALE_SEG={rice:'rice',calf:'cow',mother:'cow',grass:'grass',fert:'compost',proc:'other',grant:'common'}; // v28: grant=クエスト協力金(共通)
 const EXP_SEG={owner:'common',emp:'common',rent:'cow',feed:'cow',manure:'cow',seed:'rice',grassSow:'grass',shed:'compost',land:'common',other:'common',
   machine:'rice',barn:'cow',repair:'rice',vet:'cow',loss:'cow',dung:'cow',breed:'cow'}; // v19: 機械/牛舎/修理/獣医/死亡損失 v20: 糞置き場 v38: 種付け代
+// v60: 従業員の担当ジョブ→事業セグメントの対応表。給与を担当事業へ配賦する時に使う。
+// (旧コードはジョブキーをそのままセグメントに渡していて、veg/proc/pig担当がいると
+//  state.fy.segに無いキーを参照して週送り(weekEnd)が例外で止まる致命バグだった)
+const JOB_SEG={rice:'rice',grass:'grass',cow:'cow',cow2:'cow',veg:'other',proc:'other',pig:'other',compost:'compost'};
 function freshSeg(){const o={};for(const k in SEG_META)o[k]={s:0,e:0,sd:{},ed:{}};return o;}
 function freshFy(){return{sales:0,exp:0,
   sd:{rice:0,calf:0,mother:0,grass:0,proc:0,fert:0,grant:0},
@@ -1024,12 +1045,12 @@ function migrateFy(){
 }
 function addSale(a,cat){
   state.money+=a;state.fy.sales+=a;state.fy.sd[cat]=(state.fy.sd[cat]||0)+a;state.soldN++;
-  const g=state.fy.seg[SALE_SEG[cat]||'other'];g.s+=a;g.sd[cat]=(g.sd[cat]||0)+a; // v17: 事業別に記帳
+  const g=state.fy.seg[SALE_SEG[cat]||'other']||state.fy.seg.other;g.s+=a;g.sd[cat]=(g.sd[cat]||0)+a; // v17: 事業別に記帳 / v60: 未知セグは加工・野菜へ(週送りを止めない)
   if(state.cumSales){if(cat==='proc')state.cumSales.proc+=a;else if(cat!=='grant')state.cumSales.farm+=a;} // v28: 累計売上(認定農業者の判定)
 }
 function addExpense(a,cat,seg){
   state.money-=a;state.fy.exp+=a;state.fy.ed[cat]=(state.fy.ed[cat]||0)+a;
-  const g=state.fy.seg[seg||EXP_SEG[cat]||'common'];g.e+=a;g.ed[cat]=(g.ed[cat]||0)+a; // v17: 事業別に記帳
+  const g=state.fy.seg[seg||EXP_SEG[cat]||'common']||state.fy.seg.common;g.e+=a;g.ed[cat]=(g.ed[cat]||0)+a; // v17: 事業別に記帳 / v60: 未知セグは共通へ(週送りを止めない)
 }
 // v17: 税金計算(v15式)。牛の利益は非課税=牛の売上と牛の餌代を除いて30%
 function taxCalc(f){
@@ -1091,7 +1112,8 @@ const STAFF_META={
 const JOBS={
   rice:{n:'米',em:'🌾',desc:'4月の田植え・5〜9月の水管理・10月の収穫・毎月の精米出荷を自動でやる'},
   grass:{n:'牧草',em:'🌿',desc:'年2回の種まき・刈り取り・余剰の売却を自動でやる'},
-  cow:{n:'牛の世話',em:'🐂',desc:'毎週の餌やり＋牛舎掃除＋糞の待避舎への運搬、種付け・子牛/親牛のセリ、病気なら獣医も自動'},
+  cow:{n:'牛の世話(第一牛舎)',em:'🐂',desc:'第一牛舎(古い牛舎)を担当。毎週の餌やり＋牛舎掃除＋糞の運搬、種付け・子牛/親牛のセリ、病気なら獣医も自動。1人で母牛60/子牛50頭まで'}, // v60: 牛舎ごとの担当制
+  cow2:{n:'牛の世話(第二牛舎)',em:'🐂',desc:'北の第二牛舎(増築ぶん込み)を担当。餌やり＋掃除＋種付け・セリ・獣医も自動。1人で母牛60/子牛50頭まで(第二牛舎が無いと指示できない)'}, // v60
   veg:{n:'野菜',em:'🥕',desc:'畑の野菜(にんじん/ねぎ/黒豆/黒枝豆)の種まき・世話・収穫・売却を自動でやる'}, // v46
   proc:{n:'加工(ポテサラ)',em:'🥔',desc:'食品加工場でポテサラを毎週作って売る＋収穫した農産物を加工販売する'}, // v46
   pig:{n:'豚の放牧',em:'🐖',desc:'耕作放棄地の豚を毎月ローテーション(隣へ移動)＋余った野菜/栗を給餌＋育った豚を出荷'}, // v50
@@ -1116,6 +1138,7 @@ function staffYears(k){return Math.max(0,(state.year||1)-(state.staffHireYear&&s
 function staffSalary(k){return ECON.EMP_SALARY+ECON.EMP_RAISE*staffYears(k);}
 function toggleJob(k,job){
   if(!state.staff[k]){toast('先に雇用してね');return;}
+  if(job==='cow2'&&!state.land.barn2&&!jobsOf(k).includes('cow2')){toast('🏠 第二牛舎がまだないよ。🏘街の🏠不動産屋で「北の第二牛舎」を建てると指示できる');return;} // v60
   const js=jobsOf(k),i=js.indexOf(job);
   if(i>=0)js.splice(i,1);else js.push(job);
   state.staffJobs[k]=js;
@@ -1123,13 +1146,14 @@ function toggleJob(k,job){
   sfx(660,.07,'sine',.05);updateStaffWander();updateHUD();renderMenu();
 }
 // v46: 雇って仕事を指示した従業員は、その作業場所を歩いて巡回する(止まらず働きに行く)。無職/未雇用は定位置。
-// v47: 牛の世話担当は「持っている全部の牛舎」を巡回する(第一牛舎+第二牛舎+新築牛舎を歩いて移動)
-function cowWorkSpots(){
-  const pts=WORK_SPOTS.cow.slice(); // 第一牛舎(古い牛舎)
-  if(state.land.barn2)pts.push([31.5,6],[31.5,-4],[26.5,1],[36.5,1]); // v58: 第二牛舎(中央通路を奥まで歩き、左右の掃除アイスルも巡回)
-  for(let i=0;i<state.newBarns;i++){const p=NEW_BARN_PLOTS[i];if(p)pts.push([p[0]+5,p[1]+5],[p[0]+6,p[1]+3]);} // 新築牛舎
-  return pts;
+// v60: 牛の世話は担当牛舎だけを巡回する(cow=第一牛舎のみ / cow2=第二牛舎のみ)
+function cowWorkSpots1(){return WORK_SPOTS.cow.slice();} // 第一牛舎(古い牛舎)
+function cowWorkSpots2(){
+  if(!state.land.barn2)return [];
+  const cz0=(typeof barn2CowZ0==='function')?barn2CowZ0():-8;
+  return [[31.5,6],[31.5,cz0+1],[26.5,cz0+2],[36.5,cz0+2]]; // 中央通路を奥(増築ぶん)まで歩き、左右の掃除アイスルも巡回
 }
+function cowWorkSpots(){return cowWorkSpots1().concat(cowWorkSpots2());} // 互換(全牛舎)
 function updateStaffWander(){
   if(typeof npcs==='undefined'||!npcs)return;
   for(const n of npcs){
@@ -1137,7 +1161,8 @@ function updateStaffWander(){
     const jobs=state.staff[n.key]?jobsOf(n.key):[];
     let pts=[];
     for(const j of jobs){
-      if(j==='cow')pts=pts.concat(cowWorkSpots()); // 全牛舎を巡回
+      if(j==='cow')pts=pts.concat(cowWorkSpots1());       // v60: 第一牛舎だけを巡回
+      else if(j==='cow2')pts=pts.concat(cowWorkSpots2()); // v60: 第二牛舎だけを巡回
       else if(WORK_SPOTS[j])pts=pts.concat(WORK_SPOTS[j]);
     }
     if(pts.length){if(!n.wander||n.wander.pts.length!==pts.length){n.wi=0;}n.wander={pts};}
@@ -1426,20 +1451,16 @@ function genWorld(){
   }
   // 北の平原の木(第二牛舎の最大用地 x23-40,z-30〜7 は避ける) v58: 牛舎が北の端まで伸びるので東西に逃がす
   [[2,-8],[1,-18],[4,-27],[46,-6],[54,-16],[63,-9],[70,-20],[45,-24],[58,-27],[14,-28],[18,-14],[12,-6],[68,-28]].forEach(p=>{if(inWorld(p[0],p[1]))normalTree(p[0],p[1]);});
-  // --- 棚田（川の東、南側）3段 ---
-  for(let ter=0;ter<3;ter++){
-    const zA=38+ter*0,xA=11+ter*4,xBn=xA+3;
-    for(let x=xA;x<=xBn;x++)for(let z=36;z<=47;z++){
-      if(!inWorld(x,z))continue;
-      const lv=1+ter;
-      for(let y=WH;y>=0;y--)gset(x,y,z,0);
-      for(let y=0;y<lv;y++)gset(x,y,z,y<lv-1?B.SOIL:B.SOIL);
-      gset(x,lv-1,z,B.TILLED);
-      gset(x,lv,z,B.WATER);
-    }
+  // --- v60: 平地の水田(川の東、南側)。段々の棚田をやめて全面同じ高さの1枚田に。
+  //     高さは南の拡張(rice3: 耕地y1+水面y2)と同じ=リピート購入で南へそのままつながる ---
+  flatten(10,23,35,47,2); // 田んぼ+あぜ道の土台を同じ高さに
+  for(let x=11;x<=22;x++)for(let z=36;z<=47;z++){
+    if(!inWorld(x,z))continue;
+    gset(x,2,z,0);gset(x,1,z,B.TILLED);gset(x,2,z,B.WATER); // 耕地y1+水面y2
   }
-  // 棚田のあぜ道
-  for(let z=36;z<=47;z++){for(const x of[10,15,19,23]){if(!inWorld(x,z))continue;const lv=x<=10?1:(x<=15?2:(x<=19?3:4));for(let y=WH;y>=0;y--)gset(x,y,z,0);for(let y=0;y<lv;y++)gset(x,y,z,B.SOIL);gset(x,lv-1,z,B.PATH);}}
+  // あぜ道(北・東・西の外周のみ。中の段差・仕切りは無し)
+  for(let x=10;x<=23;x++)gset(x,2,35,B.PATH);
+  for(let z=35;z<=47;z++){gset(10,2,z,B.PATH);gset(23,2,z,B.PATH);}
   // --- v21: 旧・加工場/事務所の跡地。機能は大倉庫へ集約済みなので建物を撤去して更地(草地)に ---
   flatten(24,31,23,29,2);
   // --- v22: 牧草地の予定地(東)。開始時はただの草地(柵なし)。🏠不動産屋で
@@ -1609,7 +1630,7 @@ const PARCELS={
   barn2:{n:'北の第二牛舎(大牛舎)',em:'🏠',price:ECON.LAND_BARN_PRICE,desc:'北の平原に実在の畜舎型の大牛舎を建てる(重機レンタル・工事費込み)。中央の通路の両側に牛が通路を向いて並び、牛の前に餌箱+銀の繋ぎ柵、後ろに掃除アイスル、奥に仔牛の個室。収容枠が母牛+'+ECON.BARN2_ADD+'頭・子牛+'+ECON.BARN2_ADD+'頭。南の入口から通路で農場とつながり、増築で北(奥)へ長くなる。牛の世話担当は第一・第二を歩いて巡回。'},
   orchard:{n:'栗園(南の丘)',em:'🌰',price:ECON.LAND_ORCHARD_PRICE,desc:'農場の南の丘に栗の木が植わる。秋に🌰栗を一括収穫して瓶詰め加工できる(渋皮煮などの原料)。'}, // v27/v50: 北東→南へ
   field2:{n:'南の畑(拡張)',em:'🥕',price:1000000,desc:'南に野菜畑を拡張。にんじん/ねぎ/黒枝豆などを植える面積が増える(🥕野菜担当がいれば自動で作付け・収穫)。'}, // v50
-  rice3:{n:'南の棚田(拡張)',em:'🌾',price:2000000,desc:'南に棚田を1区画拡張。繰り返し買うと南へ1区画ずつ伸びる(最大4回)。収量は1回目+50%、以降+25%ずつ。水管理・出荷の作業も増える。'}, // v58: リピート購入で南へ拡張
+  rice3:{n:'南の田んぼ(拡張)',em:'🌾',price:2000000,desc:'平地の水田を南へ1区画拡張(段差なし・1枚の田んぼとしてつながる)。繰り返し買うと南へ1区画ずつ伸びる(最大4回)。収量は1回目+50%、以降+25%ずつ。水管理・出荷の作業も増える。'}, // v58: リピート購入で南へ拡張 / v60: 平地水田
 };
 // v27: 栗園(北東の丘 x33-47,z3-8)。牛舎と離れた場所。購入で植樹。
 function terraformOrchard(){
@@ -1627,8 +1648,8 @@ function terraformField2(){
 function rice3End(){const n=Math.min(4,state.rice3N||(state.land.rice3?1:0));return n<1?0:60+5*(n-1);} // 拡張棚田の南端z
 function terraformRice3(){
   const zEnd=rice3End();if(!zEnd)return;
-  flatten(10,23,47,Math.min(WS-1,zEnd+2),2);
-  for(let x=11;x<=22;x++)for(let z=48;z<=zEnd;z++){if(!inWorld(x,z))continue;gset(x,1,z,B.TILLED);gset(x,2,z,B.WATER);}
+  flatten(10,23,48,Math.min(WS-1,zEnd+2),2); // v60: z47(既存の田んぼの南端の行)は壊さない(平地の1枚田としてつながる)
+  for(let x=11;x<=22;x++)for(let z=48;z<=zEnd;z++){if(!inWorld(x,z))continue;gset(x,2,z,0);gset(x,1,z,B.TILLED);gset(x,2,z,B.WATER);}
   for(let x=10;x<=23;x++)gset(x,2,zEnd+1,B.PATH); // 南のあぜ道
   for(let z=48;z<=zEnd;z++){gset(10,2,z,B.PATH);gset(23,2,z,B.PATH);} // 東西のあぜ道
 }
@@ -1705,7 +1726,7 @@ function applyLandParcels(){
   if(state.abandonedLand>0)terraformPigLand(); // v50: 豚の放牧地(耕作放棄地)
 }
 function buyLand(k){
-  if(k==='rice3'){if((state.rice3N||0)>=4){toast('🌾 南の棚田はもう南の端まで拡張済みだよ(最大4区画)');return;}}
+  if(k==='rice3'){if((state.rice3N||0)>=4){toast('🌾 南の田んぼはもう南の端まで拡張済みだよ(最大4区画)');return;}}
   else if(state.land[k]){toast('🗺 その区画はもう持っているよ');return;}
   if(k==='grass2'&&!state.land.pasture1){toast('🌿 先に「西の牧草地(基本)」('+man(ECON.LAND_PASTURE_PRICE)+')を買って牧草地を作ろう');return;} // v22
   const p=PARCELS[k];
@@ -1949,7 +1970,7 @@ function riceFieldLabel(){
     if(waterDue())return'🚿 水の管理をする(そろそろ必要)';
     return'🌾 生育中('+wkLabel(ECON.RICE_HARVEST_WEEK)+'に収穫)';
   }
-  return isRicePlantWeek()?'🌾 田植えする(苗代'+man(riceSeedCost())+')':'🌾 棚田(田植えは'+wkLabel(ECON.RICE_PLANT_WEEK)+')'; // v25: 週単位
+  return isRicePlantWeek()?'🌾 田植えする(苗代'+man(riceSeedCost())+')':'🌾 田んぼ(田植えは'+wkLabel(ECON.RICE_PLANT_WEEK)+')'; // v25: 週単位
 }
 function riceFieldAction(){
   if(state.riceField==='ready'){doRiceHarvest();return;}
@@ -2368,7 +2389,7 @@ function buildDecor(){
   // v21: 看板はアイコンのみ(クリックで説明)。移転済み施設の案内看板は撤去(跡地は更地)
   updateBarnSign();
   updateBarnDungMesh(); // v35: 溜まったフンの山
-  addSign(13.5,36.2,'🌾',{t:'🌾 棚田(米づくり)',
+  addSign(13.5,36.2,'🌾',{t:'🌾 田んぼ(米づくり)',
     b:()=>'米は年1サイクル: 🌱冬(11〜2月)に土づくり堆肥(地力↑永続)→🌾4月に田植え(元肥も同時=+15%)→🚿5〜9月は3〜4週おきに水管理→🌿7月に追肥(出穂前=粒大+10%/8月以降は倒伏-15%)→🌾10月に収穫→🍚精米出荷。<br>いまの状態: '+riceFieldLabel()+'・地力'+(state.riceJiryoku||0)+'/3(収量+'+(5*(state.riceJiryoku||0))+'%)'+(state.riceField==='planted'?('・元肥'+(state.riceFert?'済✅':'なし')+'・追肥'+(state.riceLodged?'倒伏😱':state.riceTsuihi?'済✅':'まだ')+(waterDue()?'・🚿水管理そろそろ':'')):'')+'<br>棚田(この稲マーク)をタップ、または下のボタンで操作。',
     btns:()=>{const a=[[riceFieldLabel(),()=>riceFieldAction()]];
       const mo=weekToMD(state.weekN).month;
@@ -4291,7 +4312,7 @@ function openStaffTalk(k){
       : (m.line2||m.line)+'<br><br>⚠ 一度雇うと解雇できません。毎年+'+man(ECON.EMP_RAISE)+'の自動昇給で人件費が増えます。',
     btns:()=>{const a=[];
       if(!hired){a.push(['🤝 雇う(月給'+man(ECON.EMP_SALARY)+'・解雇不可)',()=>{hireStaff(k);openStaffTalk(k);}]);}
-      else{for(const j in JOBS){const has=jobsOf(k).includes(j);a.push([(has?'✅ ':'▫️ ')+JOBS[j].em+JOBS[j].n+(has?'(外す)':'を指示')+'',()=>{toggleJob(k,j);openStaffTalk(k);}]);}
+      else{for(const j in JOBS){if(j==='cow2'&&!state.land.barn2)continue;const has=jobsOf(k).includes(j);a.push([(has?'✅ ':'▫️ ')+JOBS[j].em+JOBS[j].n+(has?'(外す)':'を指示')+'',()=>{toggleJob(k,j);openStaffTalk(k);}]);} // v60: 第二牛舎が無い時はcow2を出さない
         a.push(['🧹 担当を全部外す',()=>{assignJob(k,null);openStaffTalk(k);}]);}
       return a;}});
 }
@@ -4300,11 +4321,17 @@ function isStaffNpc(key){return key==='atsushi'||key==='yusuke'||key==='naoto'||
 // ---------- v16: 従業員の自動作業（毎日実行・月次仕事は月1回ガードで自動判断） ----------
 // 指示された仕事だけを自動でやる。雇った/指示した日からすぐ働く。
 function staffDaily(notes){
-  // 🐂 牛の世話(毎日): 餌やり＋牛舎掃除
-  const wk=staffWithJob('cow');
+  // 🐂 牛の世話(毎日): 餌やり＋牛舎掃除。v60: 第一(cow)/第二(cow2)の担当制。どちらかがいれば世話は回る
+  const wk1=staffWithJob('cow'),wk2=staffWithJob('cow2'),wk=wk1||wk2;
   if(wk&&herdCount()>0&&!careDoneToday()){
     doCowCare('staff');
-    if(state.weekN%4===0)notes.push('🐂 '+STAFF_META[wk].name+': 毎週の餌やり＋牛舎掃除を担当中(自動)'); // v25: 週ベース(4週ごとに通知)
+    if(state.weekN%4===0){
+      const who=[wk1?STAFF_META[wk1].name+'(第一)':null,wk2?STAFF_META[wk2].name+'(第二)':null].filter(Boolean).join('・');
+      notes.push('🐂 '+who+': 毎週の餌やり＋牛舎掃除を担当中(自動)'); // v25: 週ベース(4週ごとに通知)
+    }
+    // v60: 第二牛舎に牛がいるのに第二の担当がいない時は案内(1人で両方は見きれない)
+    if(state.weekN%4===0&&state.land.barn2&&!wk2&&herdCount()>barn1MoPhys()+barn1CalfPhys())
+      notes.push('⚠ 第二牛舎の世話係がいない！1人で両方の牛舎は見きれないよ。「🐂牛の世話(第二牛舎)」をもう1人に指示しよう');
   }
   // 🟫 堆肥(毎日): 落ちている牛ふんを回収
   const ck=staffWithJob('compost');
@@ -4319,7 +4346,7 @@ function staffDaily(notes){
 // 月次系の仕事(田植え/水管理/収穫/出荷・牧草・種付け/セリ・肥料/農産物)。
 // 各処理は月1回ガード付き。月替わり直後(monthEnd後)にも呼んで月初に即実行する。
 function staffMonthlyJobs(notes){
-  const wk=staffWithJob('cow');
+  const wk=staffWithJob('cow')||staffWithJob('cow2'); // v60: 第一/第二どちらの担当でも種付け・セリ・獣医は自動
   if(wk){
     const nm=STAFF_META[wk].name;
     // v44: 牛担当なら獣医も自動で呼ぶ(雇ったら全部自動)。往診料+治療費は自動精算
@@ -4657,7 +4684,7 @@ function advanceWeek(notes,silent){
   // 8) 収穫タイミング通知
   if(state.week===ECON.RICE_HARVEST_WEEK&&state.riceField==='planted'){
     state.riceField='ready';
-    notes.push('🌾 稲が実った！棚田で「収穫」しよう('+riceBagsYield()+'袋)');
+    notes.push('🌾 稲が実った！田んぼで「収穫」しよう('+riceBagsYield()+'袋)');
   }
   if(state.week===ECON.RICE_PLANT_WEEK&&state.riceField==='none')notes.push('🌱 '+wkLabel(state.week)+'(春)！田植えの季節だよ(苗代'+man(riceSeedCost())+')');
   // v42: 水管理がそろそろ必要なら案内(夏はいつでもOK・3〜4週おき)
@@ -4700,7 +4727,7 @@ function weekEnd(notes){
   if(herd>0)notes.push('🍽 餌代 −'+fmt(feedCost)+'／週(配合飼料5千/頭'+(roughShort>0?('＋市販の牧草15千×'+roughShort+'頭'):'')+(fed>0?('・自給の牧草で'+fed+'頭ぶんは牧草代タダ✨'):'')+'。合計 月2万/頭・自給で月5千/頭)');
   // 3) 固定費(4週ごとに月額給与を徴収: 週1/4ずつ)
   addExpense(ECON.OWNER_SALARY/4,'owner');
-  for(const k in state.staff)if(state.staff[k])addExpense(staffSalary(k)/4,'emp',jobsOf(k)[0]||'common'); // v44: 勤続で昇給した月給
+  for(const k in state.staff)if(state.staff[k])addExpense(staffSalary(k)/4,'emp',JOB_SEG[jobsOf(k)[0]]||'common'); // v44: 勤続で昇給した月給 / v60: ジョブ→セグ対応表を通す(致命バグ修正)
   if(state.barnRented)addExpense(ECON.BARN_RENT/4,'rent');
   // 4) 本格堆肥舎の肥料生産(4週ごと)。v36: 牛糞の処分費(週末自動)は廃止→掃除で集めた糞を「処理」する時に1頭500円
   if(herd>0&&state.weekN%4===3&&state.compostShed){
@@ -5033,7 +5060,7 @@ function jaHTML(){
     (state.certFarmer?'<span class="prof">認定済✅</span>':(cok?'<button class="buy orange" onclick="certifyCertFarmer()">認定を受ける</button>':'<span style="color:#c03030">条件未達</span>'))+'</div>';
   h+='<p><b>🩺 獣医の往診(担当: 犬飼先生)</b></p>';
   if(herdCount()===0)h+='<p style="color:#8a6a45">牛はまだいないよ(牛を飼うと病気のリスクがある。その時はここで獣医を呼ぼう)。</p>';
-  else if(sick.length===0)h+='<p style="color:#1f7a1f;font-weight:bold">✅ いま牛はみんな元気！(発病したらここで獣医を呼べる)'+(staffWithJob('cow')?'<br><span style="color:#8a6a45;font-weight:normal">🐂牛の世話担当('+STAFF_META[staffWithJob('cow')].name+')がいるので、病気が出ても<b>自動で獣医を呼んで治療</b>します。だからこの治療メニューはめったに出ません(記録に「獣医を呼んで全快」と残る)。</span>':'')+'</p>';
+  else if(sick.length===0)h+='<p style="color:#1f7a1f;font-weight:bold">✅ いま牛はみんな元気！(発病したらここで獣医を呼べる)'+((staffWithJob('cow')||staffWithJob('cow2'))?'<br><span style="color:#8a6a45;font-weight:normal">🐂牛の世話担当('+STAFF_META[staffWithJob('cow')||staffWithJob('cow2')].name+')がいるので、病気が出ても<b>自動で獣医を呼んで治療</b>します。だからこの治療メニューはめったに出ません(記録に「獣医を呼んで全快」と残る)。</span>':'')+'</p>';
   else{
     const cost=ECON.VET_CALL+ECON.VET_TREAT*sick.length;
     h+='<div class="row"><div class="em">🤒</div><div class="info"><b>病気の牛が'+sick.length+'頭いる！</b><small>病気の牛は成長・繁殖が止まり、放置すると死んでしまう。往診料'+man(ECON.VET_CALL)+'＋治療費'+man(ECON.VET_TREAT)+'×'+sick.length+'頭＝'+man(cost)+'</small></div>'+
@@ -5289,6 +5316,7 @@ function staffHTML(){
     if(on){
       h+='<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:5px">';
       for(const j in JOBS){
+        if(j==='cow2'&&!state.land.barn2)continue; // v60: 第二牛舎が無い時は指示ボタンを出さない
         const sel=jobs.includes(j);
         h+='<button class="minibtn'+(sel?'':' blue')+'" style="'+(sel?'background:#1f7a1f;border-color:#144d14;':'')+'" onclick="assignJob(\''+k+'\',\''+j+'\')">'+(sel?'✅':'')+JOBS[j].em+' '+JOBS[j].n+'</button>';
       }
@@ -5297,7 +5325,7 @@ function staffHTML(){
     h+='</div>'+
       (on?'<button class="buy" style="background:#b9b0a5;border-color:#8a8177" onclick="fireStaff(\''+k+'\')">解雇不可</button>':'<button class="buy" onclick="hireStaff(\''+k+'\')">雇う(月30万)</button>')+'</div>';
   }
-  h+='<p class="sub2" style="font-size:11.5px;color:#8a6a45">仕事: 🌾米 / 🌿牧草 / 🐂牛の世話(餌+掃除+糞運搬+種付け+セリ+獣医) / 🥕野菜(種まき+収穫+売却) / 🥔加工(ポテサラ製造+販売) / 🟫堆肥。指示すると本人が作業場所へ歩いて働きに行く。牧草は作業が少ないので兼務が効率的！</p>';
+  h+='<p class="sub2" style="font-size:11.5px;color:#8a6a45">仕事: 🌾米 / 🌿牧草 / 🐂牛の世話=第一牛舎と第二牛舎で別担当(餌+掃除+糞運搬+種付け+セリ+獣医。1人で母牛60/子牛50頭まで) / 🥕野菜(種まき+収穫+売却) / 🥔加工(ポテサラ製造+販売) / 🟫堆肥。指示すると本人が担当の作業場所へ歩いて働きに行く。牧草は作業が少ないので兼務が効率的！</p>';
   return h;
 }
 // v25: 配合飼料の一括購入(10週分=牧草不足時の補填用)
@@ -5888,7 +5916,7 @@ function areaName(x,z){
   // v20: 大倉庫(複合施設)と新築牛舎
   if(x>=WHX0-2&&x<=WHX1+1&&z>=WHZ0-1&&z<=WHZ1+1)return'🏭 大倉庫(加工場・事務所)';
   // v58: 「新築牛舎」は第二牛舎の増築に統合済みなので号棟ラベルは廃止(南の棚田拡張のラベルを追加)
-  if(rice3End()&&x>=10&&x<=23&&z>=48&&z<=rice3End()+1)return'🌾 南の棚田(拡張)';
+  if(rice3End()&&x>=10&&x<=23&&z>=48&&z<=rice3End()+1)return'🌾 南の田んぼ(拡張)';
   // v16: 拡張区画
   if(x>=50&&x<=66&&z>=8&&z<=21)return state.land.grass2?'🌿 東の牧草地':'🧱 販売中の区画(荒れ地)';
   if(x>=47&&x<=66&&z>=37&&z<=47)return state.land.rice2?'🌾 東の棚田':'🧱 販売中の区画(荒れ地)';
@@ -5902,7 +5930,7 @@ function areaName(x,z){
   if(x>=24&&x<=31&&z>=23&&z<=29)return'🌱 空き地(旧事務所の跡地)'; // v21: 更地化
   if(x>=15&&x<=21&&z>=23&&z<=28)return'🌱 空き地(旧銀行の跡地)';   // v21: 更地化
   if(x>=29&&x<=36&&z>=44&&z<=49)return'🌱 空き地(旧セリ市場の跡地)'; // v21: 更地化
-  if(x>=10&&x<=23&&z>=36)return'🌾 棚田';
+  if(x>=10&&x<=23&&z>=36)return'🌾 田んぼ';
   if(x>=33&&x<=41&&z>=30&&z<=37)return'🟫 堆肥場'; // v22: 西へ移設
   if(x>=26&&x<=33&&z>=36&&z<=42)return'🥬 野菜畑';
   if(z<0)return Math.abs(x-riverX(z))<=2?'🏞 川':'🌿 北の平原'; // v57: 北の拡張ゾーン
