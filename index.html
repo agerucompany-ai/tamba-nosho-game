@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v54: 上限を厳守(枠を超えたら買えない/産ませられない・妊娠ぶんも計上)・世話係1人は母牛60頭子牛50頭まで(超えたら要増員)・外周を平地+地平線の板で行き止まり感を解消</title>
+<title>丹波農商 牧場物語 v55: 牛舎が点在しない=「増築」は北の大牛舎を東へ1つのまま伸ばす。上限厳守(はみ出し防止)・世話係は母牛60/子牛50まで・外周は地平線で行き止まり感なし・3月8週バグや牛舎の屋根も修正済</title>
 <link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -1539,6 +1539,7 @@ function buildMachineYardBlocks(){
 //      干渉しない[10,57]へ微移動。母15+子15が床(内側7×7マス)に並ぶ。
 const NEW_BARN_PLOTS=[[68,12],[10,57],[68,44],[68,58],[40,58],[54,58]]; // v21: [68,26]は巨大倉庫と干渉するため南西の山へ移設
 function terraformNewBarn(i){
+  return; // v54: 新築牛舎は点在させず、北の第二牛舎(terraformBarn2がbarn2X1で東へ拡張)にまとめる。ここは何もしない。
   // v25: 新築牛舎は中央廊下型(N-S中央を廊下、両側にスタンチョン+採食槽)
   const p=NEW_BARN_PLOTS[i];if(!p)return;
   const[px,pz]=p;
@@ -1618,16 +1619,19 @@ function terraformRice2(){
 // v47: 第二牛舎を「北」へ移設。山を切り開いて古い牛舎の上(北)に、屋根なし・両側繋ぎ+中央通路(横長)。
 // 構造: 中央にE-Wの通路、通路の南北に牛の繋ぎ列(顔は通路向き)、通路脇に採食槽、東の奥に子牛個室2つ。
 // v49: 北の第二牛舎を大幅拡大(古い牛舎の約3倍・横長)。北の山を大きく切り開いた広い平地に。z0-7で古い牛舎(z8-)には被らない。
-// v53: 北の第二牛舎=古い牛舎の構造(片側1列・掃除アイスル/繋ぎ列/餌箱/柵/中央スペース/仔牛ペン)を横向きに拡大した大牛舎。屋根なし。
-const BARN2={X0:10,X1:56,Z0:0,Z1:8,COWX0:12,COWX1:48,ROWZ:2}; // 47×9=約3倍
+// v53/v54: 北の第二牛舎=古い牛舎の構造(片側1列・掃除アイスル/繋ぎ列/餌箱/柵/中央スペース/仔牛ペン)を横向きに拡大した大牛舎。屋根なし。
+// v54: 「新築牛舎(増築)」は別の場所に建てず、この北の牛舎を東へ1棟ぶんずつ伸ばす=牛舎が点在しない。
+const BARN2={X0:10,X1:56,Z0:0,Z1:8,COWX0:12,COWX1:48,ROWZ:2};
+function barn2X1(){return Math.min(74,BARN2.X1+(state.newBarns||0)*14);} // 増築ごとに東へ+14マス(地図の端まで)
+function barn2CowX1(){return barn2X1()-8;}
 function terraformBarn2(){
-  const B2=BARN2;
-  flatten(8,60,0,12,2); // 北を広く平地に(牛舎+前庭)。川(x〜6)は避ける
-  for(let x=8;x<=60;x++)for(let z=0;z<=12;z++)if(inWorld(x,z))gset(x,2,z,B.GRASS);
-  for(let x=B2.X0;x<=B2.X1;x++)for(let z=B2.Z0;z<=B2.Z1;z++){
+  const B2=BARN2,X1=barn2X1(),COWX1=barn2CowX1();
+  flatten(8,X1+4,0,12,2); // 北を広く平地に(牛舎+前庭)。川(x〜6)は避ける
+  for(let x=8;x<=X1+4;x++)for(let z=0;z<=12;z++)if(inWorld(x,z))gset(x,2,z,B.GRASS);
+  for(let x=B2.X0;x<=X1;x++)for(let z=B2.Z0;z<=B2.Z1;z++){
     if(!inWorld(x,z))continue;
     for(let y=3;y<=8;y++)gset(x,y,z,0); // 屋根なし
-    const wall=(x===B2.X0||x===B2.X1||z===B2.Z0||z===B2.Z1);
+    const wall=(x===B2.X0||x===X1||z===B2.Z0||z===B2.Z1);
     if(wall){
       const door=(z===B2.Z1&&x>=33&&x<=38); // 南の入口(古い牛舎の東=開けた側)
       if(!door){gset(x,3,z,B.PLANK);gset(x,4,z,B.PLANK);} // 壁は2段(屋根なし=中が見える)
@@ -1635,14 +1639,15 @@ function terraformBarn2(){
     }
     // 古い牛舎の構造を横向きに: z1掃除アイスル / z2 母牛の繋ぎ列(南向き) / z3 餌箱 / z4 スタンチョン柵 / z5-7 中央の放し飼いスペース
     if(z===1)gset(x,2,z,B.PATH);                                  // 掃除アイスル(牛の後ろ・フンはここ)
-    if(z===3&&x>=B2.COWX0&&x<=B2.COWX1)gset(x,3,z,B.HAY);         // 餌箱
-    if(z===4&&x>=B2.COWX0&&x<=B2.COWX1&&(x%3!==0))gset(x,3,z,B.FENCE); // スタンチョン柵(3マスごとに隙間)
+    if(z===3&&x>=B2.COWX0&&x<=COWX1)gset(x,3,z,B.HAY);         // 餌箱
+    if(z===4&&x>=B2.COWX0&&x<=COWX1&&(x%3!==0))gset(x,3,z,B.FENCE); // スタンチョン柵(3マスごとに隙間)
     if(z>=5&&z<=7)gset(x,2,z,B.PATH);                            // 中央の放し飼いスペース
   }
-  // 仔牛ペン(東の奥 x50-55, z1-6)
-  for(let x=50;x<=55;x++){gset(x,3,1,B.FENCE);gset(x,3,6,B.FENCE);}
-  for(let z=1;z<=6;z++)gset(50,3,z,B.FENCE);
-  gset(52,3,3,0);gset(53,3,3,0); // 仔牛ペンの出入口
+  // 仔牛ペン(東の奥=牛舎の右端)
+  const cpx=COWX1+1;
+  for(let x=cpx;x<=X1-1;x++){gset(x,3,1,B.FENCE);gset(x,3,6,B.FENCE);}
+  for(let z=1;z<=6;z++)gset(cpx,3,z,B.FENCE);
+  gset(cpx,3,3,0);gset(cpx,3,4,0); // 仔牛ペンの出入口
   // 牧草の山(西の隅=餌をここから運ぶ)
   gset(12,3,2,B.HAY);gset(13,3,2,B.HAY);gset(12,4,2,B.HAY);
   // 南入口(z8,x33-38)から農場へつながる通路(古い牛舎の東 x35 を南下 z8-30)
@@ -2393,11 +2398,7 @@ function buildPastureDecor(){
   buildTufts();updateTufts();
 }
 // v21: 新牛舎の看板(アイコン+クリック説明)
-function addNewBarnSign(i){
-  const p=NEW_BARN_PLOTS[i];
-  // v25: 中央廊下型(12×11)
-  addSign(p[0]+5.5,p[1]-0.8,'🐂',{t:'🐂 新牛舎'+(i+1)+'号棟',b:'⛰山を切り開いて建てた新築牛舎(母牛+'+ECON.NEW_BARN_MO+'頭・子牛+'+ECON.NEW_BARN_CALF+'頭・家賃なし)。牛の世話・種付け・売却は牛舎メニューで。',btns:[['🐂 牛舎メニュー',()=>{menuTab='cows';openMenu();}]]});
-}
+function addNewBarnSign(i){ return; } // v54: 新築牛舎は北の牛舎に統合したので個別の看板は出さない(点在解消)
 
 // ---------- アバター（ボクセル） ----------
 function faceTex(c){
@@ -2740,13 +2741,10 @@ function barnAreas(){
   const list=[{type:'oneside',cx:21,cz:16,x0:15.6,x1:16.4,z0:10,z1:23,   // v34: 母牛の繋ぎ列(x16,z10-23。尻の西x15=掃除アイスル)
     rowsX:[16], faceMid:19, calf:{x0:25.6,x1:27.4,z0:14,z1:20},
     inner:{x0:16,x1:24,z0:9,z1:25}}];                                    // 放し飼い=繋ぎ列の両端から中央スペース(x19-24)へ
-  if(state.land.barn2)list.push({type:'centralEW',cx:30,cz:2,x0:BARN2.COWX0,x1:BARN2.COWX1,z0:0.6,z1:7.4,
-    rowsZ:[BARN2.ROWZ], faceMidZ:4, calf:{x0:50.5,x1:55,z0:1,z1:6},
-    inner:{x0:BARN2.COWX0,x1:49,z0:5,z1:7.4}}); // v53: 古い牛舎を横向きに拡大(片側1列・南向き・中央スペース)
-  for(let i=0;i<state.newBarns;i++){const p=NEW_BARN_PLOTS[i];if(!p)continue;
-    list.push({type:'central',cx:p[0]+5.5,cz:p[1]+5,x0:p[0]+1.4,x1:p[0]+10.6,z0:p[1]+1.4,z1:p[1]+9.6,
-      rowsX:[p[0]+3,p[0]+8], faceMid:p[0]+5.5, calf:{x0:p[0]+1.6,x1:p[0]+10.4,z0:p[1]+8.5,z1:p[1]+9.4},
-      inner:{x0:p[0]+1.6,x1:p[0]+10.4,z0:p[1]+1.6,z1:p[1]+8.2}});} // 新築(両側・中央通路)
+  if(state.land.barn2){const cx1=barn2CowX1();list.push({type:'centralEW',cx:30,cz:2,x0:BARN2.COWX0,x1:cx1,z0:0.6,z1:7.4,
+    rowsZ:[BARN2.ROWZ], faceMidZ:4, calf:{x0:cx1+1.5,x1:barn2X1()-1,z0:1,z1:6},
+    inner:{x0:BARN2.COWX0,x1:cx1,z0:5,z1:7.4}});} // v53/54: 古い牛舎を横向きに拡大(片側1列)・増築で東へ伸びる
+  // v54: 新築牛舎は点在させず北の第二牛舎(barn2)を東へ拡張=収容枠はbarn2の1列に含まれる(別エリアは作らない)
   return list;
 }
 function barnCenters(){return barnAreas().map(a=>[a.cx,a.cz]);} // v20互換
@@ -3582,25 +3580,27 @@ function ensureBarnBuilt(){
   if(curMap==='farm')flushDirty();
 }
 // v20: 新築牛舎(1棟3000万・補助で1500万)。⛰山を切り開いて増築。🟤糞置き場が必須。
+// v54: 「新築牛舎」=北の第二牛舎を東へ1区画ぶん増築(点在させない)
+function newBarnMaxed(){return barn2X1()>=74;} // 地図の東端まで伸ばした
 function buyNewBarn(){
-  if(state.newBarns>=NEW_BARN_PLOTS.length){toast('⛰ 山の開拓地はもう満杯だよ(新築牛舎'+state.newBarns+'棟)');return;} // v30: 糞置き場の必須条件を撤廃
+  if(!state.land.barn2){toast('🏠 先に🏠不動産屋で「北の第二牛舎」を建ててね。増築はその牛舎を東へ伸ばすよ');return;}
+  if(newBarnMaxed()){toast('🐂 牛舎はもう東の端まで拡張済み。これ以上は伸ばせないよ');return;}
   const pr=priceWithSub(ECON.NEW_BARN,'barn');
-  facilityPay(pr.price,'新築牛舎(牛舎の増築)',()=>buyNewBarnCore(pr)); // v46: 現金 or 設備資金の融資
+  facilityPay(pr.price,'牛舎の増築(北の牛舎を東へ拡張)',()=>buyNewBarnCore(pr)); // v46: 現金 or 設備資金の融資
 }
 function buyNewBarnCore(pr){
-  if(state.newBarns>=NEW_BARN_PLOTS.length)return;
-  if(state.money<pr.price){toast('💸 新築牛舎は1棟'+man(pr.price)+'。現金が足りないよ'+(pr.sub?'(補助済 半額)':'(🏛役場で申請すると半額の'+man(ECON.NEW_BARN/2)+')'));return;}
+  if(!state.land.barn2||newBarnMaxed())return;
+  if(state.money<pr.price){toast('💸 増築は'+man(pr.price)+'。現金が足りないよ'+(pr.sub?'(補助済 半額)':'(🏛役場で申請すると半額の'+man(ECON.NEW_BARN/2)+')'));return;}
   addExpense(pr.price,'barn','cow');
   state.newBarns++;state.newBarnCosts.push(pr.price);
   if(curMap==='farm'){
-    terraformNewBarn(state.newBarns-1);rebuildAll();
-    addNewBarnSign(state.newBarns-1); // v21: アイコン看板
-    refreshCowMeshes();
+    terraformBarn2();rebuildAll(); // 北の牛舎を東へ伸ばして作り直し
+    refreshCowMeshes();assignCowSlots();
   }
-  if(pr.sub){consumeSub('barn');toast('🏛 役場の補助金で半額('+man(pr.price)+')で建てられた！');}
-  else toast('🛒 定価'+man(pr.price)+'で建設(役場で申請しておけば半額だったよ…)');
+  if(pr.sub){consumeSub('barn');toast('🏛 役場の補助金で半額('+man(pr.price)+')で増築できた！');}
+  else toast('🛒 定価'+man(pr.price)+'で増築(役場で申請しておけば半額だったよ…)');
   fanfare();
-  toast('⛰ 山を切り開いて新築牛舎'+state.newBarns+'号棟が完成！(母牛+'+ECON.NEW_BARN_MO+'頭・子牛+'+ECON.NEW_BARN_CALF+'頭)');
+  toast('🐂 北の牛舎を東へ拡張！(母牛+'+ECON.NEW_BARN_MO+'頭・子牛+'+ECON.NEW_BARN_CALF+'頭)。牛舎は1つにまとまったまま大きくなるよ');
   toast('🐂 収容枠: 母牛'+state.cows.length+'/'+barnCapNow()+'頭・子牛'+state.calves.length+'/'+calfCapNow()+'頭');
   updateHUD();renderMenu();
 }
@@ -4871,12 +4871,11 @@ function jaHTML(){
     h+='<div class="row"><div class="em">'+m.em+'</div><div class="info"><b>新品の'+m.n+'('+man(m.price)+')</b><small>'+m.desc+' / いま: '+status+'<br>'+(pr.sub?'<span class="prof">🏛補助済 半額 '+man(pr.price)+'</span>':'<span style="color:#c03030">未申請 定価 '+man(pr.price)+'</span>')+'</small></div>'+
       (canBuy?'<button class="buy" '+(state.money>=pr.price||state.certFarmer?'':'disabled')+' onclick="buyMachine(\''+k+'\')">'+(state.money>=pr.price?man(pr.price):'🏦融資')+'</button>':'')+'</div>'; // v47: 認定農業者は設備資金で購入可
   }
-  // v20: 新築牛舎(3000万・補助で1500万)。🟤糞置き場が必須。山を切り開いて増築
+  // v54: 牛舎の増築=北の第二牛舎を東へ1区画ぶん伸ばす(点在させない)
   const bp=priceWithSub(ECON.NEW_BARN,'barn');
-  const plotsLeft=NEW_BARN_PLOTS.length-state.newBarns;
-  h+='<div class="row"><div class="em">🏠</div><div class="info"><b>新築牛舎を建てる(1棟'+man(ECON.NEW_BARN)+')</b><small>⛰山を切り開いて増築。1棟で母牛+'+ECON.NEW_BARN_MO+'頭・子牛+'+ECON.NEW_BARN_CALF+'頭。いま'+state.newBarns+'棟(開拓地の残り'+plotsLeft+')<br>'+
-    (bp.sub?'<span class="prof">🏛補助済 半額 '+man(bp.price)+'</span>':'<span style="color:#c03030">未申請 定価 '+man(bp.price)+'(申請で'+man(ECON.NEW_BARN/2)+')</span>')+'</small></div>'+
-    (plotsLeft>0?'<button class="buy" '+(state.money>=bp.price||state.certFarmer?'':'disabled')+' onclick="buyNewBarn()">'+(state.money>=bp.price?man(bp.price):'🏦融資して建てる')+'</button>':'')+'</div>'; // v47: 現金不足でも認定農業者なら設備資金で建てられる
+  const canExt=state.land.barn2&&!newBarnMaxed();
+  h+='<div class="row"><div class="em">🏠</div><div class="info"><b>牛舎の増築(1区画'+man(ECON.NEW_BARN)+')</b><small>'+(state.land.barn2?('北の第二牛舎を<b>東へ伸ばして</b>大きくするよ(牛舎は1つのまま・点在しない)。1区画で母牛+'+ECON.NEW_BARN_MO+'頭・子牛+'+ECON.NEW_BARN_CALF+'頭。いま増築'+state.newBarns+'区画'+(newBarnMaxed()?'・東端まで拡張済':'')+'<br>'+(bp.sub?'<span class="prof">🏛補助済 半額 '+man(bp.price)+'</span>':'<span style="color:#c03030">未申請 定価 '+man(bp.price)+'(申請で'+man(ECON.NEW_BARN/2)+')</span>')):'先に🏠不動産屋で「北の第二牛舎」を建てると、ここから東へ増築できるよ')+'</small></div>'+
+    (canExt?'<button class="buy" '+(state.money>=bp.price||state.certFarmer?'':'disabled')+' onclick="buyNewBarn()">'+(state.money>=bp.price?man(bp.price):'🏦融資して増築')+'</button>':'')+'</div>';
   h+='<p class="sub2" style="font-size:11.5px;color:#8a6a45">💡 🏭本格堆肥舎(補助で半額)は農場の🟫堆肥場で建設。中古の牛舎レンタル(月3万)は補助対象外。</p>';
   return h;
 }
@@ -5689,7 +5688,7 @@ function areaName(x,z){
   // v16: 拡張区画
   if(x>=50&&x<=66&&z>=8&&z<=21)return state.land.grass2?'🌿 東の牧草地':'🧱 販売中の区画(荒れ地)';
   if(x>=47&&x<=66&&z>=37&&z<=47)return state.land.rice2?'🌾 東の棚田':'🧱 販売中の区画(荒れ地)';
-  if(x>=8&&x<=60&&z>=0&&z<=12&&state.land.barn2)return '🏠 第二牛舎(北・大牛舎)'; // v53: 北の大第二牛舎
+  if(x>=8&&x<=78&&z>=0&&z<=12&&state.land.barn2)return '🏠 第二牛舎(北・大牛舎)'; // v53/54: 北の大牛舎(東へ増築)
   if(x>=BASE_WS||z>=BASE_WS)return'🌲 未開拓の荒れ地';
   if(x>=35&&x<=49&&z>=8&&z<=21)return state.land.pasture1?'🌿 牧草地':'🧱 空き地(牧草地の予定地・販売中)'; // v22
   if(x<=3&&z>=18&&z<=25)return'🏘 街の入口(橋の西)'; // v22
