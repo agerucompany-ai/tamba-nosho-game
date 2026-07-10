@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v55: 牛舎が点在しない=「増築」は北の大牛舎を東へ1つのまま伸ばす。上限厳守(はみ出し防止)・世話係は母牛60/子牛50まで・外周は地平線で行き止まり感なし・3月8週バグや牛舎の屋根も修正済</title>
+<title>丹波農商 牧場物語 v56: 山・灰色の壁を全廃して全面フラットな平原に(地平線まで続く)・スタッフにりゅうのすけ(牛豚)とあみ(食品加工)を追加・棚田を南に続けて拡張・放牧すると牛が牧草地へ自分で草を食べに行く(粗飼料代タダ)</title>
 <link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -481,6 +481,12 @@ const CHARS={
   naoto:{name:'なおとさん',role:'加工・堆肥のお兄さん',skin:'#eac199',cheek:'#e89a7a',hair:'#241a12',glasses:true,ponytail:true,shirt:'#2f5fa8',pants:'#22262a',shoe:'#333',spot:'compost',
     line:'牛糞は🧹掃除して牛舎に溜めて、月1回「処理」する(1頭500円)。🏭堆肥舎を建てれば肥料にして売れるよ！',
     line2:'僕を雇って「堆肥」を指示すれば、ふん回収も肥料の出荷も自動だよ(事務所で雇用・月給30万円)'},
+  ryunosuke:{name:'りゅうのすけさん',urls:['char_min/mnaoto_walk.glb'],role:'牛と豚のお兄さん',skin:'#e0aa7c',cheek:'#e07a5a',hair:'#0f0d0a',cap:'#7a1f1f',shirt:'#2f6a3a',pants:'#2a2a30',shoe:'#3a2a1a',spot:'barn2', // v56
+    line:'牛も豚も任せて！増えた頭数はもう1人で見きれないから、僕みたいな世話係を増やすといいよ🐂🐖',
+    line2:'僕を雇って「牛の世話」や「豚の放牧」を指示すれば全部自動！世話係を増やすと母牛60頭ずつ見られる枠が増えるよ(事務所で雇用・月給30万円)'},
+  ami:{name:'あみちゃん',urls:['char_min/shufu_walk.glb'],role:'食品加工のお姉さん',skin:'#f3d2b6',cheek:'#f0a0a8',hair:'#4a2c18',ponytail:true,shirt:'#d76a8a',pants:'#5a4a6a',shoe:'#b04a6a',spot:'proc', // v56
+    line:'丹波の野菜でポテサラや加工品を作るのが得意！加工は毎週コツコツが大事だよ🥔',
+    line2:'私を雇って「加工(ポテサラ)」を指示すれば、ポテサラ作りも農産物の加工販売も自動でやるよ(事務所で雇用・月給30万円)'},
 };
 // ---------- v19: 街の登場人物(Meshy新住人6役+住民)。model=char_min/m{model}_walk.glb ----------
 const TOWN_CHARS={
@@ -702,9 +708,9 @@ function freshState(){return{
   year:1,week:14,weekN:0,absWeek:0, // v25: 1年目4月1週目(4月相当)開始。weekN=通算週数
   res:{veg:0,negi:0,bean:0,edamame:0,chestnut:0,compost:0,manure:0,veg_seed:0,negi_seed:0,bean_seed:0,edamame_seed:0},
   barnRented:false,
-  staff:{atsushi:false,yusuke:false,naoto:false},
-  staffJobs:{atsushi:[],yusuke:[],naoto:[]}, // v44: 1人に複数の仕事を指示できる(配列)。rice/grass/cow/compost
-  staffHireYear:{atsushi:0,yusuke:0,naoto:0}, // v44: 雇った年(勤続年数=毎年+3万の自動昇給の起点)
+  staff:{atsushi:false,yusuke:false,naoto:false,ryunosuke:false,ami:false}, // v56: りゅうのすけ/あみ追加
+  staffJobs:{atsushi:[],yusuke:[],naoto:[],ryunosuke:[],ami:[]}, // v44/56
+  staffHireYear:{atsushi:0,yusuke:0,naoto:0,ryunosuke:0,ami:0}, // v44/56
   formulaFeed:0, // v25: 配合飼料の在庫(単位:週×頭分)
   cows:[],   // 母牛 {id,name,preg(-1=未妊娠/0..39=妊娠週数),births,debt,retired,bredWeek}
   calves:[], // 子牛 {id,ageWeeks(週齢),motherId,bornWeekN,weaned}
@@ -1067,6 +1073,8 @@ const STAFF_META={
   atsushi:{name:'あつし',em:'🤠',hint:'牛の扱いが得意'},
   yusuke:{name:'ゆうすけ',em:'👨‍🌾',hint:'米と牧草が得意'},
   naoto:{name:'なおと',em:'🧑‍🔧',hint:'堆肥と加工が得意'},
+  ryunosuke:{name:'りゅうのすけ',em:'🧑‍🌾',hint:'牛と豚の世話が得意'}, // v56
+  ami:{name:'あみ',em:'👩‍🍳',hint:'食品加工が得意'}, // v56
 };
 const JOBS={
   rice:{n:'米',em:'🌾',desc:'4月の田植え・5〜9月の水管理・10月の収穫・毎月の精米出荷を自動でやる'},
@@ -1360,20 +1368,12 @@ function genWorld(){
   const cx0=BASE_WS/2,cz0=BASE_WS/2; // v16: 地形の中心は旧世界のまま(既存マップを維持)
   for(let x=0;x<WS;x++)for(let z=0;z<WS;z++){
     if(x>=BASE_WS||z>=BASE_WS){ // v16: 拡張ゾーン=未開拓の荒れ地(区画を買うと開拓される)
-      let h=2+Math.round(0.6*Math.sin(x*0.35)+0.6*Math.cos(z*0.3)+h2(x,z)*0.6); // v53: 起伏を抑えて開けた荒れ地に
-      if(x>=WS-10||z>=WS-10)h=1; // v53: 外周10マスは平地(core地面と同じ高さ)=地平線となめらかにつながる
-      h=Math.max(1,Math.min(WH-6,h));
-      for(let y=0;y<=h;y++){
-        let t=B.SOIL;
-        if(y===h)t=h>=6?B.STONE:B.GRASS;
-        else if(y<h-1)t=B.STONE;
-        gset(x,y,z,t);
-      }
+      const h=1; // v56: 拡張ゾーンも全面フラットな平原(山・起伏なし=地平線までなめらか)
+      gset(x,0,z,B.SOIL);gset(x,1,z,B.GRASS);
       continue;
     }
     const d=Math.hypot(x-cx0,z-cz0);
-    let h=1+Math.round(Math.sin(x*0.21)*0.8+Math.cos(z*0.19)*0.8);
-    if(d>19&&z>=14)h+=Math.round((d-19)*0.9); // v53: 北(z<14)は丘にせず開けた平地に(牛舎を広く建てられる)
+    let h=1; // v56: 丘・山を全廃して全面フラットな平原に(灰色の壁/山をなくす)
     h=Math.max(1,Math.min(WH-6,h));
     const rx=riverX(z);
     const isRiver=Math.abs(x-rx)<=1;
@@ -1384,7 +1384,7 @@ function genWorld(){
     if(Math.abs(x-rx)===2){h=1;}
     for(let y=0;y<=h;y++){
       let t=B.SOIL;
-      if(y===h)t=(d>19&&h>4)?B.STONE:B.GRASS;
+      if(y===h)t=B.GRASS; // v56: 全面グラス(石の山肌なし)
       else if(y<h-1)t=B.STONE;
       gset(x,y,z,t);
     }
@@ -1587,11 +1587,12 @@ function terraformField2(){
   flatten(25,34,43,50,2);
   for(let x=26;x<=33;x++)for(let z=44;z<=49;z++)if(inWorld(x,z))gset(x,2,z,(x%2===0)?B.TILLED:B.SOIL);
 }
-// v50: 南の棚田(拡張)=南に水を張った棚田を追加(x24-34,z50-56)。riceScaleで収量+50%
+// v56: 南の棚田(拡張)=既存の棚田(x11-22,z36-47)の真下に続けて拡張(下続き)。riceScaleで収量+50%
 function terraformRice3(){
-  flatten(23,35,49,57,2);
-  for(let x=24;x<=34;x++)for(let z=50;z<=56;z++){if(!inWorld(x,z))continue;gset(x,1,z,B.TILLED);gset(x,2,z,B.WATER);}
-  for(let x=23;x<=35;x++){gset(x,2,49,B.PATH);gset(x,2,57,B.PATH);} // あぜ道
+  flatten(10,23,47,62,2);
+  for(let x=11;x<=22;x++)for(let z=48;z<=60;z++){if(!inWorld(x,z))continue;gset(x,1,z,B.TILLED);gset(x,2,z,B.WATER);}
+  for(let x=10;x<=23;x++)gset(x,2,61,B.PATH); // 南のあぜ道
+  for(let z=48;z<=60;z++){gset(10,2,z,B.PATH);gset(23,2,z,B.PATH);} // 東西のあぜ道
 }
 // v22: 西の牧草地(基本区画)。開始時は柵のない空き地→購入で柵付きの牧草地に
 function terraformPasture1(){
@@ -2687,7 +2688,7 @@ function loadNPCGLBs(){
 //      GLBはマップをまたいで保持(切替のたびに読み直さない)。
 const npcs=[];
 function initNPCs(){
-  const spots={barn:[22.5,28.5],pasture:[39.5,13.5],compost:[35,36.8]}; // v27: 牛舎の南入口の外(草地)に立たせる=壁の上に乗るバグ修正
+  const spots={barn:[22.5,28.5],pasture:[39.5,13.5],compost:[35,36.8],barn2:[35,11],proc:[45,32]}; // v27/56: barn2=北の牛舎前・proc=加工場前
   const mk=(modelKey,cfg,map,pos,wander)=>{
     const g=new THREE.Group();               // ホルダー（ラベル＋キャラ）
     const vox=buildVoxAvatar(cfg); vox.visible=false; g.add(vox); // v15: ボクセルは非表示で待機(GLB失敗時のみ表示)
@@ -4113,7 +4114,7 @@ function openStaffTalk(k){
         a.push(['🧹 担当を全部外す',()=>{assignJob(k,null);openStaffTalk(k);}]);}
       return a;}});
 }
-function isStaffNpc(key){return key==='atsushi'||key==='yusuke'||key==='naoto';}
+function isStaffNpc(key){return key==='atsushi'||key==='yusuke'||key==='naoto'||key==='ryunosuke'||key==='ami';} // v56
 
 // ---------- v16: 従業員の自動作業（毎日実行・月次仕事は月1回ガードで自動判断） ----------
 // 指示された仕事だけを自動でやる。雇った/指示した日からすぐ働く。
@@ -4505,13 +4506,15 @@ function weekEnd(notes){
   }
   // 2) 餌の消費と週次餌代。v38: 餌=牧草(粗飼料15千/頭・自給なら無料)＋配合飼料(濃厚飼料5千/頭・常時)=最大 月2万/頭
   const herd=herdCount();
-  const fed=Math.min(state.grassStock,herd*ECON.GRASS_EAT); // 自給の牧草で賄えた頭
-  state.grassStock-=fed;
+  const grazing=!!(state.cowFree&&state.land.pasture1&&state.grassSown); // v56: 放牧中は牧草地で自分で草を食べる=粗飼料タダ・在庫も減らない
+  const fed=grazing?herd:Math.min(state.grassStock,herd*ECON.GRASS_EAT); // 放牧なら全頭が自給扱い
+  if(!grazing)state.grassStock-=fed;
   state.grassFedLast=fed;
-  const roughShort=herd-fed; // 市販の牧草(粗飼料)を買う頭数
+  const roughShort=grazing?0:herd-fed; // 市販の牧草(粗飼料)を買う頭数(放牧中はゼロ)
   const concentrate=Math.round(herd*ECON.FEED_CONCENTRATE/4); // 配合飼料(全頭・常時)
   const roughage=Math.round(roughShort*ECON.FEED_MARKET/4);   // 牧草(自給で賄えない分は市販)
   const feedCost=concentrate+roughage;
+  if(grazing&&herd>0)notes.push('🐄 放牧中！牛が牧草地で自分で草を食べているので粗飼料代タダ(配合飼料のみ)。牧草の在庫も減らない');
   if(feedCost>0)addExpense(feedCost,'feed');
   if(herd>0)notes.push('🍽 餌代 −'+fmt(feedCost)+'／週(配合飼料5千/頭'+(roughShort>0?('＋市販の牧草15千×'+roughShort+'頭'):'')+(fed>0?('・自給の牧草で'+fed+'頭ぶんは牧草代タダ✨'):'')+'。合計 月2万/頭・自給で月5千/頭)');
   // 3) 固定費(4週ごとに月額給与を徴収: 週1/4ずつ)
@@ -5804,8 +5807,9 @@ function animate(ts){
   for(const m of cowMeshes){
     const u=m.userData;u.t+=dt;
     const a=cowAreas[Math.min(u.bi||0,cowAreas.length-1)];
-    // v27: 放し飼い時、母牛は牛舎の広い範囲(通路まで)へ出る=扉状のスタンチョンから前へ。仔牛はペン内。
-    const roam=state.cowFree?(u.big?(a.inner||a):(u.roam||a)):(u.roam||a);
+    // v27: 放し飼い時、母牛は牛舎の広い範囲(通路まで)へ出る。v56: 牧草地の近くの牛舎(片側1列=古い牛舎)の母牛は放牧で牧草地へ歩いて草を食べに行く
+    let roam=state.cowFree?(u.big?(a.inner||a):(u.roam||a)):(u.roam||a);
+    if(state.cowFree&&u.big&&state.land.pasture1&&state.grassSown&&a.type==='oneside')roam={x0:16,x1:48.5,z0:9,z1:22}; // 牛舎〜牧草地を自由に(草を食べに行く)
     let tx,tz,arrive;
     if(state.cowFree){ // 🚶散歩(放し飼い): 繋ぎを解いて通路側へ出て歩き回る
       if(u.t>4){u.t=0;
