@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v64: 機械の経済を実データ化 — 機械は%削減でなく必須の前提(米一式=トラクター+田植え機+コンバイン+乾燥機/牧草一式=トラクター+ダンプベッセル+ロールベーラー)。1人+一式=陸続き5町まで・5町超/飛地(東の棚田/東の牧草地)は別の一式+担当。牧草機械は補助で半額(トラクター400/ダンプ200/ベーラー200)・米機械は補助対象外(乾燥機 中古300/新品600)。ドローンは米専用-20%</title>
+<title>丹波農商 牧場物語 v65: 経営分析の見える化 — 事務所に📊経営分析(過去の決算書ビューア=各年度のPL/BSをそのまま保存・売上/利益/現金の推移グラフ=canvas自前描画・資金繰り表=制度融資の返済スケジュールを年ごとに明示して期末現金を予測。新規就農資金の据置明け=4年目からの返済増と資金ショート年を警告色で見える化)</title>
 <link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -754,6 +754,7 @@ function freshState(){return{
   barnDung:0, // v35: 掃除で集めたフンが牛舎内に溜まる量。月1回「処理」で消す。満杯だと掃除できない
   fy:freshFy(), // v17: 勘定別+事業セグメント別の期中帳簿
   lastResult:null,history:[],weekLog:[], // v44: weekLog=毎週の出来事の記録(見返し用)
+  fyArchive:[], // v65: 過去年度の完全な決算書(PL内訳+期末BS)のアーカイブ
   abandonedLand:0,pigPlots:0,pigs:[],pigSeq:1,pigRotWeek:-99, // v50: 豚の放牧(耕作放棄地の反数・電柵済み反数・豚・ローテーション週)
   chestnutMachine:false,chestnutShip:0,chestnutBizYear:0, // v50: 栗の瓶詰め(加工機・出荷残・今年加工したか)
   edits:{},crops:{},treeFruit:{},tuftDay:{},plotHist:{}, // v43: plotHist=連作障害の履歴{"x,z":{last,streak}}
@@ -2527,7 +2528,7 @@ function buildWarehouseInterior(){
   wbox(71.4,24.6,0.7,1.3,0.6,0x7a8a95);  // 書類キャビネット
   addDecoCollider(72.5,25.0,0.8,F);addDecoCollider(74.4,29.0,0.5,F);addDecoCollider(71.4,24.6,0.4,F);
   const oi=iconSprite('🏢',1.5);oi.position.set(72.5,F+3.6,27);decoGroup.add(oi);
-  addInfoIcon(oi,{t:'🏢 事務所(大倉庫・東)',b:'雇用・仕事の指示・帳簿(PL/BS・事業別)はここで。<br>従業員(月給30万)に🌾米/🌿牧草/🐂牛の世話/🟫堆肥を指示すると、毎日/月初に自動でやってくれるよ(放置経営)。',btns:[['🤝 雇用・指示',()=>{menuTab='staff';openMenu();}],['📒 帳簿(PL/BS)を見る',()=>{menuTab='ledger';openMenu();}]]});
+  addInfoIcon(oi,{t:'🏢 事務所(大倉庫・東)',b:'雇用・仕事の指示・帳簿(PL/BS・事業別)はここで。<br>従業員(月給30万)に🌾米/🌿牧草/🐂牛の世話/🟫堆肥を指示すると、毎日/月初に自動でやってくれるよ(放置経営)。',btns:[['🤝 雇用・指示',()=>{menuTab='staff';openMenu();}],['📒 帳簿(PL/BS)を見る',()=>{menuTab='ledger';openMenu();}],['📊 経営分析(過去決算・グラフ・資金繰り)',()=>{menuTab='biz';openMenu();}]]});
   // --- 外の看板(西の大搬入口の前) ---
   addSign(39.5,24,'🏭',{t:'🏭 大倉庫(複合施設)',b:'農機庫・米の貯蔵・精米機・食品加工場・事務所を1棟に集約した超巨大倉庫(35×13)。<br>西の大きな搬入口から中に入って歩き回れるよ。米の出荷は🍚精米機、雇用・帳簿は🏢事務所、農産物の売却は📦倉庫メニューで。',btns:[['📦 倉庫メニュー',()=>{menuTab='wh';openMenu();}],['🏢 雇用・指示(事務所)',()=>{menuTab='staff';openMenu();}]]},1.8);
 }
@@ -3710,6 +3711,8 @@ function nearestAction(wx,wz){
   cand(MACH_POS.polisher[0],MACH_POS.polisher[1],2.0,machineBroken('polisher')?'⚠ 精米機(故障中)':'🍚 精米機(精米して出荷)',()=>{if(machineBroken('polisher')){toast('🍚 精米機が故障中！🔧街の修理屋で修理を('+man(machRepairCost('polisher'))+')');}else shipRice();});
   cand(59.5,25.2,2.2,'📦 米の貯蔵('+state.riceBags+'袋)・倉庫',()=>{menuTab='wh';openMenu();});
   cand(72.5,25.6,2.6,'🏢 事務所(雇用・帳簿・指示)',()=>{menuTab='staff';openMenu();});
+  cand(74.4,28.5,2.2,'📊 経営分析(過去決算・推移グラフ・資金繰り表)',()=>{menuTab='biz';openMenu();}); // v65: 事務所の書棚
+
   cand(44,31,2.6,(state.procWeek===state.weekN)?'🥔 ポテサラ加工場(今週は加工済)':'🥔 ポテサラを作って売る(週1・利益'+man(ECON.FOOD_PROC_SALE-ECON.FOOD_PROC_COST)+')',()=>doProcess(null)); // v30: 倉庫の一番手前(西の入口すぐ)へ移設
   cand(46.5,28.2,2.4,'🚜 農機庫(機械の格納)',()=>{
     const t=state.machines.tractor,names=[]; // v64: 台数表示
@@ -5086,7 +5089,10 @@ function doFiscalClose(){
   };
   r.bs=computeBS(); // v17: 期末(税納付後)時点の貸借対照表
   state.lastResult=r;
-  state.history.push({year:r.year,sales:r.sales,exp:r.exp,profit:r.profit,tax});
+  state.history.push({year:r.year,sales:r.sales,exp:r.exp,profit:r.profit,tax,cash:state.money}); // v65: 期末現金も記録(推移グラフ用)
+  if(!state.fyArchive)state.fyArchive=[]; // v65: 完全な決算書をアーカイブ(過去決算ビューア用)
+  state.fyArchive=state.fyArchive.filter(a=>a.year!==r.year);
+  state.fyArchive.push(JSON.parse(JSON.stringify(r)));
   state.fy=freshFy();
   showFiscal(r);
   if(tax>0)toast('🏛 税金'+fmt(tax)+'を納付した(牛の利益は非課税)');
@@ -5210,14 +5216,14 @@ function segBSHTML(segKey,b){
   h+='<p style="font-size:11.5px;color:#8a6a45">💡 現金と銀行借入は🏢共通/本部にまとめているよ。全事業+共通を合算すると全社のBSと一致する。</p>';
   return h;
 }
-function showFiscal(r){
+function showFiscal(r,archive){ // v65: archive=true なら過去決算の閲覧モード(新年度演出なし)
   const box=document.getElementById('fiscalBox');
   const prof=r.profit>=0;
   // v15: 税金(v14セーブのlastResultにはtaxが無いので0扱い)
   const tax=r.tax||0,taxable=r.taxable||0,afterTax=(r.afterTax!==undefined)?r.afterTax:r.profit-tax;
   // v17: PL(当期)＋BS(期末時点)＋事業別利益を1画面で。BSは決算時のスナップショット(旧セーブは現時点)
   const bs=r.bs||computeBS();
-  box.innerHTML='<h2>📒 '+r.year+'年目 決算</h2>'+
+  box.innerHTML='<h2>📒 '+r.year+'年目 決算'+(archive?'(過去の決算書)':'')+'</h2>'+
     '<p><b>PL(損益計算書)</b>='+r.year+'年目4月〜3月の経営成績、<b>BS(貸借対照表)</b>=期末時点の財産だよ。</p>'+
     '<h2 style="font-size:16px">📈 PL(損益計算書)</h2>'+
     '<table class="fs">'+
@@ -5236,7 +5242,7 @@ function showFiscal(r){
     '<p style="font-size:14px;font-weight:bold" class="'+(prof?'prof':'loss')+'">'+(prof?'🎉 黒字決算！銀行から売上高'+fmt(r.sales)+'まで借入できるよ':'⚠ 赤字決算…銀行融資は受けられないよ(経費を見直そう)')+'</p>'+
     '<h2 style="font-size:16px">🏦 BS(貸借対照表・期末時点)</h2>'+
     bsHTML(bs)+BS_NOTE+
-    '<button class="close" onclick="closeFiscal()">閉じる(新年度スタート！)</button>';
+    '<button class="close" onclick="closeFiscal()">'+(archive?'閉じる':'閉じる(新年度スタート！)')+'</button>';
   document.getElementById('fiscal').style.display='flex';
 }
 function closeFiscal(){document.getElementById('fiscal').style.display='none';}
@@ -5270,12 +5276,13 @@ function renderMenu(){
   const box=document.getElementById('menuBox');
   const tab=(id,label)=>'<div class="tab '+(menuTab===id?'on':'')+'" onclick="menuTab=\''+id+'\';renderMenu()">'+label+'</div>';
   let html='<h2>🌾 丹波農商 <span style="font-size:13px;color:#8a6a45">'+ymdLabel()+'・'+fmt(state.money)+'</span></h2>'+
-    '<div class="tabs">'+tab('ach','🏆 実績')+tab('ledger','📒 帳簿')+tab('wh','📦 倉庫')+tab('cows','🏚 牛舎')+tab('herd','🐂 牛')+((state.abandonedLand>0||state.pigs.length>0)?tab('pig','🐖 豚'):'')+tab('auction','🐂 セリ')+tab('bank','🏦 銀行')+tab('staff','🤝 指示')+tab('land','🏠 不動産屋')+tab('diy','🔨 DIY')+
+    '<div class="tabs">'+tab('ach','🏆 実績')+tab('ledger','📒 帳簿')+tab('biz','📊 分析')+tab('wh','📦 倉庫')+tab('cows','🏚 牛舎')+tab('herd','🐂 牛')+((state.abandonedLand>0||state.pigs.length>0)?tab('pig','🐖 豚'):'')+tab('auction','🐂 セリ')+tab('bank','🏦 銀行')+tab('staff','🤝 指示')+tab('land','🏠 不動産屋')+tab('diy','🔨 DIY')+
     (menuTab==='yakuba'?tab('yakuba','🏛 役場'):'')+(menuTab==='ja'?tab('ja','🚜 農協'):'')+(menuTab==='repair'?tab('repair','🔧 修理屋'):'')+ // v19: 街の施設タブ(現地でだけ開く)
     tab('set','⚙')+'</div>';
   if(menuTab==='ach')html+=achHTML();
   else if(menuTab==='herd')html+=cowListHTML();
   else if(menuTab==='ledger')html+=ledgerHTML();
+  else if(menuTab==='biz')html+=bizHTML(); // v65: 経営分析
   else if(menuTab==='wh')html+=whHTML();
   else if(menuTab==='cows')html+=cowsHTML();
   else if(menuTab==='auction')html+=auctionHTML();
@@ -5292,6 +5299,7 @@ function renderMenu(){
   html+='<button class="close" onclick="closeMenu()">閉じる</button>';
   html+='<button class="close" style="background:#8a7a5a;border-color:#5a4a2a;box-shadow:0 3px 0 #5a4a2a;font-size:13px" onclick="backToTitle()">🏠 タイトルに戻る</button>'; // v39
   box.innerHTML=html;
+  if(menuTab==='biz')setTimeout(drawBizCharts,0); // v65: innerHTML反映後にcanvasへ描画
 }
 // v16: 土地(区画)の購入=ワールド拡張
 // v50: 豚の放牧事業メニュー
@@ -5464,7 +5472,8 @@ function ledgerHTML(){
     h+='<table class="fs"><tr class="hd"><td>決算の歴史</td><td class="amt">純利益</td></tr>';
     for(const r of state.history)h+='<tr><td>'+r.year+'年目(売上'+fmt(r.sales)+')</td><td class="amt '+(r.profit>=0?'prof':'loss')+'">'+(r.profit>=0?'+':'−')+fmt(Math.abs(r.profit))+'</td></tr>';
     h+='</table>';
-    h+='<div class="row"><div class="em">📒</div><div class="info"><b>直近の決算書(PL+BS)を見る</b></div><button class="minibtn blue" onclick="showFiscal(state.lastResult)">表示</button></div>';
+    h+='<div class="row"><div class="em">📒</div><div class="info"><b>直近の決算書(PL+BS)を見る</b></div><button class="minibtn blue" onclick="showFiscal(state.lastResult,true)">表示</button></div>';
+    h+='<div class="row"><div class="em">📊</div><div class="info"><b>経営分析</b><small>過去の決算書・売上/利益の推移グラフ・資金繰り表(将来の返済と現金の見通し)</small></div><button class="minibtn blue" onclick="menuTab=\'biz\';renderMenu()">開く</button></div>'; // v65
   }
   return h;
 }
@@ -5482,6 +5491,225 @@ function ledgerStatusHTML(){
   (herd>0?'<tr><td>牛糞の処理費(掃除→月1回処理・1頭'+ECON.DUNG_PROC_FEE+'円'+(state.compostShed?'・🏭堆肥舎で肥料化✨':'')+')</td><td class="amt">'+fmt(herd*ECON.DUNG_PROC_FEE)+'</td></tr>':'')+
   '</table>'+
   '<p class="sub2" style="font-size:11.5px;color:#8a6a45">🌿 牧草: '+(state.grassSown?('作付け済み(収穫は🌸5月1週目/🍂9月3週目・1回'+grassCutYield()+'束・'+(isGrassHarvestWeek()?('今週は収穫週！'+(state.grassCutWeek===state.weekN?'収穫済✅':'まだ⬜')):'次は'+nextGrassHarvestLabel())+')'):(state.land.pasture1?'未作付け(牧草地で'+man(grassSowCost())+')':'牧草地なし(🏠不動産屋で購入)'))+' / 牛の消費 週'+grassNeed+'束 / 米: '+(state.riceField==='none'?'未作付け(4月1週目に苗代'+man(riceSeedCost())+')':state.riceField==='planted'?('生育中(10月3週目に'+riceBagsYield()+'袋。水管理'+(isWaterSeason()?(waterDue()?'そろそろ⬜':'済✅'):'は夏のみ')+')'):'収穫待ち！')+(herdCount()>0?' / 🐂健康'+state.care.health+'・汚れ'+state.care.dirt:'')+'</p>';
+}
+// ---------- v65: 経営分析(過去の決算書・売上/利益の推移グラフ・資金繰り表) ----------
+let bizView='cash';
+let bizCashRows=null; // 資金繰りグラフ用(直近のcashflowHTML計算結果)
+function setBiz(v){bizView=v;renderMenu();}
+function manSigned(v){return (v>=0?'+':'−')+man(Math.abs(v));}
+function weeksLeftInFy(){return ((ECON.RICE_PLANT_WEEK-1-state.week)%ECON.WEEKS_PER_YEAR+ECON.WEEKS_PER_YEAR)%ECON.WEEKS_PER_YEAR;} // 年度末(3月末=13週)までの残り週
+function bizHTML(){
+  const vt=(id,l)=>'<div class="tab '+(bizView===id?'on':'')+'" onclick="setBiz(\''+id+'\')">'+l+'</div>';
+  let h='<p>📊 <b>経営分析</b>(事務所): 資金繰りの見通し・売上/利益の推移・過去の決算書。</p>';
+  h+='<div class="tabs">'+vt('cash','💧 資金繰り表')+vt('graph','📈 推移グラフ')+vt('hist','📚 過去の決算書')+'</div>';
+  if(bizView==='graph')h+=bizGraphHTML();
+  else if(bizView==='hist')h+=fyArchiveHTML();
+  else h+=cashflowHTML();
+  return h;
+}
+// --- ① 過去の決算書ビューア(fyArchive=各年度の完全な決算書) ---
+function fyArchiveHTML(){
+  const ar=(state.fyArchive||[]).slice().sort((a,b)=>a.year-b.year);
+  if(!ar.length)return '<p style="color:#8a6a45">まだ決算書がないよ。最初の年度末(3月末)に決算すると、ここに毎年の決算書(PL/BS)が保存されていくよ。</p>';
+  let h='<p>年度を選ぶと、その年の<b>決算書(PL＋期末BS)</b>が当時のまま見られるよ。</p>';
+  h+='<table class="fs"><tr class="hd"><td>年度</td><td class="amt">売上高</td><td class="amt">税引後利益</td><td class="amt"></td></tr>';
+  for(const r of ar){
+    const at=(r.afterTax!==undefined)?r.afterTax:r.profit-(r.tax||0);
+    h+='<tr><td>'+r.year+'年目</td><td class="amt">'+man(r.sales)+'</td><td class="amt '+(at>=0?'prof':'loss')+'">'+manSigned(at)+'</td>'+
+      '<td class="amt"><button class="minibtn blue" onclick="showFyArchive('+r.year+')">📒 決算書</button></td></tr>';
+  }
+  h+='</table>';
+  if(state.history.length>ar.length)h+='<p style="font-size:11.5px;color:#8a6a45">💡 旧バージョンでプレイした年度は要約(決算の歴史)だけで、完全な決算書は残っていないよ(今後の年度末からは自動保存)。</p>';
+  return h;
+}
+function showFyArchive(y){const r=(state.fyArchive||[]).find(a=>a.year===y);if(r)showFiscal(r,true);}
+// --- ② 売上・利益の推移グラフ(canvas自前描画・外部ライブラリなし) ---
+function bizGraphHTML(){
+  if(!state.history.length)return '<p style="color:#8a6a45">まだ決算がないよ。年度末(3月末)の決算を重ねると、売上と利益の推移がグラフで見られるよ。</p>';
+  let h='<p>📈 <b>売上高・税引後利益・期末現金の推移</b>(全社・年度ごと)。</p>';
+  h+='<div style="overflow-x:auto;background:#fffdf2;border:2px solid #c9b98f;border-radius:8px;padding:4px"><canvas id="bizChart"></canvas></div>';
+  h+='<p style="font-size:11.5px;color:#8a6a45">🟩 売上高(棒)・🟦 税引後利益(棒・🟥赤字)・🟠 期末現金(折れ線・記録がある年のみ)。</p>';
+  const ar=(state.fyArchive||[]).filter(r=>r.seg).sort((a,b)=>a.year-b.year);
+  if(ar.length){ // 事業別売上の内訳(完全な決算書がある年のみ)
+    const keys=[];
+    for(const k in SEG_META){if(k==='common')continue;if(ar.some(r=>r.seg[k]&&r.seg[k].s>0))keys.push(k);}
+    if(keys.length){
+      h+='<p style="font-size:12.5px;color:#5a3714;font-weight:bold">🧩 事業別売上の推移</p>';
+      h+='<div style="overflow-x:auto"><table class="fs"><tr class="hd"><td>年度</td>'+keys.map(k=>'<td class="amt">'+SEG_META[k].em+SEG_META[k].n+'</td>').join('')+'</tr>';
+      for(const r of ar)h+='<tr><td>'+r.year+'年目</td>'+keys.map(k=>'<td class="amt">'+man((r.seg[k]&&r.seg[k].s)||0)+'</td>').join('')+'</tr>';
+      h+='</table></div>';
+    }
+  }
+  return h;
+}
+function niceStepMan(maxMan){ // グラフ目盛り(万円単位)
+  const steps=[50,100,250,500,1000,2500,5000,10000,25000,50000,100000];
+  for(const s of steps)if(maxMan/s<=6)return s;
+  return 200000;
+}
+function setupChart(cv,H){ // DPR対応でcanvasを親幅に合わせる
+  const dpr=window.devicePixelRatio||1;
+  const W=Math.max(300,Math.min((cv.parentElement&&cv.parentElement.clientWidth-10)||560,640));
+  cv.style.width=W+'px';cv.style.height=H+'px';cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);
+  const ctx=cv.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.fillStyle='#fffdf2';ctx.fillRect(0,0,W,H);
+  return {ctx,W,H};
+}
+function chartAxis(ctx,W,H,vmax,vmin){ // 目盛り・グリッド。y座標変換関数を返す
+  const padL=56,padR=8,padT=24,padB=20,ih=H-padT-padB;
+  const stepM=niceStepMan(Math.max(vmax,-vmin,10000)/10000),step=stepM*10000;
+  vmax=Math.max(step,Math.ceil(vmax/step)*step);vmin=Math.min(0,Math.floor(vmin/step)*step);
+  const y=v=>padT+ih*(1-(v-vmin)/(vmax-vmin));
+  ctx.font='10px sans-serif';ctx.textAlign='right';ctx.lineWidth=1;
+  for(let v=vmin;v<=vmax+1;v+=step){
+    ctx.strokeStyle='#e8dcc0';ctx.beginPath();ctx.moveTo(padL,y(v));ctx.lineTo(W-padR,y(v));ctx.stroke();
+    ctx.fillStyle='#8a6a45';ctx.fillText((v/10000).toLocaleString()+'万',padL-4,y(v)+3);
+  }
+  if(vmin<0){ctx.strokeStyle='#a08a60';ctx.beginPath();ctx.moveTo(padL,y(0));ctx.lineTo(W-padR,y(0));ctx.stroke();}
+  return {y,padL,padR,padT,padB};
+}
+function drawBizCharts(){drawHistoryChart();drawCashChart();}
+function drawHistoryChart(){
+  const cv=document.getElementById('bizChart');if(!cv)return;
+  const hist=state.history;if(!hist.length)return;
+  const {ctx,W,H}=setupChart(cv,250);
+  let vmax=1,vmin=0;
+  for(const r of hist){const at=r.profit-(r.tax||0);vmax=Math.max(vmax,r.sales,at,r.cash||0);vmin=Math.min(vmin,at);}
+  const ax=chartAxis(ctx,W,H,vmax,vmin),y=ax.y,y0=y(0);
+  const n=hist.length,sw=(W-ax.padL-ax.padR)/n;
+  const skip=Math.ceil(n/8); // 年ラベルの間引き
+  ctx.textAlign='center';
+  for(let i=0;i<n;i++){
+    const r=hist[i],cx=ax.padL+sw*i+sw/2,at=r.profit-(r.tax||0);
+    const bw=Math.max(4,Math.min(16,sw*0.3));
+    ctx.fillStyle='#6aa84f';ctx.fillRect(cx-bw-1,y(r.sales),bw,y0-y(r.sales)); // 売上(緑棒)
+    ctx.fillStyle=at>=0?'#3a6fd8':'#c0453a'; // 利益(青棒/赤字は赤)
+    ctx.fillRect(cx+1,Math.min(y(at),y0),bw,Math.abs(y(at)-y0));
+    if(i%skip===0||i===n-1){ctx.fillStyle='#6a5232';ctx.font='10px sans-serif';ctx.fillText(r.year+'年',cx,H-6);}
+  }
+  ctx.strokeStyle='#e08a2e';ctx.lineWidth=2;ctx.beginPath();let started=false; // 期末現金(折れ線)
+  for(let i=0;i<n;i++){const r=hist[i];if(r.cash===undefined||r.cash===null)continue;const cx=ax.padL+sw*i+sw/2;if(!started){ctx.moveTo(cx,y(r.cash));started=true;}else ctx.lineTo(cx,y(r.cash));}
+  if(started)ctx.stroke();
+  ctx.fillStyle='#e08a2e';
+  for(let i=0;i<n;i++){const r=hist[i];if(r.cash===undefined||r.cash===null)continue;const cx=ax.padL+sw*i+sw/2;ctx.beginPath();ctx.arc(cx,y(r.cash),3,0,Math.PI*2);ctx.fill();}
+  ctx.textAlign='left';ctx.font='10.5px sans-serif'; // 凡例
+  ctx.fillStyle='#6aa84f';ctx.fillRect(ax.padL,7,10,10);ctx.fillStyle='#5a3714';ctx.fillText('売上高',ax.padL+13,16);
+  ctx.fillStyle='#3a6fd8';ctx.fillRect(ax.padL+58,7,10,10);ctx.fillStyle='#5a3714';ctx.fillText('税引後利益',ax.padL+71,16);
+  ctx.strokeStyle='#e08a2e';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(ax.padL+140,12);ctx.lineTo(ax.padL+155,12);ctx.stroke();ctx.fillStyle='#5a3714';ctx.fillText('期末現金',ax.padL+158,16);
+}
+// --- ③ 資金繰り表: 制度融資の将来返済スケジュール(実返済ロジックrepayInstitutionalLoansと同じ規則) ---
+// 新規就農資金: 3年据置→(借入年+3)年目の年度末から STARTUP_LOAN/(TERM-GRACE)=年750万 / スーパーL: 毎年度末にannual(10年均等)
+function loanSchedulePlan(minYears){
+  const sl=state.startupLoan||{},su=state.superL||{};
+  let slRemain=(sl.taken&&sl.remain>0)?sl.remain:0;
+  const slAnnual=Math.round(ECON.STARTUP_LOAN/(ECON.STARTUP_TERM-ECON.STARTUP_GRACE));
+  let suRemain=su.remain>0?su.remain:0;
+  const suAnnual=su.annual||0;
+  const rows=[];
+  for(let y=state.year;y<state.year+20;y++){
+    let sp=0,up=0;
+    if(slRemain>0&&y>=(sl.loanYear||0)+ECON.STARTUP_GRACE){sp=Math.min(slRemain,slAnnual);slRemain-=sp;} // 年度末返済(y年度末=翌年4月にelapsed>3)
+    if(suRemain>0&&suAnnual>0){up=Math.min(suRemain,suAnnual);suRemain-=up;}
+    rows.push({year:y,startup:sp,superL:up,total:sp+up});
+  }
+  let last=rows.length-1;while(last>0&&rows[last].total===0)last--;
+  return rows.slice(0,Math.min(rows.length,Math.max(last+2,minYears||6))); // 完済の翌年まで(最低minYears)
+}
+function cashflowHTML(){
+  const sl=state.startupLoan||{},su=state.superL||{};
+  const slAnnual=Math.round(ECON.STARTUP_LOAN/(ECON.STARTUP_TERM-ECON.STARTUP_GRACE));
+  const sched=loanSchedulePlan(6);
+  const cd=cowDebtTotal();
+  // 営業CF(概算)=税引後利益ベース
+  let baseCF=0,baseLbl='';
+  if(state.history.length){
+    const hs=state.history.slice(-3);
+    baseCF=Math.round(hs.reduce((s,r)=>s+(r.profit-(r.tax||0)),0)/hs.length);
+    baseLbl='直近'+hs.length+'年の税引後利益の平均('+manSigned(baseCF)+'/年)が今後も続く前提';
+  }else{
+    const t=taxCalc(state.fy);
+    const elapsed=Math.max(1,ECON.WEEKS_PER_YEAR-weeksLeftInFy());
+    baseCF=elapsed>=13?Math.round(t.afterTax*ECON.WEEKS_PER_YEAR/elapsed):t.afterTax;
+    baseLbl='まだ決算がないので今期ここまでの実績からの概算';
+  }
+  const wl=weeksLeftInFy();
+  const curTax=taxCalc(state.fy).tax; // 今期3月末の税金見込み
+  let h='<p>💧 <b>資金繰り表</b>: 借金の返済は<b>年度末(3月末)にまとめて現金から引き落とし</b>。'+(sl.taken&&sl.remain>0?'🎓新規就農資金は3年据置→<b>'+((sl.loanYear||1)+ECON.STARTUP_GRACE)+'年目の年度末から年'+man(slAnnual)+'の返済が始まる</b>ので、':'')+'期末現金の見通しで資金ショートを先に察知しよう。</p>';
+  h+='<table class="fs"><tr class="hd"><td>借入の状況(いま)</td><td class="amt">残高</td></tr>';
+  if(sl.taken&&sl.remain>0)h+='<tr><td style="padding-left:14px">🎓 新規就農資金('+sl.loanYear+'年目借入・無利息)<br><small style="color:#8a6a45">3年据置→'+(sl.loanYear+ECON.STARTUP_GRACE)+'年目の年度末から年'+man(slAnnual)+'ずつ</small></td><td class="amt">'+man(sl.remain)+'</td></tr>';
+  if(su.remain>0)h+='<tr><td style="padding-left:14px">🏅 スーパーL資金(無利息)<br><small style="color:#8a6a45">毎年度末に'+man(su.annual)+'(10年均等)</small></td><td class="amt">'+man(su.remain)+'</td></tr>';
+  if(state.bankLoan>0)h+='<tr><td style="padding-left:14px">🏦 銀行借入(自分のタイミングで返済)</td><td class="amt">'+man(state.bankLoan)+'</td></tr>';
+  if(cd>0)h+='<tr><td style="padding-left:14px">🐂 牛の与信(子牛の売却代金から1頭ずつ精算)</td><td class="amt">'+man(cd)+'</td></tr>';
+  if(!(sl.taken&&sl.remain>0)&&su.remain<=0&&state.bankLoan<=0&&cd<=0)h+='<tr><td style="padding-left:14px">(借入なし✨)</td><td class="amt">￥0</td></tr>';
+  h+='</table>';
+  // 将来の見通し(現金シミュレーション)
+  bizCashRows=[];
+  for(const r of state.history)bizCashRows.push({year:r.year,past:true,repay:null,cash:(r.cash!==undefined?r.cash:null)});
+  const rows=[];let cash=state.money;
+  for(let i=0;i<sched.length;i++){
+    const s=sched[i];
+    const op=(i===0)?Math.round(baseCF*wl/ECON.WEEKS_PER_YEAR)-curTax:baseCF;
+    const start=cash,end=start+op-s.total;
+    rows.push({year:s.year,start,op,startup:s.startup,superL:s.superL,end});
+    bizCashRows.push({year:s.year,past:false,repay:s.total,cash:end});
+    cash=end;
+  }
+  h+='<p style="font-size:12.5px;color:#5a3714;font-weight:bold">📅 今後の資金繰り(見通し)</p>';
+  const mm=v=>(v<0?'−':'')+Math.round(Math.abs(v)/10000).toLocaleString()+'万'; // 表を狭く保つ万単位表記
+  h+='<div style="overflow-x:auto"><table class="fs" style="white-space:nowrap;font-size:11.5px"><tr class="hd"><td>年度</td><td class="amt">営業CF</td><td class="amt">🎓就農</td><td class="amt">🏅L</td><td class="amt">期末現金</td></tr>';
+  for(const r of rows){
+    const warn=r.end<0?'background:#ffdcdc':(r.end<3000000?'background:#fff1cf':'');
+    h+='<tr style="'+warn+'"><td>'+r.year+'年目'+(r.year===state.year?'<small>(今期)</small>':'')+(r.end<0?'<br><b style="color:#c03030;font-size:10px">⚠ショート！</b>':(r.end<3000000?'<br><b style="color:#c07a20;font-size:10px">⚠わずか</b>':''))+'</td>'+
+      '<td class="amt '+(r.op>=0?'prof':'loss')+'">'+(r.op>=0?'+':'')+mm(r.op)+'</td>'+
+      '<td class="amt'+(r.startup>0?' loss':'')+'">'+(r.startup>0?'−'+mm(r.startup):'—')+'</td>'+
+      '<td class="amt'+(r.superL>0?' loss':'')+'">'+(r.superL>0?'−'+mm(r.superL):'—')+'</td>'+
+      '<td class="amt '+(r.end>=0?'':'loss')+'"><b>'+mm(r.end)+'</b></td></tr>';
+  }
+  h+='</table></div>';
+  h+='<div style="overflow-x:auto;background:#fffdf2;border:2px solid #c9b98f;border-radius:8px;padding:4px;margin-top:6px"><canvas id="cashChart"></canvas></div>';
+  h+='<p style="font-size:11.5px;color:#8a6a45">🟫 年度末の返済額(棒)・🟦 期末現金(折れ線・実線=実績/以降=見通し)。0を割る年は返済が払えない＝倒産ラインだよ。</p>';
+  h+='<p style="font-size:11.5px;color:#8a6a45">📐 前提: 営業CF(本業の現金収支)は'+baseLbl+'。今期('+state.year+'年目)は残り'+wl+'週ぶん+3月末の税金見込み'+man(curTax)+'を差引き。返済は確定スケジュール(無利息)。🐂牛の与信は子牛の売却時にその都度精算するのでこの表には入れていない。新しい借入・大きな投資・規模拡大で見通しは変わるよ。</p>';
+  if(state.history.length){
+    h+='<p style="font-size:12.5px;color:#5a3714;font-weight:bold">📜 過去の実績</p>';
+    h+='<table class="fs"><tr class="hd"><td>年度</td><td class="amt">売上高</td><td class="amt">税引後利益</td><td class="amt">期末現金</td></tr>';
+    for(const r of state.history){const at=r.profit-(r.tax||0);h+='<tr><td>'+r.year+'年目</td><td class="amt">'+man(r.sales)+'</td><td class="amt '+(at>=0?'prof':'loss')+'">'+manSigned(at)+'</td><td class="amt">'+(r.cash!==undefined&&r.cash!==null?man(r.cash):'—')+'</td></tr>';}
+    h+='</table>';
+  }
+  return h;
+}
+function drawCashChart(){
+  const cv=document.getElementById('cashChart');if(!cv||!bizCashRows||!bizCashRows.length)return;
+  const rows=bizCashRows;
+  const {ctx,W,H}=setupChart(cv,230);
+  let vmax=1,vmin=0;
+  for(const r of rows){if(r.cash!==null)vmax=Math.max(vmax,r.cash);if(r.repay)vmax=Math.max(vmax,r.repay);if(r.cash!==null)vmin=Math.min(vmin,r.cash);}
+  const ax=chartAxis(ctx,W,H,vmax,vmin),y=ax.y,y0=y(0);
+  const n=rows.length,sw=(W-ax.padL-ax.padR)/n;
+  const skip=Math.ceil(n/8);
+  ctx.textAlign='center';
+  for(let i=0;i<n;i++){
+    const r=rows[i],cx=ax.padL+sw*i+sw/2;
+    const bw=Math.max(4,Math.min(16,sw*0.36));
+    if(r.repay){ctx.fillStyle='#a5682a';ctx.fillRect(cx-bw/2,y(r.repay),bw,y0-y(r.repay));} // 返済額(棒)
+    if(i%skip===0||i===n-1){ctx.fillStyle='#6a5232';ctx.font='10px sans-serif';ctx.fillText(r.year+'年',cx,H-6);}
+  }
+  ctx.lineWidth=2;let prev=null; // 期末現金(折れ線): 実績=実線・見通し=点線
+  for(let i=0;i<n;i++){
+    const r=rows[i];if(r.cash===null)continue;
+    const cx=ax.padL+sw*i+sw/2,cy=y(r.cash);
+    if(prev){ctx.strokeStyle='#3a6fd8';ctx.setLineDash(r.past?[]:[5,4]);ctx.beginPath();ctx.moveTo(prev[0],prev[1]);ctx.lineTo(cx,cy);ctx.stroke();}
+    prev=[cx,cy];
+  }
+  ctx.setLineDash([]);
+  for(let i=0;i<n;i++){
+    const r=rows[i];if(r.cash===null)continue;
+    const cx=ax.padL+sw*i+sw/2;
+    ctx.fillStyle=r.cash<0?'#c0453a':'#3a6fd8';
+    ctx.beginPath();ctx.arc(cx,y(r.cash),3.2,0,Math.PI*2);ctx.fill();
+  }
+  ctx.textAlign='left';ctx.font='10.5px sans-serif'; // 凡例
+  ctx.fillStyle='#a5682a';ctx.fillRect(ax.padL,7,10,10);ctx.fillStyle='#5a3714';ctx.fillText('年度末の返済額',ax.padL+13,16);
+  ctx.strokeStyle='#3a6fd8';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(ax.padL+108,12);ctx.lineTo(ax.padL+123,12);ctx.stroke();ctx.fillStyle='#5a3714';ctx.fillText('期末現金(実績→見通し)',ax.padL+126,16);
 }
 // 倉庫: 米の精米出荷・牧草売却・農産物・種
 function whHTML(){
@@ -6539,6 +6767,9 @@ function startGame(saveData){
     state=saveData?mergeState(freshState(),saveData.state):freshState();
     migrateFy();   // v17: 事業セグメント帳簿を追補
     migrateV25();  // v25: 週単位時間・配合飼料・仔牛授乳の新フィールドを追補(堅牢化)
+    // v65: 過去決算アーカイブの追補。旧セーブは直近のlastResultだけでも登録して見られるように
+    if(!state.fyArchive)state.fyArchive=[];
+    if(state.lastResult&&state.lastResult.year&&!state.fyArchive.some(a=>a.year===state.lastResult.year))state.fyArchive.push(JSON.parse(JSON.stringify(state.lastResult)));
     curMap=state.map||'farm'; // v19: セーブしたマップ(農場/街)で再開
     initThree();
     initNPCs();       // v19: 全NPC(農場+街)を生成
