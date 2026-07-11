@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v62: 従業員の労働キャパシティ(1人=作業量100%まで)。各仕事に規模連動の労働量%・任せすぎ警告・キャパオーバーで週次ミス(世話が雑/収穫取りこぼし/種付け・ローテ忘れ等)・事務所と会話に作業量バー表示</title>
+<title>丹波農商 牧場物語 v63: 繁忙期システム(田植え/稲刈り/草刈り/栗収穫の週は労働量が跳ね上がり、時期が重なると1人では回らない=ヘルプ要)＋機械化で軽減(田植え機/コンバイン/草刈り機/栗収穫ネット=ピーク-60%・ドローン=常時-20%)。来週の繁忙予告notes・作業量バーにピーク/機械効果表示</title>
 <link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -678,12 +678,18 @@ const ECON={
   MACH_COMBINE:4500000,   // v20: コンバイン(新設)。収穫の機械化で米の収量+10%
   MACH_POLISHER:1200000,  // v20: 業務用精米機
   MACH_PROCESSOR:1500000, // 新品加工機(農産物の売値1.5倍)
+  MACH_MOWER:1000000,     // v63: 草刈り機(モアー)。牧草の刈り取り週の労働量-60%
+  MACH_CNHARV:1200000,    // v63: 栗収穫ネット+拾い上げ機。秋の栗一括収穫の労働量-60%
+  MACH_DRONE:2000000,     // v63: 農業ドローン(農薬散布/播種/見回り)。米・野菜の労働量を常時-20%
   REP_TRACTOR:150000,     // トラクター(中型/中古)の修理代
   REP_TRACTOR_S:80000,    // v20: 小型トラクターの修理代
   REP_PLANTER:80000,      // v20: 田植え機の修理代
   REP_COMBINE:120000,     // v20: コンバインの修理代
   REP_POLISHER:60000,     // v20: 精米機の修理代(価格帯に合わせ引下げ)
   REP_PROCESSOR:80000,    // 加工機の修理代
+  REP_MOWER:60000,        // v63: 草刈り機の修理代
+  REP_CNHARV:60000,       // v63: 栗収穫ネットの修理代
+  REP_DRONE:150000,       // v63: ドローンの修理代
   BREAK_OLD:0.008,       // 中古機械の故障率(1日あたり。月あたり約2割)
   BREAK_NEW:0.002,       // 新品機械の故障率(1日あたり。月あたり約6%)
   PLANTER_BONUS:0.10,    // v20: 田植え機の収量ボーナス
@@ -750,7 +756,7 @@ function freshState(){return{
   lastLogin:'',loginStreak:0,claimedAch:{}, // v40: 毎日ログインボーナス・実績
   // ---- v19: 街・補助金・機械・獣医 / v20: 実売価格の機械・糞置き場・新築牛舎 ----
   map:'farm',
-  machines:{tractor:{lvl:'old',size:'mid',broken:false,cost:0},polisher:{lvl:'old',broken:false,cost:0},processor:{lvl:null,broken:false,cost:0},planter:{lvl:null,broken:false,cost:0},combine:{lvl:null,broken:false,cost:0}},
+  machines:{tractor:{lvl:'old',size:'mid',broken:false,cost:0},polisher:{lvl:'old',broken:false,cost:0},processor:{lvl:null,broken:false,cost:0},planter:{lvl:null,broken:false,cost:0},combine:{lvl:null,broken:false,cost:0},mower:{lvl:null,broken:false,cost:0},cnharv:{lvl:null,broken:false,cost:0},drone:{lvl:null,broken:false,cost:0}}, // v63: 草刈り機/栗収穫ネット/ドローン
   subsidy:{machine:null,barn:null,shed:null},
   shedCost:0,
   dungYard:false,dungCost:0,      // v20: 糞置き場(簡易)=処理のみ・牛舎増築の必須条件
@@ -882,10 +888,13 @@ function hasBarn(){return state.barnRented||state.newBarns>0||state.land.barn2;}
 function dungOk(){return true;} // v30: 糞置き場を廃止したので牛舎増築の前提条件を撤廃(いつでも増築可)
 const MACH_META={
   tractor:{n:'トラクター',em:'🚜',price:ECON.MACH_TRACTOR_M,repair:ECON.REP_TRACTOR,seg:'rice',desc:'田植え(4月)と収穫(10月)に必要。新品は小型150万(基本規模)/中型500万(東の棚田対応)',stop:'田植え・収穫ができない'},
-  planter:{n:'田植え機',em:'🌱',price:ECON.MACH_PLANTER,repair:ECON.REP_PLANTER,seg:'rice',desc:'田植えの機械化。植えた年の米の収量+10%',stop:'田植えの機械化(+10%)が使えない'},
-  combine:{n:'コンバイン',em:'🌾',price:ECON.MACH_COMBINE,repair:ECON.REP_COMBINE,seg:'rice',desc:'収穫の機械化。米の収量+10%',stop:'収穫の機械化(+10%)が止まる'},
+  planter:{n:'田植え機',em:'🌱',price:ECON.MACH_PLANTER,repair:ECON.REP_PLANTER,seg:'rice',desc:'田植えの機械化。植えた年の米の収量+10%＆🌱田植え週の担当の労働量-60%(繁忙期に強い)',stop:'田植えの機械化(+10%/労働-60%)が使えない'},
+  combine:{n:'コンバイン',em:'🌾',price:ECON.MACH_COMBINE,repair:ECON.REP_COMBINE,seg:'rice',desc:'収穫の機械化。米の収量+10%＆🌾稲刈り週の担当の労働量-60%(繁忙期に強い)',stop:'収穫の機械化(+10%/労働-60%)が止まる'},
   polisher:{n:'精米機',em:'🍚',price:ECON.MACH_POLISHER,repair:ECON.REP_POLISHER,seg:'rice',desc:'毎月の精米出荷に必要(業務用120万)',stop:'精米出荷ができない'},
   processor:{n:'加工機',em:'🍱',price:ECON.MACH_PROCESSOR,repair:ECON.REP_PROCESSOR,seg:'other',desc:'農産物(野菜/豆/栗等)の売値が1.5倍になる',stop:'農産物の1.5倍加工が止まる'},
+  mower:{n:'草刈り機',em:'✂',price:ECON.MACH_MOWER,repair:ECON.REP_MOWER,seg:'grass',desc:'牧草刈りの機械化。✂草刈り週(5月/9月)の担当の労働量-60%(繁忙期に強い)',stop:'草刈りの機械化(労働-60%)が止まる'}, // v63
+  cnharv:{n:'栗収穫ネット',em:'🌰',price:ECON.MACH_CNHARV,repair:ECON.REP_CNHARV,seg:'other',desc:'栗園に収穫ネット+拾い上げ機を設置。🌰秋の栗一括収穫の労働量-60%(繁忙期に強い)',stop:'栗収穫の機械化(労働-60%)が止まる'}, // v63
+  drone:{n:'農業ドローン',em:'🚁',price:ECON.MACH_DRONE,repair:ECON.REP_DRONE,seg:'rice',desc:'農薬散布・播種・見回りを空から自動化。🌾米と🥕野菜の担当の労働量が常時-20%',stop:'ドローンの軽減(-20%)が止まる'}, // v63
 };
 // v20: 機械の修理代(小型トラクターは安い)
 function machRepairCost(k){
@@ -893,7 +902,7 @@ function machRepairCost(k){
   return MACH_META[k].repair;
 }
 const SUB_META={
-  machine:{em:'🚜',n:'新品の機械',desc:'トラクター150万(小型)/500万(中型)・田植え機150万・コンバイン450万・精米機120万・加工機150万 → 半額(農協の資材窓口で購入)'},
+  machine:{em:'🚜',n:'新品の機械',desc:'トラクター150万(小型)/500万(中型)・田植え機150万・コンバイン450万・精米機120万・加工機150万・草刈り機100万・栗収穫ネット120万・ドローン200万 → 半額(農協の資材窓口で購入)'}, // v63
   barn:{em:'🏠',n:'新築牛舎',desc:'1棟3000万→1500万。母牛15頭+子牛15頭。⛰山を切り開いて増築'},
   shed:{em:'🏭',n:'本格堆肥舎',desc:'1500万→750万。牛糞→肥料の製造販売＋肥料代割引(農場の🟫堆肥場で建設)'},
 };
@@ -937,6 +946,9 @@ function migrateV25(){
   if(!state.machines)state.machines={tractor:{lvl:'old',size:'mid',broken:false,cost:0},polisher:{lvl:'old',broken:false,cost:0},processor:{lvl:null,broken:false,cost:0},planter:{lvl:null,broken:false,cost:0},combine:{lvl:null,broken:false,cost:0}};
   if(!state.machines.planter)state.machines.planter={lvl:null,broken:false,cost:0};
   if(!state.machines.combine)state.machines.combine={lvl:null,broken:false,cost:0};
+  if(!state.machines.mower)state.machines.mower={lvl:null,broken:false,cost:0};   // v63
+  if(!state.machines.cnharv)state.machines.cnharv={lvl:null,broken:false,cost:0}; // v63
+  if(!state.machines.drone)state.machines.drone={lvl:null,broken:false,cost:0};   // v63
   if(!state.machines.tractor.size)state.machines.tractor.size='mid';
   if(!state.subsidy)state.subsidy={machine:null,barn:null,shed:null};
   if(state.newBarns===undefined){state.newBarns=0;state.newBarnCosts=[];}
@@ -1077,7 +1089,7 @@ function computeBS(){
     bldgShed:state.compostShed?(state.shedCost||ECON.SHED_COST):0, // v19: 補助購入なら支払額=取得原価
     bldgDung:state.dungYard?(state.dungCost||ECON.DUNG_COST):0,    // v20: 糞置き場
     bldgBarn:(state.newBarnCosts||[]).reduce((s,c)=>s+c,0),        // v20: 新築牛舎(全棟の取得原価)
-    mach:['tractor','polisher','processor','planter','combine'].reduce((s,k)=>s+((state.machines&&state.machines[k]&&state.machines[k].cost)||0),0), // v19/v20: 新品機械
+    mach:['tractor','polisher','processor','planter','combine','mower','cnharv','drone'].reduce((s,k)=>s+((state.machines&&state.machines[k]&&state.machines[k].cost)||0),0), // v19/v20: 新品機械 / v63: 草刈り機・栗収穫ネット・ドローン
     landGrass:(state.land.pasture1?ECON.LAND_PASTURE_PRICE:0)+(state.land.grass2?ECON.LAND_GRASS_PRICE:0)+(state.land.orchard?ECON.LAND_ORCHARD_PRICE:0), // v22: 西の牧草地+東の牧草地 / v28: 栗園
     landRice:state.land.rice2?ECON.LAND_RICE_PRICE:0,
     landBarn:state.land.barn2?ECON.LAND_BARN_PRICE:0,
@@ -1139,7 +1151,7 @@ function barn1MoN(){return Math.min(state.cows.length,barn1MoPhys());}
 function barn2MoN(){return Math.max(0,state.cows.length-barn1MoPhys());}
 function barn1CalfN(){return Math.min(state.calves.length,barn1CalfPhys());}
 function barn2CalfN(){return Math.max(0,state.calves.length-barn1CalfPhys());}
-function jobLabor(job){
+function jobLaborBase(job){
   switch(job){
     case 'cow':  return barn1MoN()/(ECON.COW_CARE_MO*2)+barn1CalfN()/(ECON.COW_CARE_CALF*2);   // 第一牛舎: 母60+子50=1.0
     case 'cow2': return barn2MoN()/(ECON.COW_CARE_MO*2)+barn2CalfN()/(ECON.COW_CARE_CALF*2);   // 第二牛舎も同じ基準
@@ -1152,9 +1164,71 @@ function jobLabor(job){
   }
   return 0;
 }
+// ---------- v63: 時期(繁忙期)係数 × 機械補正 ----------
+// 繁忙期はその週だけ労働量が跳ね上がる(田植え/稲刈り×3.5・草刈り×5・栗一括収穫+0.4・野菜の播種収穫期×1.5・水管理期×1.4)。
+// 機械化するとピークが大きく下がる(田植え機/コンバイン/草刈り機/栗収穫ネット=各ピーク-60%・ドローン=米/野菜を常時-20%)。
+function machineWorks(k){const m=state.machines&&state.machines[k];return !!(m&&m.lvl&&!m.broken);}
+function chestnutPendingAt(wk){const mo=weekToMD(wk).month;return !!(state.land.orchard&&(mo===10||mo===11)&&state.chestnutBizYear!==state.year);} // 栗の一括収穫がまだの秋
+function jobLabor(job,wk){
+  if(wk===undefined)wk=state.week;
+  const base=jobLaborBase(job);
+  if(job==='rice'){
+    let m=1,mm=1;
+    if(wk===ECON.RICE_PLANT_WEEK){m=3.5;if(machineWorks('planter'))mm*=0.4;}        // 🌱田植えの大ピーク
+    else if(wk===ECON.RICE_HARVEST_WEEK){m=3.5;if(machineWorks('combine'))mm*=0.4;} // 🌾稲刈りの大ピーク
+    else if(wk>=18&&wk<=35)m=1.4;                                                   // 🚿夏の水管理期は中
+    if(machineWorks('drone'))mm*=0.8;                                               // 🚁散布/見回りを常時軽減
+    return base*m*mm;
+  }
+  if(job==='grass'){
+    const peak=(wk===18||wk===36);                                                  // ✂草刈り週(5月/9月)
+    return base*(peak?5:1)*((peak&&machineWorks('mower'))?0.4:1);
+  }
+  if(job==='veg'){
+    const mo=weekToMD(wk).month;
+    const m=(mo===4||mo===5||mo===10||mo===11)?1.5:1;                               // 🥕春の種まき・秋の収穫期は中ピーク
+    return base*m*(machineWorks('drone')?0.8:1);
+  }
+  if(job==='proc'&&chestnutPendingAt(wk)){
+    return 0.25+0.45*(machineWorks('cnharv')?0.4:1);                                // 🌰秋の栗一括収穫の大ピーク(ネットで-60%)
+  }
+  return base;
+}
+// その週にピークになる作業のラベル(週次notes・UI用)
+function seasonPeaksAt(wk){
+  const p=[];
+  if(wk===ECON.RICE_PLANT_WEEK)p.push('🌾田植え');
+  if(wk===ECON.RICE_HARVEST_WEEK)p.push('🌾稲刈り');
+  if(wk===18||wk===36)p.push('✂草刈り');
+  if(chestnutPendingAt(wk))p.push('🌰栗の一括収穫');
+  return p;
+}
+// あるジョブが今週ピークか(UI用ラベル)
+function jobPeakNote(job,wk){
+  if(wk===undefined)wk=state.week;
+  if(job==='rice'&&wk===ECON.RICE_PLANT_WEEK)return'🌾田植え';
+  if(job==='rice'&&wk===ECON.RICE_HARVEST_WEEK)return'🌾稲刈り';
+  if(job==='grass'&&(wk===18||wk===36))return'✂草刈り';
+  if(job==='proc'&&chestnutPendingAt(wk))return'🌰栗収穫';
+  return'';
+}
+// 今週このジョブに効いている機械補正のラベル(UI用)
+function jobMachNote(job,wk){
+  if(wk===undefined)wk=state.week;
+  const a=[];
+  if(job==='rice'){
+    if(wk===ECON.RICE_PLANT_WEEK&&machineWorks('planter'))a.push('🌱田植え機-60%');
+    if(wk===ECON.RICE_HARVEST_WEEK&&machineWorks('combine'))a.push('🌾コンバイン-60%');
+    if(machineWorks('drone'))a.push('🚁ドローン-20%');
+  }
+  if(job==='grass'&&(wk===18||wk===36)&&machineWorks('mower'))a.push('✂草刈り機-60%');
+  if(job==='proc'&&chestnutPendingAt(wk)&&machineWorks('cnharv'))a.push('🌰収穫ネット-60%');
+  if(job==='veg'&&machineWorks('drone'))a.push('🚁ドローン-20%');
+  return a.length?'('+a.join('・')+')':'';
+}
 // 同じ仕事を複数人に指示したら分担して1人あたりは軽くなる
 function jobShareN(job){let n=0;for(const kk in state.staff)if(state.staff[kk]&&jobsOf(kk).includes(job))n++;return Math.max(1,n);}
-function staffLoad(k){let s=0;for(const j of jobsOf(k))s+=jobLabor(j)/jobShareN(j);return s;}
+function staffLoad(k,wk){let s=0;for(const j of jobsOf(k))s+=jobLabor(j,wk)/jobShareN(j);return s;} // v63: wk指定でその週の(繁忙期込み)負荷を予測できる
 function loadPct(k){return Math.round(staffLoad(k)*100);}
 function overRate(k){return Math.max(0,staffLoad(k)-1);}
 // キャパオーバー(100%超)だと超過に比例して週次のミスが出る(120%で約3割/週・150%で約8割/週)
@@ -1171,8 +1245,11 @@ function weekMiss(tag,k){
 // 事務所の指示UI・話しかけダイアログに出す労働量バー
 function loadBarHTML(k){
   const p=loadPct(k),col=p<=80?'#3a8a3a':(p<=100?'#c08a20':'#c03030');
+  // v63: 今週ピークの仕事と機械補正を表示(例: 📈今週は🌾田植え(🌱田植え機-60%)の繁忙期)
+  const pk=[];for(const j of jobsOf(k)){const n=jobPeakNote(j);if(n)pk.push(n+jobMachNote(j));}
   return '<div style="margin-top:4px;font-size:11px;color:'+col+';font-weight:bold">作業量 '+p+'%'+(p>100?' ⚠手一杯(仕事にミスが出るよ！)':(p>80?'(そろそろ限界)':''))+
-    '<div style="height:6px;max-width:220px;background:#e8dfc8;border-radius:3px;overflow:hidden;margin-top:2px"><div style="height:100%;width:'+Math.min(100,p)+'%;background:'+col+'"></div></div></div>';
+    '<div style="height:6px;max-width:220px;background:#e8dfc8;border-radius:3px;overflow:hidden;margin-top:2px"><div style="height:100%;width:'+Math.min(100,p)+'%;background:'+col+'"></div></div>'+
+    (pk.length?'<div style="font-size:10.5px;color:#a0501a;margin-top:2px">📈 今週は'+pk.join('・')+'の繁忙期！</div>':'')+'</div>';
 }
 function toggleJob(k,job){
   if(!state.staff[k]){toast('先に雇用してね');return;}
@@ -2330,8 +2407,11 @@ function buildWarehouseInterior(){
   addInfoIcon(gi,{t:'🚜 機械置き場(倉庫の外・屋根なし)',b:()=>{
     const t=state.machines.tractor,names=[];
     names.push('🚜 トラクター: '+(t.lvl==='new'?(t.size==='small'?'小型・新品':'中型・新品'):'中古の中型')+(t.broken?' ⚠故障中':' ✅'));
-    names.push('🌱 田植え機: '+(state.machines.planter.lvl?(state.machines.planter.broken?'⚠故障中':'✅稼働(収量+10%)'):'未保有'));
-    names.push('🌾 コンバイン: '+(state.machines.combine.lvl?(state.machines.combine.broken?'⚠故障中':'✅稼働(収量+10%)'):'未保有'));
+    names.push('🌱 田植え機: '+(state.machines.planter.lvl?(state.machines.planter.broken?'⚠故障中':'✅稼働(収量+10%・田植え週の労働-60%)'):'未保有'));
+    names.push('🌾 コンバイン: '+(state.machines.combine.lvl?(state.machines.combine.broken?'⚠故障中':'✅稼働(収量+10%・稲刈り週の労働-60%)'):'未保有'));
+    names.push('✂ 草刈り機: '+(machineOwned('mower')?(state.machines.mower.broken?'⚠故障中':'✅稼働(草刈り週の労働-60%)'):'未保有'));   // v63
+    names.push('🌰 栗収穫ネット: '+(machineOwned('cnharv')?(state.machines.cnharv.broken?'⚠故障中':'✅稼働(栗収穫の労働-60%)'):'未保有')); // v63
+    names.push('🚁 農業ドローン: '+(machineOwned('drone')?(state.machines.drone.broken?'⚠故障中':'✅稼働(米/野菜の労働-20%)'):'未保有'));  // v63
     return '倉庫の外(南)の屋根なしの機械置き場。トラクタ等の農機を屋外に格納。<br>'+names.join('<br>')+'<br><br>新しい機械は🚜街の農協で購入(🏛役場の補助で半額)。故障したら🔧街の修理屋へ。';
   }});
   // --- 米の貯蔵(x55-63): 北壁沿いの大きな貯蔵棚2基+床のパレット(貯蔵量が見える規模) ---
@@ -3549,6 +3629,9 @@ function nearestAction(wx,wz){
     names.push('🚜トラクター('+(t.lvl==='new'?(t.size==='small'?'小型・新品':'中型・新品'):'中古')+(t.broken?'⚠故障':'')+')');
     if(state.machines.planter.lvl)names.push('🌱田植え機'+(state.machines.planter.broken?'(⚠故障)':''));
     if(state.machines.combine.lvl)names.push('🌾コンバイン'+(state.machines.combine.broken?'(⚠故障)':''));
+    if(machineOwned('mower'))names.push('✂草刈り機'+(state.machines.mower.broken?'(⚠故障)':''));   // v63
+    if(machineOwned('cnharv'))names.push('🌰栗収穫ネット'+(state.machines.cnharv.broken?'(⚠故障)':'')); // v63
+    if(machineOwned('drone'))names.push('🚁ドローン'+(state.machines.drone.broken?'(⚠故障)':''));  // v63
     toast('🚜 農機庫: '+names.join('・')+'。新しい機械は🚜街の農協で(補助で半額)');
   });
   cand(21.5,27,3.0,hasBarn()?'🏚 牛舎(牛の管理)':'🏚 古い牛舎を借りる(月3万円)',()=>{if(hasBarn()){menuTab='cows';openMenu();}else rentBarn();}); // v34: 南入口(中央スペースx20-23,z26)の前
@@ -4038,7 +4121,7 @@ function progressPigs(notes){
   if(ready>0&&!staffWithJob('pig'))notes.push('🐖 出荷できる豚が'+ready+'頭に！🐖豚メニューで出荷(1頭'+man(ECON.PIG_SELL)+')');
 }
 // ---------- v50: 栗の瓶詰め加工事業(秋に一括拾い→加工→1年かけて出荷) ----------
-function isChestnutSeason(){const m=weekToMD(state.weekN).month;return m===10||m===11;} // 秋
+function isChestnutSeason(){const m=weekToMD(state.week).month;return m===10||m===11;} // 秋 / v63: weekN(通算週)→week(年内週)に修正。従来は季節が14週ズレて春に発火していた
 function harvestChestnutBiz(who){
   if(!state.land.orchard){if(!who)toast('🌰 先に🏠不動産屋で栗園を買おう');return false;}
   if(!isChestnutSeason()){if(!who)toast('🌰 栗の一括収穫・加工は秋(10〜11月)だけ。いまは待とう');return false;}
@@ -4263,7 +4346,7 @@ function buyMachineCore(k,size,m,st,base,label,pr){
   if(pr.sub){consumeSub('machine');toast('🏛 役場の補助金で半額('+man(pr.price)+')で購入できた！(定価'+man(base)+')');}
   else toast('🛒 定価'+man(pr.price)+'で購入(役場で申請しておけば半額の'+man(base/2)+'だったよ…)');
   fanfare();
-  toast('✨ 新品の'+label+'を導入！故障率がぐっと下がったよ'+(k==='planter'?'(次の田植えから収量+10%)':k==='combine'?'(収穫の収量+10%)':''));
+  toast('✨ 新品の'+label+'を導入！故障率がぐっと下がったよ'+(k==='planter'?'(次の田植えから収量+10%・田植え週の労働-60%)':k==='combine'?'(収穫の収量+10%・稲刈り週の労働-60%)':k==='mower'?'(草刈り週の労働-60%)':k==='cnharv'?'(秋の栗収穫の労働-60%)':k==='drone'?'(米・野菜の労働が常時-20%)':'')); // v63: 労働軽減も案内
   if(k==='tractor'&&size==='small'&&state.land.rice2)toast('⚠ 小型は東の棚田(規模1.5倍)の田植えに非対応…中型(500万)が必要だよ');
   if(curMap==='farm'){if(k==='processor')buildProcessor();if(k==='planter')buildPlanter();if(k==='combine')buildCombine();buildMachineBadges();}
   updateHUD();renderMenu();
@@ -4346,7 +4429,7 @@ function openStaffTalk(k){
       : (m.line2||m.line)+'<br><br>⚠ 一度雇うと解雇できません。毎年+'+man(ECON.EMP_RAISE)+'の自動昇給で人件費が増えます。',
     btns:()=>{const a=[];
       if(!hired){a.push(['🤝 雇う(月給'+man(ECON.EMP_SALARY)+'・解雇不可)',()=>{hireStaff(k);openStaffTalk(k);}]);}
-      else{for(const j in JOBS){if(j==='cow2'&&!state.land.barn2)continue;const has=jobsOf(k).includes(j);a.push([(has?'✅ ':'▫️ ')+JOBS[j].em+JOBS[j].n+' '+Math.round(jobLabor(j)*100)+'%'+(has?'(外す)':'を指示')+'',()=>{toggleJob(k,j);openStaffTalk(k);}]);} // v60: 第二牛舎が無い時はcow2を出さない / v62: 労働量%
+      else{for(const j in JOBS){if(j==='cow2'&&!state.land.barn2)continue;const has=jobsOf(k).includes(j);a.push([(has?'✅ ':'▫️ ')+JOBS[j].em+JOBS[j].n+' '+Math.round(jobLabor(j)*100)+'%'+jobMachNote(j)+(has?'(外す)':'を指示')+'',()=>{toggleJob(k,j);openStaffTalk(k);}]);} // v63: 機械補正を表示 // v60: 第二牛舎が無い時はcow2を出さない / v62: 労働量%
         a.push(['🧹 担当を全部外す',()=>{assignJob(k,null);openStaffTalk(k);}]);}
       return a;}});
 }
@@ -4778,6 +4861,21 @@ function advanceWeek(notes,silent){
     const herd=herdCount();
     if(herd>0&&!isGrassHarvestWeek()&&state.grassStock<herd*ECON.GRASS_EAT*4)notes.push('🌿 自給の牧草が残り'+state.grassStock+'束(牛'+herd+'頭で週'+herd*ECON.GRASS_EAT+'束)。足りない分は自動で市販の牧草を仕入れる(1頭15千)ので餌やりは止まりません。次の刈り取りは'+nextGrassHarvestLabel()+'。自給が多いほど餌代が安くなるよ');
   }
+  // v63: 繁忙期(時期被り)の警告＋来週予告。ピーク週はその週だけ労働量が跳ねる=重なると1人では回らない
+  {
+    const curPeaks=seasonPeaksAt(state.week);
+    if(curPeaks.length)for(const k in state.staff){
+      if(!state.staff[k])continue;
+      const p=loadPct(k);
+      if(p>100)notes.push('📢 今週は'+curPeaks.join('と')+'のピーク！'+STAFF_META[k].name+'の作業量が'+p+'%で手が回らない…ミスが出るかも。ヘルプ(増員)か🚜機械化(農協)で軽くしよう');
+    }
+    const nwk=(state.week%ECON.WEEKS_PER_YEAR)+1,nextPeaks=seasonPeaksAt(nwk);
+    if(nextPeaks.length)for(const k in state.staff){
+      if(!state.staff[k])continue;
+      const np=Math.round(staffLoad(k,nwk)*100);
+      if(np>100)notes.push('📅 来週('+wkLabel(nwk)+')は'+nextPeaks.join('と')+(nextPeaks.length>1?'が重なる':'のピーク')+'！'+STAFF_META[k].name+'の作業量が'+np+'%になりそう。手が足りないかも(増員か🚜機械化を)');
+    }
+  }
   // 9) 週次の従業員仕事(種まき/収穫/出荷/種付け等)
   staffMonthlyJobs(notes);
   if(!silent)toast('⏭ '+ymdLabel());
@@ -4968,11 +5066,11 @@ function segPLHTML(segKey,g){
 // 事業別BS(その事業にひも付く資産・負債)
 function segBSHTML(segKey,b){
   const rows=[];const liabs=[];
-  if(segKey==='rice'){rows.push(['🍚 米在庫('+b.nRice+'袋×3万)',b.invRice],['🌾 東の棚田(取得原価)',b.landRice],['🚜 機械(トラクター/田植え機/コンバイン/精米機・新品分)',(state.machines.tractor.cost||0)+(state.machines.polisher.cost||0)+(state.machines.planter.cost||0)+(state.machines.combine.cost||0)]);}
-  else if(segKey==='grass'){rows.push(['🌿 牧草在庫('+b.nGrass+'束×1万)',b.invGrass],['🗺 牧草地(西/東・取得原価)',b.landGrass]);}
+  if(segKey==='rice'){rows.push(['🍚 米在庫('+b.nRice+'袋×3万)',b.invRice],['🌾 東の棚田(取得原価)',b.landRice],['🚜 機械(トラクター/田植え機/コンバイン/精米機/ドローン・新品分)',(state.machines.tractor.cost||0)+(state.machines.polisher.cost||0)+(state.machines.planter.cost||0)+(state.machines.combine.cost||0)+((state.machines.drone&&state.machines.drone.cost)||0)]);} // v63: ドローン
+  else if(segKey==='grass'){rows.push(['🌿 牧草在庫('+b.nGrass+'束×1万)',b.invGrass],['🗺 牧草地(西/東・取得原価)',b.landGrass],['✂ 草刈り機(取得原価)',(state.machines.mower&&state.machines.mower.cost)||0]);} // v63
   else if(segKey==='cow'){rows.push(['🐂 母牛'+b.nCows+'頭',b.cowsV],['🐮 子牛'+b.nCalves+'頭',b.calvesV],['🏠 新築牛舎'+state.newBarns+'棟(取得原価)',b.bldgBarn],['🟤 糞置き場(取得原価)',b.bldgDung],['🏠 北の第二牛舎(取得原価)',b.landBarn]);liabs.push(['🐂 牛の与信(繁殖ローン)',b.cowDebt]);}
   else if(segKey==='compost'){rows.push(['🏭 本格堆肥舎(取得原価)',b.bldgShed],['🟫 肥料在庫('+b.nFert+'袋×8千)',b.invFert]);}
-  else if(segKey==='other'){rows.push(['🍱 加工機(取得原価)',state.machines.processor.cost||0]);}
+  else if(segKey==='other'){rows.push(['🍱 加工機(取得原価)',state.machines.processor.cost||0],['🌰 栗収穫ネット(取得原価)',(state.machines.cnharv&&state.machines.cnharv.cost)||0]);} // v63
   else if(segKey==='common'){rows.push(['💴 現金(全社の資金は本部で管理)',b.cash]);liabs.push(['🏦 銀行借入金',b.bank]);if(b.inst>0)liabs.push(['🎓 制度融資(新規就農/スーパーL)',b.inst]);}
   else rows.push(['(この事業の在庫は少額のため計上なし)',0]);
   let at=0,lt=0;
@@ -5160,7 +5258,7 @@ function jaHTML(){
       '<button class="buy" '+((state.money>=prS.price||state.certFarmer)&&!(st.lvl==='new'&&st.size==='small'&&!st.broken)?'':'disabled')+' onclick="buyMachine(\'tractor\',\'small\')">小型 '+man(prS.price)+'</button>'+
       '<button class="buy" '+((state.money>=prM.price||state.certFarmer)&&!(st.lvl==='new'&&st.size==='mid'&&!st.broken)?'':'disabled')+' onclick="buyMachine(\'tractor\',\'mid\')">中型 '+man(prM.price)+'</button></div></div>';
   }
-  for(const k of['planter','combine','polisher','processor']){
+  for(const k of['planter','combine','polisher','processor','mower','cnharv','drone']){ // v63: 草刈り機/栗収穫ネット/ドローンを追加
     const m=MACH_META[k],st=state.machines[k];
     const owned=machineOwned(k);
     const pr=priceWithSub(m.price,'machine');
@@ -5193,7 +5291,7 @@ function repairHTML(){
     }
   }
   if(!anyB)h+='<p style="color:#1f7a1f;font-weight:bold">✅ いま故障している機械はないよ</p>';
-  h+='<p class="sub2" style="font-size:11.5px;color:#8a6a45">💡 修理代: トラクター'+man(ECON.REP_TRACTOR)+'(小型'+man(ECON.REP_TRACTOR_S)+')/田植え機'+man(ECON.REP_PLANTER)+'/コンバイン'+man(ECON.REP_COMBINE)+'/精米機'+man(ECON.REP_POLISHER)+'/加工機'+man(ECON.REP_PROCESSOR)+'。放置すると生産が止まってもっと損！</p>';
+  h+='<p class="sub2" style="font-size:11.5px;color:#8a6a45">💡 修理代: トラクター'+man(ECON.REP_TRACTOR)+'(小型'+man(ECON.REP_TRACTOR_S)+')/田植え機'+man(ECON.REP_PLANTER)+'/コンバイン'+man(ECON.REP_COMBINE)+'/精米機'+man(ECON.REP_POLISHER)+'/加工機'+man(ECON.REP_PROCESSOR)+'/草刈り機'+man(ECON.REP_MOWER)+'/栗収穫ネット'+man(ECON.REP_CNHARV)+'/ドローン'+man(ECON.REP_DRONE)+'。放置すると生産が止まってもっと損！</p>'; // v63
   return h;
 }
 // 帳簿: v17=PL(損益計算書)とBS(貸借対照表)を切替、さらに事業別タブ
@@ -5724,8 +5822,8 @@ window.__v4dbg.npcPos=()=>npcs.filter(n=>n.mesh.parent).map(n=>({key:n.key,name:
 window.__v4dbg.cowPos=()=>cowMeshes.map(m=>({id:(m.userData.cow||m.userData.calf||{id:-1}).id,big:!!m.userData.big,bi:m.userData.bi,x:+m.position.x.toFixed(2),y:+m.position.y.toFixed(2),z:+m.position.z.toFixed(2)}));
 window.__v4dbg.manurePos=()=>manures.map(m=>({x:+m.position.x.toFixed(2),y:+m.position.y.toFixed(2),z:+m.position.z.toFixed(2)}));
 window.__v4dbg.cowMode=v=>{if(v!==undefined&&!!v!==!!state.cowFree)toggleCowMode();return state.cowFree;};
-window.__v4dbg.staffLoad=k=>({pct:loadPct(k),load:+staffLoad(k).toFixed(3),jobs:jobsOf(k)}); // v62検証用
-window.__v4dbg.jobLabor=j=>+jobLabor(j).toFixed(3); // v62検証用
+window.__v4dbg.staffLoad=(k,wk)=>({pct:loadPct(k),load:+staffLoad(k,wk).toFixed(3),jobs:jobsOf(k)}); // v62検証用 / v63: wk指定で繁忙期込み予測
+window.__v4dbg.jobLabor=(j,wk)=>+jobLabor(j,wk).toFixed(3); // v62検証用 / v63: wk指定可
 window.__v4dbg.barnAreas=()=>barnAreas();
 window.__v4dbg.topYAt=(x,z)=>topY(x,z);
 window.__v4dbg.blockAt=(x,y,z)=>getB(x,y,z);
