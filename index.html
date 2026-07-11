@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v65: 経営分析の見える化 — 事務所に📊経営分析(過去の決算書ビューア=各年度のPL/BSをそのまま保存・売上/利益/現金の推移グラフ=canvas自前描画・資金繰り表=制度融資の返済スケジュールを年ごとに明示して期末現金を予測。新規就農資金の据置明け=4年目からの返済増と資金ショート年を警告色で見える化)</title>
+<title>丹波農商 牧場物語 v66: 導線の見直し — ①雇用促進クエスト(従業員を新規に雇うたび年収の半分=180万円を協力金として支給・各人1回) ②仔牛の自己保留(母牛に残す)を廃止=子牛は雌雄とも育ったら全頭セリ出荷・増頭はセリ購入で(指示の手間をなくす) ③クエストを22ステップに細分化=常に「次の一手」と場所が分かるチュートリアル導線に再設計</title>
 <link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -763,6 +763,7 @@ function freshState(){return{
   planted:0,harvestN:0,soldN:0,
   sound:true,questDone:0,
   lastLogin:'',loginStreak:0,claimedAch:{}, // v40: 毎日ログインボーナス・実績
+  hireBonusPaid:{},calfSoldN:0, // v66: 雇用ボーナス(各人1回)・子牛の累計出荷数(クエスト判定)
   // ---- v19: 街・補助金・機械・獣医 / v20: 実売価格の機械・糞置き場・新築牛舎 ----
   map:'farm',
   machines:{tractor:{lvl:'old',size:'mid',broken:false,cost:0,n:1},polisher:{lvl:'old',broken:false,cost:0,n:1},processor:{lvl:null,broken:false,cost:0,n:0},planter:{lvl:null,broken:false,cost:0,n:0},combine:{lvl:null,broken:false,cost:0,n:0},dryer:{lvl:null,broken:false,cost:0,n:0},dumper:{lvl:null,broken:false,cost:0,n:0},baler:{lvl:null,broken:false,cost:0,n:0},mower:{lvl:null,broken:false,cost:0,n:0},cnharv:{lvl:null,broken:false,cost:0,n:0},drone:{lvl:null,broken:false,cost:0,n:0}}, // v63: 草刈り機/栗収穫ネット/ドローン v64: 乾燥機/ダンプ/ベーラー+台数n
@@ -3220,19 +3221,30 @@ function updateHUD(){
 }
 // クエスト（経営チュートリアル：1つずつ）
 // v21: 常時表示は「短いアイコン+一言」だけ。❓(タップ)で詳しい説明ポップアップ
+// v66: 「次の一手」が常に分かるよう1アクション=1クエストに細分化。s=いま何をする(場所つき)、tが手順
 const QUESTS=[
- {s:'🥔 ポテサラで創業資金',t:'まず現金が尽きないよう🏭東の大倉庫の🍱食品加工場で「ポテサラを作って売る」(週1)。丹波の野菜でポテサラを作って売り、毎月100万円・利益30万円で創業期を乗り切ろう！',c:()=>state.procWeek>=0,r:200000},
- {s:'🌾 田植えしよう(春)',t:'春の4月1週目：🌾棚田で「田植え」しよう(苗代300万円)。棚田のアイコンをタップするか、棚田に近づいて「使う」',c:()=>state.riceField!=='none'||state.riceBags>0||state.soldRiceBags>0,r:300000},
- {s:'⏭ 週を進めよう',t:'⏭「次の週へ」で時間を進めよう。5〜9月は🚿水管理(サボると収量減)！秋に収穫できるよ',c:()=>state.riceBags>0||state.soldRiceBags>0,r:100000},
- {s:'🍚 精米して出荷',t:'📦大倉庫の🍚精米機で「精米して出荷」しよう(1袋3万円・週1回)。精米機のアイコンからも出荷できるよ',c:()=>state.soldRiceBags>0,r:300000},
- {s:'🐂 牛を飼おう',t:'🏚牛舎を借りて(月3万円)、🌉川の橋を渡って街へ行き🐂セリでメス牛を買おう(与信100万円=現金は減らない)',c:()=>state.cows.length>0||state.calves.length>0,r:300000},
- {s:'🍼 牛の世話をしよう',t:'🌾牧草の山から牧草をかかえて→牛の前の餌箱に入れると全頭に餌やり。🧹掃除は牛の後ろのアイスルで週1回！よく食べた牛は太って高く売れる。仔牛は4週まで母のミルク→離乳でペンへ',c:()=>state.care.fedWeek>=0,r:150000},
- {s:'🎓 新規就農者になろう',t:'🚜街の農協で「新規就農者」の認定を受けよう。認定されると🏦銀行で新規就農資金3,000万円(7年・最初の3年は返済なし・無利息)が借りられるよ',c:()=>state.newFarmer,r:300000},
- {s:'🌰 栗園を買おう',t:'🏠街の不動産屋で栗園(300万)を買って栗の生産を始めよう。土地(牧草地/棚田/牧場)も広げて規模拡大！',c:()=>state.land.orchard||state.land.pasture1||state.land.rice2||state.land.barn2,r:200000},
- {s:'🏭 堆肥舎を建てよう',t:'🏭本格堆肥舎(1500万・🏛役場の補助で750万)を建てて肥料事業を始めよう(牛糞の処分費ゼロ＋牛糞→肥料の製造販売)',c:()=>state.compostShed,r:300000},
- {s:'⛰ 牛舎を増築しよう',t:'⛰山を切り開いて新築牛舎(3000万・🏛補助で1500万・母15子15)を建てよう！🚜街の農協で建てられるよ',c:()=>state.newBarns>0,r:300000},
- {s:'🏅 認定農業者を目指す',t:'3年経って加工以外の売上(米・牛・牧草・肥料)が累計2,000万円を超えたら、🚜農協で「認定農業者」に。スーパーL資金で売上と同額を無利息(10年均等)で借りられる！',c:()=>state.certFarmer,r:500000},
- {s:'🌟 規模拡大へ！',t:'♀メスの子牛を母牛に残して増頭、認定農業者のスーパーL資金も使って規模拡大で利益を最大化しよう！',c:()=>false,r:0},
+ {s:'🥔 大倉庫でポテサラを作って売る',t:'🏭東の大倉庫の🍱食品加工場へ行き「ポテサラを作って売る」(週1回)。丹波の野菜でポテサラを作って売れば、創業期の現金を稼げるよ！',c:()=>state.procWeek>=0,r:200000},
+ {s:'🎓 街の農協で新規就農者の認定',t:'🌉川の橋を渡って街へ行き、🚜農協で「新規就農者」の認定を受けよう。認定されると🏦銀行で新規就農資金3,000万円(7年・最初の3年は返済なし・無利息)が借りられるよ',c:()=>state.newFarmer,r:300000},
+ {s:'🌱 牧草地にタネをまく',t:'🌿牧草地へ行って「作付け」しよう。牧草は牛の餌。🌸春(5月1週)と🍂秋(9月3週)に✂刈り取れるよ。自給できれば餌代がほぼタダに！',c:()=>state.grassSown||state.grassStock>0,r:100000},
+ {s:'🏚 牛舎を借りる',t:'🏚古い牛舎(月3万円)を借りよう。牛舎メニューから「借りる」。牛を飼うにはまず牛の家から！',c:()=>hasBarn(),r:100000},
+ {s:'🐂 街のセリでメス牛を買う',t:'🌉橋を渡って街の🐂セリ市場へ。メス牛は「与信100万円」で買える=現金は減らず、その牛に借金100万が付く(子牛の売却代金から半分ずつ返済)',c:()=>state.cows.length>0||state.calves.length>0,r:300000},
+ {s:'🌾 牛に餌やりをする',t:'🌾牧草の山から牧草をかかえて→牛の前の餌箱に入れると全頭に餌やり(週1回)。よく食べた牛は太って高く売れるよ',c:()=>state.care.fedWeek>=0,r:100000},
+ {s:'🧹 牛舎を掃除する',t:'牛の後ろの通路(アイスル)で🧹掃除(週1回)。汚れたままだと牛が病気になりやすい。集めたフンは🟫堆肥場で処理・堆肥にできるよ',c:()=>state.care.cleanWeek>=0,r:100000},
+ {s:'💉 母牛に種付けする',t:'🐂牛メニューから「💉種付け」(1回1万円・成功率80%)。成功すると40週(約10ヶ月)後に子牛が生まれるよ。毎年1頭産ませるのが儲けのコツ！',c:()=>state.cows.some(c=>c.preg>=0||(c.births||0)>0),r:150000},
+ {s:'✂ 牧草を刈り取る(5月1週/9月3週)',t:'🌸春5月1週か🍂秋9月3週に🌿牧草地で「✂刈り取り」。刈った牧草はロールになって牛舎へ運ばれ、餌の在庫になる。刈ったら次のシーズンにまた🌱種まきを忘れずに',c:()=>state.grassCutWeek>=0||state.grassStock>0,r:150000},
+ {s:'🐮 育った子牛をセリで出荷',t:'子牛は週齢32週まで育てたら、街の🐂セリ市場か牛メニューから売却(♀100万/♂120万・状態で±)。売却代金の半分は母牛の借金返済に充てられるよ',c:()=>(state.calfSoldN||0)>0,r:300000},
+ {s:'🤝 事務所で従業員を雇う',t:'🏢大倉庫の事務所で従業員(月給30万)を雇って仕事を指示すると、餌やりも種付けもセリも全部自動(放置経営)！さらに雇用促進の協力金=その人の年収の半分(180万円)がすぐもらえる！⚠一度雇うと解雇できないよ',c:()=>Object.values(state.staff).some(v=>v),r:200000},
+ {s:'🚜 農協で米の機械一式を揃える',t:'🚜街の農協で🚜トラクター・🌱田植え機・🌾コンバイン・♨乾燥機の一式を揃えよう(中古もOK)。🏛役場の補助金(半額)も忘れずに申請！機械がないと広い棚田は回せないよ',c:()=>RICE_SET.every(k=>effN(k)>=1),r:500000},
+ {s:'🌾 棚田で田植え(春4月1週)',t:'春の4月1週に🌾棚田で「田植え」(苗代300万円)。棚田のアイコンをタップするか、棚田に近づいて「使う」。堆肥舎があれば元肥もタダで+15%',c:()=>state.riceField!=='none'||state.riceBags>0||state.soldRiceBags>0,r:300000},
+ {s:'🚿 水管理して秋の稲刈りへ',t:'⏭「次の週へ」で時間を進めつつ、5〜9月は🚿田んぼの水管理(サボると収量減)。7月の追肥で+10%。秋(10月)に🌾コンバインで収穫だ！',c:()=>state.riceBags>0||state.soldRiceBags>0,r:200000},
+ {s:'🍚 大倉庫で精米して出荷',t:'📦大倉庫の🍚精米機で「精米して出荷」(1袋3万円・週1回)。精米機のアイコンからも出荷できるよ。米は年1回のまとまった大きな収入！',c:()=>state.soldRiceBags>0,r:300000},
+ {s:'🏠 不動産屋で土地を広げる',t:'🏠街の不動産屋で🌰栗園(300万)や牧草地・棚田の拡張を買って規模拡大しよう。栗は秋の収穫を瓶詰め加工で高く売れるよ',c:()=>state.land.orchard||state.land.pasture1||state.land.rice2||state.land.grass2||state.land.field2,r:200000},
+ {s:'🏭 本格堆肥舎を建てる',t:'🏭本格堆肥舎(1500万・🏛役場の補助で750万)を建てよう。牛糞の処分費がゼロになり、牛糞→肥料の製造販売もできる(肥料事業)',c:()=>state.compostShed,r:300000},
+ {s:'🍱 農協で加工機を買う',t:'🚜街の農協で🍱食品加工機を買うと、ポテサラなど加工品の売値が1.5倍に！加工事業の利益がグッと伸びるよ',c:()=>effN('processor')>=1,r:200000},
+ {s:'⛰ 新築牛舎を建てて増頭',t:'⛰山を切り開いて新築牛舎(3000万・🏛補助で1500万・母15子15)を建てよう！🚜街の農協で建てられる。牛舎が増えたら🐂セリで母牛をどんどん買い足そう',c:()=>state.newBarns>0||state.land.barn2,r:300000},
+ {s:'🏅 認定農業者になる',t:'3年経って加工以外の売上(米・牛・牧草・肥料)が累計2,000万円を超えたら、🚜農協で「認定農業者」に。スーパーL資金で売上と同額を無利息(10年均等)で借りられる！',c:()=>state.certFarmer,r:500000},
+ {s:'🐂 母牛を10頭に増やす',t:'🐂セリで母牛を買い足して10頭体制へ。従業員に世話を任せれば大規模でも回るよ(1人で母牛60頭まで)。スーパーL資金も活用！',c:()=>state.cows.length>=10,r:500000},
+ {s:'🌟 利益を最大化しよう！',t:'牛・米・栗・加工・肥料の5本柱と設備投資で利益を最大化！📊事務所の経営分析で資金繰りもチェックしながら、丹波いちばんの農場を目指そう！',c:()=>false,r:0},
 ];
 function updateQuest(){
   while(state.questDone<QUESTS.length-1&&QUESTS[state.questDone].c()){
@@ -4064,6 +4076,7 @@ function sellCalf(id){
   if(cf.sick){toast('🤒 病気の子牛は売れないよ。🚜街の農協で獣医を呼んで治してから');return;} // v19
   if((cf.ageWeeks||0)<ECON.CALF_SHIP_WEEKS){toast('🐮 子牛はまだ週齢'+(cf.ageWeeks||0)+'週('+ECON.CALF_SHIP_WEEKS+'週で出荷可)');return;}
   state.calves.splice(i,1);
+  state.calfSoldN=(state.calfSoldN||0)+1; // v66: クエスト判定用の累計出荷数
   const price=calfSalePrice(cf); // v20: 雌雄ベース(メス100万/オス120万)×状態補正
   const adj=Math.round(cowCondAdj(cf)*100);
   addSale(price,'calf');
@@ -4080,21 +4093,7 @@ function sellCalf(id){
   if(repay>0)toast('🐂 うち'+man(repay)+'を母牛の返済に充当・現金+'+man(price-repay));
   refreshCowMeshes();updateHUD();renderMenu();
 }
-// v20: メスの子牛を売らずに牧場に残して母牛(繁殖用)にする
-function keepAsMother(id){
-  const i=state.calves.findIndex(x=>x.id===id);if(i<0)return;
-  const cf=state.calves[i];
-  if(cf.sex!=='F'){toast('♂オスは母牛にできないよ(肥育して売却しよう)');return;}
-  if(cf.age<ECON.CALF_SHIP_AGE){toast('🐮 月齢'+ECON.CALF_SHIP_AGE+'ヶ月から母牛に昇格できるよ(いま'+cf.age+'ヶ月)');return;}
-  if(cf.sick){toast('🤒 病気の子牛は母牛にできないよ。先に獣医で治療を');return;}
-  if(state.cows.length>=barnCapNow()){toast('🏚 母牛の枠が満員('+barnCapNow()+'頭)だよ。⛰新築牛舎で増築するか、引退牛を売却してから');return;}
-  state.calves.splice(i,1);
-  state.cows.push({id:cf.id,name:'牛'+cf.id,preg:-1,births:0,debt:0,retired:false,bredMonth:-1,sick:false,sickDays:0,fat:cf.fat!==undefined?cf.fat:60,sickCount:cf.sickCount||0,homeGrown:true});
-  fanfare();
-  toast('💞 ♀メス子牛'+cf.id+'を母牛として牧場に残した！(自家育成=与信・借金なし)');
-  toast('💡 種付けすれば次世代の子牛を産んでくれるよ(売れば'+man(calfSalePrice(cf))+'だった)');
-  refreshCowMeshes();updateHUD();renderMenu();
-}
+// v66: 自己保留(keepAsMother=メス子牛を母牛に残す)は廃止。子牛は雌雄とも育ったら出荷、増頭はセリでの購入で行う
 function sellMother(id){
   const i=state.cows.findIndex(x=>x.id===id);if(i<0)return;
   const c=state.cows[i];
@@ -4510,6 +4509,14 @@ function hireStaff(k){
   state.staffJobs[k]=[];
   fanfare();
   toast('🤝 '+STAFF_META[k].name+'を雇った！(月給'+man(ECON.EMP_SALARY)+')');
+  // v66: 雇用促進クエスト=新規雇用ごとに、その人の年収の半分(現月給×12÷2)を協力金として支給。各人1回のみ
+  state.hireBonusPaid=state.hireBonusPaid||{};
+  if(!state.hireBonusPaid[k]){
+    state.hireBonusPaid[k]=1;
+    const hb=Math.round(staffSalary(k)*12/2);
+    addSale(hb,'grant');
+    toast('✅ '+STAFF_META[k].name+'さんの雇用でクエスト達成！雇用促進の協力金 +'+man(hb)+'(年収の半分・現金'+man(state.money)+')');
+  }
   toast('⚠ 注意: 一度雇うと解雇できません。さらに毎年+'+man(ECON.EMP_RAISE)+'の自動昇給で人件費が増えます(勤続で重くなる)');
   toast('👉 続けて仕事(米/牧草/牛の世話/野菜/加工/堆肥)を指示しよう。1人に複数OK。指示すると作業場所へ歩いて働きに行くよ！');
   updateStaffWander();updateHUD();renderMenu();
@@ -4609,12 +4616,7 @@ function staffMonthlyJobs(notes){
     for(let i=state.calves.length-1;i>=0;i--){
       const cf=state.calves[i];
       if((cf.ageWeeks||0)>=ECON.CALF_SHIP_WEEKS&&!cf.sick){ // v19: 病気の子牛は売らない
-        // v20: ♀メスは母牛の枠が空いていれば母牛候補として自動昇格(次世代の親牛)。♂オスは売却
-        if(cf.sex==='F'&&state.cows.length<moCap()){
-          notes.push('🐂 '+nm+': ♀メス子牛'+cf.id+'を母牛として残した(自家育成・与信なし)');
-          keepAsMother(cf.id);
-          continue;
-        }
+        // v66: 自己保留は廃止。雌雄とも育ったら全頭セリで売却(増頭はセリでの購入で)
         notes.push('🐂 '+nm+': '+sexMark(cf)+'の子牛をセリで売却('+man(calfSalePrice(cf))+')');
         sellCalf(cf.id);
       }
@@ -5796,10 +5798,9 @@ function cowListHTML(){
   for(const cf of state.calves){
     const ship=(cf.ageWeeks||0)>=ECON.CALF_SHIP_WEEKS&&!cf.sick;
     h+='<div class="cowrow"><span style="font-size:15px">🐮</span><span class="st">'+calfStatusText(cf)+(ship?'<br><small style="color:#8a6a45">'+condReasons(cf)+'</small>':'')+'</span>'+
-      (ship?('<button class="minibtn orange" onclick="sellCalf('+cf.id+');renderMenu()">'+man(calfSalePrice(cf))+'で売却</button>'+
-        (cf.sex==='F'?'<button class="minibtn" '+(state.cows.length<barnCapNow()?'':'disabled')+' onclick="keepAsMother('+cf.id+');renderMenu()">母牛に残す</button>':'')):'')+'</div>';
+      (ship?('<button class="minibtn orange" onclick="sellCalf('+cf.id+');renderMenu()">'+man(calfSalePrice(cf))+'で売却</button>'):'')+'</div>';
   }
-  h+='<p class="sub2" style="font-size:11.5px;color:#8a6a45">💉種付け1万→40週で出産→仔牛32週で出荷。売値♀100万/♂120万(状態で±)。売却の半分は母牛の借金返済へ。♀は母牛に残せる。母牛は8産まで。</p>';
+  h+='<p class="sub2" style="font-size:11.5px;color:#8a6a45">💉種付け1万→40週で出産→仔牛32週で出荷。売値♀100万/♂120万(状態で±)。売却の半分は母牛の借金返済へ。母牛は8産まで。増頭は🐂セリでの購入で。</p>';
   return h;
 }
 // セリ市場: メス牛の与信購入・子牛/親牛の売却
@@ -5814,13 +5815,12 @@ function auctionHTML(){
     for(const cf of ship){
       const price=calfSalePrice(cf),adj=Math.round(cowCondAdj(cf)*100);
       h+='<div class="cowrow"><span style="font-size:15px">🐮</span><span class="st">'+sexMark(cf)+'の子牛'+cf.id+'(週齢'+(cf.ageWeeks||0)+'週)<br><small style="color:#8a6a45">'+condReasons(cf)+' → ベース'+man(calfBasePrice(cf))+(adj!==0?(adj>0?'の+':'の')+adj+'%で'+(adj>0?'高く':'安く')+'売れる':'')+'</small></span>'+
-      '<button class="minibtn orange" onclick="sellCalf('+cf.id+')">'+man(price)+'で売却</button>'+
-      (cf.sex==='F'?'<button class="minibtn" '+(state.cows.length<barnCapNow()?'':'disabled')+' onclick="keepAsMother('+cf.id+')">母牛に残す</button>':'')+'</div>';
+      '<button class="minibtn orange" onclick="sellCalf('+cf.id+')">'+man(price)+'で売却</button></div>';
     }
   }else h+='<p style="color:#8a6a45">出荷できる子牛はまだいないよ(月齢8ヶ月から。病気の子は治療してから)。</p>';
   const ret=state.cows.filter(c=>c.retired);
   for(const c of ret)h+='<div class="cowrow"><span style="font-size:18px">🐂</span><span class="st">'+cowStatusText(c)+'<br><small style="color:#8a6a45">'+condReasons(c)+'</small></span><button class="minibtn orange" onclick="sellMother('+c.id+')">'+man(motherSalePrice(c))+'で売却</button></div>';
-  h+='<p class="sub2" style="font-size:11.5px;color:#8a6a45">💡 売却の半分(最大50万)は母牛の借金返済へ(2頭で完済)。♀仔牛は「母牛に残す」と与信なしで増頭できる。</p>';
+  h+='<p class="sub2" style="font-size:11.5px;color:#8a6a45">💡 売却の半分(最大50万)は母牛の借金返済へ(2頭で完済)。増頭したい時は「与信で購入」で母牛を買い足そう。</p>';
   return h;
 }
 // 銀行: 黒字のみ・限度=直近売上高・無利息
