@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v61: 上部HUD(所持金/日付/場所)が右上ボタン群と被らないレイアウトに(メニュー/次の週へ/街へ行くを下へ)・🚶散歩(放し飼い)の浮きボタン撤去→🐂牛メニュー/🏚牛舎メニュー内の切替に集約・街→農場の帰り道を右(東)の門に移設</title>
+<title>丹波農商 牧場物語 v62: 従業員の労働キャパシティ(1人=作業量100%まで)。各仕事に規模連動の労働量%・任せすぎ警告・キャパオーバーで週次ミス(世話が雑/収穫取りこぼし/種付け・ローテ忘れ等)・事務所と会話に作業量バー表示</title>
 <link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -1133,6 +1133,47 @@ function staffWithJob(job){for(const k in state.staff)if(state.staff[k]&&jobsOf(
 // v44: 勤続年数と、毎年+3万円の自動昇給を反映した今の月給
 function staffYears(k){return Math.max(0,(state.year||1)-(state.staffHireYear&&state.staffHireYear[k]||state.year||1));}
 function staffSalary(k){return ECON.EMP_SALARY+ECON.EMP_RAISE*staffYears(k);}
+// ---------- v62: 労働キャパシティ(従業員1人のフルタイム=1.0) ----------
+// 各ジョブの労働量。規模(頭数/面積/拡張)が大きいほど重い。牛の世話は母60頭+子50頭で丁度1.0(既存の上限と整合)。
+function barn1MoN(){return Math.min(state.cows.length,barn1MoPhys());}
+function barn2MoN(){return Math.max(0,state.cows.length-barn1MoPhys());}
+function barn1CalfN(){return Math.min(state.calves.length,barn1CalfPhys());}
+function barn2CalfN(){return Math.max(0,state.calves.length-barn1CalfPhys());}
+function jobLabor(job){
+  switch(job){
+    case 'cow':  return barn1MoN()/(ECON.COW_CARE_MO*2)+barn1CalfN()/(ECON.COW_CARE_CALF*2);   // 第一牛舎: 母60+子50=1.0
+    case 'cow2': return barn2MoN()/(ECON.COW_CARE_MO*2)+barn2CalfN()/(ECON.COW_CARE_CALF*2);   // 第二牛舎も同じ基準
+    case 'rice': return 0.3*riceScale();                                    // 基本0.3・棚田を全部広げると約1.0
+    case 'grass':return hasPasture()?(state.land.grass2?0.2:0.12):0.05;     // 年2回の作業で軽め
+    case 'veg':  return state.land.field2?0.4:0.25;                         // 畑の面積ベース
+    case 'proc': return 0.25+(state.land.orchard?0.05:0);                   // 週の加工+栗の瓶詰め
+    case 'pig':  return pigCount()>0?Math.min(0.6,0.08+0.02*pigCount()):0.05; // 頭数ベース
+    case 'compost': return Math.min(0.6,0.08+herdCount()*0.003);            // 糞の量=牛の頭数ベース
+  }
+  return 0;
+}
+// 同じ仕事を複数人に指示したら分担して1人あたりは軽くなる
+function jobShareN(job){let n=0;for(const kk in state.staff)if(state.staff[kk]&&jobsOf(kk).includes(job))n++;return Math.max(1,n);}
+function staffLoad(k){let s=0;for(const j of jobsOf(k))s+=jobLabor(j)/jobShareN(j);return s;}
+function loadPct(k){return Math.round(staffLoad(k)*100);}
+function overRate(k){return Math.max(0,staffLoad(k)-1);}
+// キャパオーバー(100%超)だと超過に比例して週次のミスが出る(120%で約3割/週・150%で約8割/週)
+function missRoll(k){return overRate(k)>0&&Math.random()<Math.min(0.85,overRate(k)*1.6);}
+// 月次ジョブは1回の週送り内で2回呼ばれる(週番号の増加をまたぐ)ので、週送りパスIDで1回だけ判定・通知する
+// (0=ミスなし/1=新規ミス(通知)/2=今回ミス済み(黙ってスキップ))
+function weekMiss(tag,k){
+  if(!state.missWk)state.missWk={};
+  const pass=state.advPass||0;
+  if(state.missWk[tag]===pass)return 2;
+  if(missRoll(k)){state.missWk[tag]=pass;return 1;}
+  return 0;
+}
+// 事務所の指示UI・話しかけダイアログに出す労働量バー
+function loadBarHTML(k){
+  const p=loadPct(k),col=p<=80?'#3a8a3a':(p<=100?'#c08a20':'#c03030');
+  return '<div style="margin-top:4px;font-size:11px;color:'+col+';font-weight:bold">作業量 '+p+'%'+(p>100?' ⚠手一杯(仕事にミスが出るよ！)':(p>80?'(そろそろ限界)':''))+
+    '<div style="height:6px;max-width:220px;background:#e8dfc8;border-radius:3px;overflow:hidden;margin-top:2px"><div style="height:100%;width:'+Math.min(100,p)+'%;background:'+col+'"></div></div></div>';
+}
 function toggleJob(k,job){
   if(!state.staff[k]){toast('先に雇用してね');return;}
   if(job==='cow2'&&!state.land.barn2&&!jobsOf(k).includes('cow2')){toast('🏠 第二牛舎がまだないよ。🏘街の🏠不動産屋で「北の第二牛舎」を建てると指示できる');return;} // v60
@@ -1140,6 +1181,9 @@ function toggleJob(k,job){
   if(i>=0)js.splice(i,1);else js.push(job);
   state.staffJobs[k]=js;
   toast('📋 '+STAFF_META[k].name+': '+(i>=0?JOBS[job].n+'を担当から外した':JOBS[job].em+JOBS[job].n+'を指示した(担当'+js.length+'件・毎日/月初に自動)'));
+  // v62: 任せすぎ警告(指示はできるが、キャパオーバーだと仕事にミスが出る)
+  if(i<0&&staffLoad(k)>1)toast('⚠ '+STAFF_META[k].name+'は手一杯です(作業量'+loadPct(k)+'%)！任せすぎるとミス(取りこぼし)が出るよ。もう1人雇うか担当を減らそう');
+  else if(i<0&&staffLoad(k)>0.8)toast('💦 '+STAFF_META[k].name+'の作業量は'+loadPct(k)+'%。100%を超えるとミスが出るから気をつけて');
   sfx(660,.07,'sine',.05);updateStaffWander();updateHUD();renderMenu();
 }
 // v46: 雇って仕事を指示した従業員は、その作業場所を歩いて巡回する(止まらず働きに行く)。無職/未雇用は定位置。
@@ -3369,7 +3413,7 @@ function evalCowCareWeek(notes){
   if(c.fedWeek!==state.weekN){c.health=Math.max(0,c.health-ECON.CARE_HUNGRY*2);bad=true;notes.push('⚠ 餌やりを忘れて牛が腹ぺこ…健康-'+(ECON.CARE_HUNGRY*2)+'(いま'+c.health+')');}
   if(c.cleanWeek!==state.weekN){c.dirt=Math.min(100,c.dirt+ECON.CARE_DIRT_ADD*2);bad=true;}
   if(c.dirt>=ECON.CARE_DIRT_BAD){c.health=Math.max(0,c.health-5);notes.push('⚠ 牛舎が汚れすぎ(汚れ'+c.dirt+')！牛の健康がさらに低下(いま'+c.health+')');}
-  if(!bad)c.health=Math.min(100,c.health+ECON.CARE_RECOVER*2);
+  if(!bad&&c.sloppyWk!==state.weekN)c.health=Math.min(100,c.health+ECON.CARE_RECOVER*2); // v62: 手一杯で世話が雑だった週は回復しない
   // 肥育度(太り具合)の週次変化
   const fedThisWeek=c.fedWeek===state.weekN;
   for(const a of[...state.cows,...state.calves]){
@@ -4298,11 +4342,11 @@ function openStaffTalk(k){
   const m=STAFF_META[k];const hired=state.staff[k];
   showIconInfo({t:'👤 '+m.name+(hired?'(雇用中)':''),
     b:()=>hired
-      ? '担当: '+jobLabel(k)+'<br>勤続'+(staffYears(k)+1)+'年目・今の月給'+man(staffSalary(k))+'<br>⚠ 解雇はできません／毎年+'+man(ECON.EMP_RAISE)+'の自動昇給あり<br>下のボタンで仕事を指示(複数OK・もう一度押すと外す)。'
+      ? '担当: '+jobLabel(k)+loadBarHTML(k)+'勤続'+(staffYears(k)+1)+'年目・今の月給'+man(staffSalary(k))+'<br>⚠ 解雇はできません／毎年+'+man(ECON.EMP_RAISE)+'の自動昇給あり<br>下のボタンで仕事を指示(複数OK・もう一度押すと外す)。作業量100%を超えるとミスが出るよ。' // v62: 労働量バー
       : (m.line2||m.line)+'<br><br>⚠ 一度雇うと解雇できません。毎年+'+man(ECON.EMP_RAISE)+'の自動昇給で人件費が増えます。',
     btns:()=>{const a=[];
       if(!hired){a.push(['🤝 雇う(月給'+man(ECON.EMP_SALARY)+'・解雇不可)',()=>{hireStaff(k);openStaffTalk(k);}]);}
-      else{for(const j in JOBS){if(j==='cow2'&&!state.land.barn2)continue;const has=jobsOf(k).includes(j);a.push([(has?'✅ ':'▫️ ')+JOBS[j].em+JOBS[j].n+(has?'(外す)':'を指示')+'',()=>{toggleJob(k,j);openStaffTalk(k);}]);} // v60: 第二牛舎が無い時はcow2を出さない
+      else{for(const j in JOBS){if(j==='cow2'&&!state.land.barn2)continue;const has=jobsOf(k).includes(j);a.push([(has?'✅ ':'▫️ ')+JOBS[j].em+JOBS[j].n+' '+Math.round(jobLabor(j)*100)+'%'+(has?'(外す)':'を指示')+'',()=>{toggleJob(k,j);openStaffTalk(k);}]);} // v60: 第二牛舎が無い時はcow2を出さない / v62: 労働量%
         a.push(['🧹 担当を全部外す',()=>{assignJob(k,null);openStaffTalk(k);}]);}
       return a;}});
 }
@@ -4322,7 +4366,20 @@ function staffDaily(notes){
     // v60: 第二牛舎に牛がいるのに第二の担当がいない時は案内(1人で両方は見きれない)
     if(state.weekN%4===0&&state.land.barn2&&!wk2&&herdCount()>barn1MoPhys()+barn1CalfPhys())
       notes.push('⚠ 第二牛舎の世話係がいない！1人で両方の牛舎は見きれないよ。「🐂牛の世話(第二牛舎)」をもう1人に指示しよう');
+    // v62: キャパオーバーの世話係は世話が雑になる(健康低下・掃除の取りこぼし)
+    for(const wl of[[wk1,'第一'],[wk2,'第二']]){
+      const w=wl[0];
+      if(w&&missRoll(w)){
+        state.care.health=Math.max(0,state.care.health-3);
+        state.care.dirt=Math.min(100,state.care.dirt+8);
+        state.care.sloppyWk=state.weekN; // 雑な世話の週は健康が回復しない(evalCowCareWeek)
+        notes.push('⚠ '+STAFF_META[w].name+'('+wl[1]+'牛舎)は手一杯(作業量'+loadPct(w)+'%)で餌やり・掃除が雑に…牛の健康-3・汚れ+8。担当を減らすかもう1人雇おう');
+      }
+    }
   }
+  // v62: 任せすぎの定期警告(4週ごと)
+  if(state.weekN%4===1)for(const sk in state.staff)if(state.staff[sk]&&staffLoad(sk)>1)
+    notes.push('⚠ '+STAFF_META[sk].name+'は任せすぎ(作業量'+loadPct(sk)+'%)！手が回らずミスが出やすい。もう1人雇うか担当を減らそう');
   // 🟫 堆肥(毎日): 落ちている牛ふんを回収
   const ck=staffWithJob('compost');
   if(ck&&manures.length>0){
@@ -4350,7 +4407,11 @@ function staffMonthlyJobs(notes){
         notes.push('🩺 '+nm+': 病気の牛'+sick.length+'頭に獣医を呼んで全快させた(往診+治療 −'+man(cost)+')');
       }else notes.push('🤒 '+nm+': 病気の牛がいるが往診料'+man(cost)+'が払えない…現金を確保して(放置は最悪死亡)');
     }
-    for(const c of state.cows){
+    // v62: キャパオーバーだと種付けを後回しにしてしまう(繁殖の回転が落ちる)
+    const breedSkip=weekMiss('breed',wk);
+    if(breedSkip===1&&state.cows.some(c=>!c.retired&&!c.sick&&c.preg<0))
+      notes.push('⚠ '+nm+'は手一杯(作業量'+loadPct(wk)+'%)で種付けを後回しにした…(来週に持ち越し)');
+    if(!breedSkip)for(const c of state.cows){
       if(!c.retired&&!c.sick&&c.preg<0&&c.bredWeek!==state.weekN){ // v19: 病気の牛は種付けしない
         if(committedCalves()>=calfCap()){notes.push('⚠ '+nm+': '+capMsgCalf()+'ので種付けを見送り(妊娠中'+pregCount()+'頭ぶん含む)');break;} // v53: 妊娠ぶんも含めて厳守
         c.bredWeek=state.weekN;
@@ -4387,9 +4448,18 @@ function staffMonthlyJobs(notes){
     if(smallNG&&isRicePlantWeek()&&state.riceField==='none')notes.push('⚠ '+nm+': 小型トラクターでは東の棚田まで田植えできない！中型(500万)が必要');
     if(isRicePlantWeek()&&state.riceField==='none'&&!machineBroken('tractor')&&!smallNG&&state.money>=riceSeedCost()){doRicePlant();notes.push('🌾 '+nm+': 苗代'+man(riceSeedCost())+'で田植えした'+(state.ricePlanterBonus?'(🌱田植え機+10%)':''));}
     if(waterDue()){
-      if(doRiceWater('staff'))notes.push('🚿 '+nm+': 田んぼの水を管理した');
+      // v62: キャパオーバーだと水管理を後回しにしてしまう(サボり扱いで収量減の恐れ)
+      const wMiss=weekMiss('water',rk);
+      if(wMiss===1)notes.push('⚠ '+nm+'は手一杯(作業量'+loadPct(rk)+'%)で田んぼの水管理を後回しにした…(放置が続くと収量ダウン)');
+      else if(!wMiss&&doRiceWater('staff'))notes.push('🚿 '+nm+': 田んぼの水を管理した');
     }
-    if(state.riceField==='ready'&&!machineBroken('tractor')){const b=riceBagsYield();doRiceHarvest();notes.push('🌾 '+nm+': 米'+b+'袋を収穫した');}
+    if(state.riceField==='ready'&&!machineBroken('tractor')){
+      const b=riceBagsYield();doRiceHarvest();
+      // v62: キャパオーバーだと収穫の一部を刈り遅れで取りこぼす(15%)
+      let lost=0;
+      if(missRoll(rk)){lost=Math.max(1,Math.round(b*0.15));state.riceBags=Math.max(0,state.riceBags-lost);}
+      notes.push('🌾 '+nm+': 米'+(b-lost)+'袋を収穫した'+(lost>0?'…手一杯(作業量'+loadPct(rk)+'%)で'+lost+'袋を刈り遅れで取りこぼした！':''));
+    }
     if(state.riceBags>0&&state.shipMonth!==state.weekN){
       if(machineBroken('polisher'))notes.push('⚠ '+nm+': 精米機が故障中で出荷できない！🔧街の修理屋へ');
       else{const n=Math.min(riceShipMax(),state.riceBags);shipRice();notes.push('🌾 '+nm+': '+n+'袋を精米出荷した');}
@@ -4402,7 +4472,12 @@ function staffMonthlyJobs(notes){
     if(!hasPasture())notes.push('🌿 '+nm+': 牧草地がない！🏘街の🏠不動産屋で「西の牧草地」を買おう');
     // v44: 牛がいなくても播種する(余剰は売却)。刈り取り後の未作付けを毎シーズン自動でまき直し
     else if(!state.grassSown&&state.money>=grassSowCost()){sowGrass();notes.push('🌿 '+nm+': 牧草を作付け(播種)した(−'+man(grassSowCost())+')');}
-    if(state.grassSown&&isGrassHarvestWeek()&&doGrassCut('staff'))notes.push('🌿 '+nm+': '+(state.week===18?'🌸春(5月1週目)':'🍂秋(9月3週目)')+'の牧草を刈り取った(+'+state.grassProdLast+'束)');
+    if(state.grassSown&&isGrassHarvestWeek()&&doGrassCut('staff')){
+      // v62: キャパオーバーだと牧草の2割を刈り残す
+      let lost=0;
+      if(missRoll(gk)){lost=Math.round(state.grassProdLast*0.2);state.grassStock=Math.max(0,state.grassStock-lost);}
+      notes.push('🌿 '+nm+': '+(state.week===18?'🌸春(5月1週目)':'🍂秋(9月3週目)')+'の牧草を刈り取った(+'+(state.grassProdLast-lost)+'束)'+(lost>0?'…手一杯(作業量'+loadPct(gk)+'%)で'+lost+'束を刈り残した！':''));
+    }
     if(state.grassSown){const s=sellGrassSurplus(true);if(s>0)notes.push('🌿 '+nm+': 余剰牧草'+s+'束を売却');}
   }
   // 🥕 野菜(v46): 畑の種まき・収穫・売却を自動でやる
@@ -4411,7 +4486,11 @@ function staffMonthlyJobs(notes){
     const nm=STAFF_META[vk].name;
     // 収穫: 熟した畑作物(にんじん/ねぎ/黒豆/黒枝豆)
     let harv=0;
-    for(const kk in state.crops){const c=state.crops[kk];
+    // v62: キャパオーバーだと収穫を後回しにしてしまう(今週の収穫なし)
+    const vegSkip=weekMiss('veg',vk);
+    if(vegSkip===1&&Object.keys(state.crops).some(kk=>['veg','negi','bean','edamame'].includes(state.crops[kk].type)&&cropMature(state.crops[kk])))
+      notes.push('⚠ '+nm+'は手一杯(作業量'+loadPct(vk)+'%)で野菜の収穫を後回しにした…(来週に持ち越し)');
+    if(!vegSkip)for(const kk in state.crops){const c=state.crops[kk];
       if(['veg','negi','bean','edamame'].includes(c.type)&&cropMature(c)){
         const meta=CROPMETA[c.type];let num=meta.num;
         if(c.type==='negi'){c.cuts=(c.cuts||0)+1;addRes('negi',num);harv+=num;if(c.cuts>=3){delete state.crops[kk];removeCropMesh(kk);}else{c.mon=0;c.d=0;refreshCropMesh(kk);}continue;}
@@ -4436,7 +4515,12 @@ function staffMonthlyJobs(notes){
   const pk=staffWithJob('proc');
   if(pk){
     const nm=STAFF_META[pk].name;
-    if(state.procWeek!==state.weekN&&doProcess('staff'))notes.push('🥔 '+nm+': 食品加工場でポテサラを作って売った(+'+man(ECON.FOOD_PROC_SALE)+')');
+    // v62: キャパオーバーだとポテサラ作りを休んでしまう(今週の加工売上なし)
+    if(state.procWeek!==state.weekN){
+      const pMiss=weekMiss('proc',pk);
+      if(pMiss===1)notes.push('⚠ '+nm+'は手一杯(作業量'+loadPct(pk)+'%)でポテサラ作りを休んだ…(今週の加工売上'+man(ECON.FOOD_PROC_SALE)+'を逃した)');
+      else if(!pMiss&&doProcess('staff'))notes.push('🥔 '+nm+': 食品加工場でポテサラを作って売った(+'+man(ECON.FOOD_PROC_SALE)+')');
+    }
     if(state.land.orchard&&isChestnutSeason()&&state.chestnutBizYear!==state.year&&harvestChestnutBiz('staff'))notes.push('🌰 '+nm+': 栗を一括収穫して瓶詰め加工に出した'+(state.chestnutMachine?'(自社機でタダ)':'(外注−'+man(ECON.CHESTNUT_OUTSOURCE)+')')+'→1年かけて出荷'); // v50
     let g=0;for(const kk of['veg','negi','bean','edamame','chestnut']){const n=state.res[kk]||0;if(n>0){g+=n*PRICE[kk];state.res[kk]=0;}}
     if(g>0){const gp=Math.round(g*procMult());addSale(gp,'proc');notes.push('🥔 '+nm+': 農産物を加工して'+fmt(gp)+'で売却'+(procMult()>1?'(🍱加工機で1.5倍)':''));}
@@ -4446,7 +4530,10 @@ function staffMonthlyJobs(notes){
   if(pgk&&pigCount()>0){
     const nm=STAFF_META[pgk].name;
     if(state.pigPlots<2)notes.push('🐖 '+nm+': ローテーションできる耕作放棄地が足りない(2反以上＋電柵が必要)。豚が育たないよ');
-    else if(rotatePigs('staff')&&state.weekN%4===0)notes.push('🐖 '+nm+': 豚を隣の放牧地へローテーションした');
+    else{const pgMiss=weekMiss('pigrot',pgk); // v62: キャパオーバーだとローテを忘れる
+      if(pgMiss===1)notes.push('⚠ '+nm+'は手一杯(作業量'+loadPct(pgk)+'%)で豚のローテーションを忘れた…(育ちが遅れる)');
+      else if(!pgMiss&&rotatePigs('staff')&&state.weekN%4===0)notes.push('🐖 '+nm+': 豚を隣の放牧地へローテーションした');
+    }
     const boost=feedPigsScraps('staff');if(boost>0)notes.push('🐖 '+nm+': 余った野菜/栗を豚に給餌(早く育つ)');
     const shipped=shipPigs('staff');if(shipped>0)notes.push('🐖 '+nm+': 育った豚'+shipped+'頭を出荷(+'+man(shipped*ECON.PIG_SELL)+')');
   }
@@ -4454,7 +4541,12 @@ function staffMonthlyJobs(notes){
   const ck=staffWithJob('compost');
   if(ck){
     const nm=STAFF_META[ck].name;
-    if((state.res.manure||0)>0){const n=state.res.manure;state.res.manure=0;state.res.compost+=n;notes.push('🟫 '+nm+': 堆肥を'+n+'個作った');}
+    // v62: キャパオーバーだと堆肥づくりが後回しに(原料が溜まったまま)
+    if((state.res.manure||0)>0){
+      const cMiss=weekMiss('compost',ck);
+      if(cMiss===1)notes.push('⚠ '+nm+'は手一杯(作業量'+loadPct(ck)+'%)で堆肥づくりが後回しに…(牛ふん'+state.res.manure+'個が溜まったまま)');
+      else if(!cMiss){const n=state.res.manure;state.res.manure=0;state.res.compost+=n;notes.push('🟫 '+nm+': 堆肥を'+n+'個作った');}
+    }
     if(state.compostShed){const n=sellFert(true);if(n>0)notes.push('🟫 '+nm+': 肥料'+n+'袋を出荷('+fmt(n*ECON.FERT_PRICE)+')');}
     // v49: 連作で弱った畑に堆肥をまいて回復(売る前に畑の手当てを優先)。堆肥が無ければ購入してでも直す
     let healed=0;
@@ -4647,6 +4739,7 @@ function finishAdvance(){
 }
 function advanceWeek(notes,silent){
   if(isGameOver)return;
+  state.advPass=(state.advPass||0)+1; // v62: 週送りパスID(週内2回呼ばれる月次ジョブのミス判定を1回にする)
   // 1) 従業員の日次自動作業(今週分をまとめて処理)
   staffDaily(notes);
   // 2) 牛の世話のサボり判定(健康/汚れ)
@@ -5305,20 +5398,21 @@ function staffHTML(){
     const m=STAFF_META[k];
     const on=state.staff[k];
     const jobs=jobsOf(k);
-    h+='<div class="row"><div class="em">'+m.em+'</div><div class="info"><b>'+m.name+(on?' ✅雇用中(勤続'+(staffYears(k)+1)+'年目・月給'+man(staffSalary(k))+')':'')+'</b><small>'+m.hint+(on?'。担当: '+jobLabel(k)+(jobs.length?'('+jobs.map(j=>JOBS[j].desc).join(' / ')+')':''):'')+'</small>';
+    h+='<div class="row"><div class="em">'+m.em+'</div><div class="info"><b>'+m.name+(on?' ✅雇用中(勤続'+(staffYears(k)+1)+'年目・月給'+man(staffSalary(k))+')':'')+'</b><small>'+m.hint+(on?'。担当: '+jobLabel(k)+(jobs.length?'('+jobs.map(j=>JOBS[j].desc).join(' / ')+')':''):'')+'</small>'+(on?loadBarHTML(k):'');
     if(on){
       h+='<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:5px">';
       for(const j in JOBS){
         if(j==='cow2'&&!state.land.barn2)continue; // v60: 第二牛舎が無い時は指示ボタンを出さない
         const sel=jobs.includes(j);
-        h+='<button class="minibtn'+(sel?'':' blue')+'" style="'+(sel?'background:#1f7a1f;border-color:#144d14;':'')+'" onclick="assignJob(\''+k+'\',\''+j+'\')">'+(sel?'✅':'')+JOBS[j].em+' '+JOBS[j].n+'</button>';
+        h+='<button class="minibtn'+(sel?'':' blue')+'" style="'+(sel?'background:#1f7a1f;border-color:#144d14;':'')+'" onclick="assignJob(\''+k+'\',\''+j+'\')">'+(sel?'✅':'')+JOBS[j].em+' '+JOBS[j].n+' '+Math.round(jobLabor(j)*100)+'%</button>'; // v62: 各仕事の労働量%
       }
       h+='<button class="minibtn" style="background:#988478;border-color:#6a594d" onclick="assignJob(\''+k+'\',null)">全部外す</button></div>';
     }
     h+='</div>'+
       (on?'<button class="buy" style="background:#b9b0a5;border-color:#8a8177" onclick="fireStaff(\''+k+'\')">解雇不可</button>':'<button class="buy" onclick="hireStaff(\''+k+'\')">雇う(月30万)</button>')+'</div>';
   }
-  h+='<p class="sub2" style="font-size:11.5px;color:#8a6a45">仕事: 🌾米 / 🌿牧草 / 🐂牛の世話=第一牛舎と第二牛舎で別担当(餌+掃除+糞運搬+種付け+セリ+獣医。1人で母牛60/子牛50頭まで) / 🥕野菜(種まき+収穫+売却) / 🥔加工(ポテサラ製造+販売) / 🟫堆肥。指示すると本人が担当の作業場所へ歩いて働きに行く。牧草は作業が少ないので兼務が効率的！</p>';
+  h+='<p class="sub2" style="font-size:11.5px;color:#8a6a45">仕事: 🌾米 / 🌿牧草 / 🐂牛の世話=第一牛舎と第二牛舎で別担当(餌+掃除+糞運搬+種付け+セリ+獣医。1人で母牛60/子牛50頭まで) / 🥕野菜(種まき+収穫+売却) / 🥔加工(ポテサラ製造+販売) / 🟫堆肥。指示すると本人が担当の作業場所へ歩いて働きに行く。牧草は作業が少ないので兼務が効率的！</p>'+
+    '<p class="sub2" style="font-size:11.5px;color:#b0462a"><b>📊 作業量(v62):</b> 1人がこなせる仕事量は<b>100%まで</b>(ボタンの%は今の規模での労働量。頭数や畑が増えると重くなる)。100%を超えて任せると<b>手が回らずミス</b>(餌やりが雑・収穫の取りこぼし・種付けやローテの忘れ等)が出だすよ。同じ仕事を2人に指示すると分担して1人あたり半分に。</p>';
   return h;
 }
 // v25: 配合飼料の一括購入(10週分=牧草不足時の補填用)
@@ -5630,6 +5724,8 @@ window.__v4dbg.npcPos=()=>npcs.filter(n=>n.mesh.parent).map(n=>({key:n.key,name:
 window.__v4dbg.cowPos=()=>cowMeshes.map(m=>({id:(m.userData.cow||m.userData.calf||{id:-1}).id,big:!!m.userData.big,bi:m.userData.bi,x:+m.position.x.toFixed(2),y:+m.position.y.toFixed(2),z:+m.position.z.toFixed(2)}));
 window.__v4dbg.manurePos=()=>manures.map(m=>({x:+m.position.x.toFixed(2),y:+m.position.y.toFixed(2),z:+m.position.z.toFixed(2)}));
 window.__v4dbg.cowMode=v=>{if(v!==undefined&&!!v!==!!state.cowFree)toggleCowMode();return state.cowFree;};
+window.__v4dbg.staffLoad=k=>({pct:loadPct(k),load:+staffLoad(k).toFixed(3),jobs:jobsOf(k)}); // v62検証用
+window.__v4dbg.jobLabor=j=>+jobLabor(j).toFixed(3); // v62検証用
 window.__v4dbg.barnAreas=()=>barnAreas();
 window.__v4dbg.topYAt=(x,z)=>topY(x,z);
 window.__v4dbg.blockAt=(x,y,z)=>getB(x,y,z);
