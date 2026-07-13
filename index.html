@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v69: 移動を地続きに — 農場⇄街は端と端で接続着地、🚄丹波駅を新設して新幹線は駅→駅で発着、🍜高架下と🚉東京駅を高架+地上通路で直結。ホテルの絵文字を🛎に変更、東京の群衆をチビで可愛いボクセル人間(目・腕・2本脚の歩き)に一新、飲食のバイト人件費率15%→10%で🥩焼肉の赤字解消</title>
+<title>丹波農商 牧場物語 v70: 駅の配置を明快に — 🚄丹波駅を街の北端へ移設(線路が場外へ抜ける自然な配置)、🚉東京駅を高架下の東端へ移して高架線と一直線に連続(駅を出て西へ歩けばそのまま🍜飲食店街)、到着スポーンや群衆ルートも新駅に合わせて調整</title>
 <link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -3714,7 +3714,7 @@ function nearestAction(wx,wz){
       const r=restAt(s.id);
       cand(s.x,s.z,2.4,r?(CUISINE[r.type].em+' '+CUISINE[r.type].name+'(店舗の管理)'):'🍴 ここに出店する('+(s.venue==='stadium'?'⚾球場':'通常')+')',()=>{menuTab='food';openMenu();});
     }
-    cand(50.5,55.5,3.0,'🚄 丹波へ帰る(新幹線)',()=>switchMap('town'));
+    cand(70,38.5,3.0,'🚄 丹波へ帰る(新幹線)',()=>switchMap('town')); // v70: 東京駅は高架線の東端へ移設
     return best;
   }
   // ---- v19: 街マップの対象(施設・NPC) / v22: 農場への道 ----
@@ -3730,7 +3730,7 @@ function nearestAction(wx,wz){
     cand(13.5,28.6,2.4,'🔧 修理屋(機械の修理)',()=>{menuTab='repair';openMenu();});
     cand(47.5,44.3,2.6,'🐂 セリ市場',()=>{menuTab='auction';openMenu();});
     cand(64.5,31.5,3.2,'🌉 農場へ帰る(橋への道)',()=>switchMap('farm')); // v61: 街の右(東)の門から農場へ
-    cand(35,29.4,2.6,'🚄 東京へ行く(新幹線)',()=>switchMap('tokyo')); // v68: 大通り沿いの駅の看板
+    cand(33,10.5,2.6,'🚄 東京へ行く(新幹線)',()=>switchMap('tokyo')); // v70: 北端の丹波駅の駅前広場の看板
     return best;
   }
   // ---- 農場マップの対象 ----
@@ -5998,7 +5998,7 @@ function genTown(){
     gset(x,3,z,rim?B.STONE:B.WATER);
   }
   // 建物(壁3段+窓+屋根)
-  townBuilding(27,36,13,19,B.WHITE,B.BROOF,[[31,19],[32,19]]); // 役場
+  townBuilding(27,36,13,19,B.WHITE,B.BROOF,[[31,19],[32,19],[33,19],[34,19],[31,13],[32,13],[33,13],[34,13]]); // 役場 v70: 北端の丹波駅の駅前広場に面したので、北(駅側)にも入口=南北に通り抜けて大通りへ出られる
   townBuilding(14,21,36,41,B.BRICK,B.STONE,[[17,36],[18,36]]); // 銀行
   townBuilding(24,29,36,40,B.PLANK,B.RROOF,[[26,36],[27,36]]); // 不動産屋
   townBuilding(38,46,36,42,B.WHITE,B.GROOF,[[41,36],[42,36]]); // 農協
@@ -6021,14 +6021,15 @@ function genTown(){
   for(let x=63;x<=66;x++)for(let z=30;z<=33;z++)gset(x,2,z,B.PATH); // 道を東へ延長
   for(let y=3;y<=5;y++){gset(63,y,29,B.WOOD);gset(63,y,34,B.WOOD);} // 門柱
   for(let z=29;z<=34;z++)gset(63,6,z,B.PLANK); // 門の梁
-  // v69: 🚄 丹波駅(大通りの北側 x33-43)。駅前広場+赤レンガ駅舎(南北に通り抜け)+1段高いホーム+線路の砂利敷き。
-  //      東京と「駅→駅」で行き来する導線(新幹線の車両とレールは buildTownDecor で装飾)
-  for(let x=33;x<=43;x++)for(let z=28;z<=29;z++)gset(x,2,z,B.PAVE); // 駅前広場(大通りz30に接続)
-  for(let x=32;x<=46;x++)for(let z=20;z<=21;z++)gset(x,2,z,B.STONE); // 線路の砂利敷き
-  for(let x=33;x<=43;x++)for(let z=22;z<=23;z++){gset(x,2,z,B.PAVE);gset(x,3,z,B.PAVE);} // ホーム(1段高い・東京からの着地点)
-  townBuilding(33,43,24,27,B.BRICK,B.BROOF,[[36,27],[37,27],[38,27],[39,27],[36,24],[37,24],[38,24],[39,24]]); // 赤レンガ駅舎(広場⇄ホームを通り抜け)
-  // 並木(v69: [38,28]は丹波駅の駅前広場と重なるため撤去)
-  [[7,28],[13,28],[19,28],[44,28],[50,28],[56,28],[59,36],[7,35],[36,50],[38,58],[16,44],[28,44],[7,41],[60,41]].forEach(p=>normalTree(p[0],p[1]));
+  // v70: 🚄 丹波駅を街の北端へ移設(南北大通りの北の突き当り)。線路は北端z0-1で場外(丘の中)へ抜ける自然な配置。
+  //      旧駅(x33-43,z20-29)は撤去=生成しないので跡地は元の草地に戻る(新幹線の車両とレールは buildTownDecor で装飾)
+  for(let x=27;x<=39;x++)for(let z=0;z<=12;z++){for(let y=3;y<=WH;y++)gset(x,y,z,0);gset(x,2,z,B.PAVE);} // 北の丘を平坦化
+  for(let x=29;x<=37;x++)for(let z=0;z<=1;z++)gset(x,2,z,B.STONE); // 線路の砂利敷き(北端=map外へ抜ける)
+  for(let x=29;x<=37;x++)for(let z=2;z<=4;z++){gset(x,2,z,B.STONE);gset(x,3,z,B.PAVE);} // ホーム(1段高い・東京からの着地点)
+  townBuilding(28,38,5,9,B.BRICK,B.BROOF,[[31,5],[32,5],[33,5],[34,5],[31,9],[32,9],[33,9],[34,9]]); // 赤レンガ駅舎(ホーム⇄街を南北に通り抜け)
+  for(let x=28;x<=38;x++)for(let z=10;z<=12;z++)gset(x,2,z,B.PAVE); // 駅前広場(南北大通りの北端に接続)
+  // 並木(v70: 旧駅の撤去で[38,28]を復活)
+  [[7,28],[13,28],[19,28],[38,28],[44,28],[50,28],[56,28],[59,36],[7,35],[36,50],[38,58],[16,44],[28,44],[7,41],[60,41]].forEach(p=>normalTree(p[0],p[1]));
 }
 // 建物ヘルパ: 壁3段(y3-5)+窓(y4に水ガラス)+屋根(y6)+石畳の床
 function townBuilding(x0,x1,z0,z1,wallB,roofB,doors){
@@ -6137,22 +6138,22 @@ function buildTownDecor(){
   addSign(47.5,44.3,'🐂',{t:'🐂 セリ市場',b:'メス牛を預託制度で導入できるよ(担当: 勝さん)。牛代100万は現金が減らず借金に(初回手数料2%＝2万だけ支払い・預託残高に年利1.8%)。預託の上限は50頭で、借金を完済すると枠が空く。子牛はベース♀100万/♂120万+状態補正、8産後の親牛は50万+補正で売却。',btns:[['🐂 セリ(牛の売買)',()=>{menuTab='auction';openMenu();}]]});
   // v61: 東の大通りの突き当たり=「農場への道」(右の門をくぐると農場の橋のたもとへ)
   addSign(61,27.5,'🌉',{t:'🌉 農場への道(橋)',b:'東(右)の道を進むと🌾農場へ続く川の橋に出るよ。門をくぐると自動で農場へ帰る。',btns:[['🌾 農場へ帰る',()=>switchMap('farm')]]});
-  // v68: 🚄 丹波駅=新幹線で東京へ v69: 看板は駅舎の前(駅前広場)。駅舎・ホーム・線路はgenTown、車両とレールはこの下で装飾
-  addSign(35,29.4,'🚄',{t:'🚄 丹波駅(新幹線)',b:'赤レンガの駅舎の奥がホーム。新幹線で🗼<b>東京駅</b>へ行けるよ(駅→駅で発着)。東京には⚾野球場・🏢オフィス街・🛍モール・🚉東京駅・🍜高架下の飲食店街・🛎ホテルがあって、🐙たこ焼き/🍤天ぷら/🍣寿司/🥩焼肉の<b>飲食店を出店して経営</b>できる(帰りは東京駅の🚄看板から丹波駅へ)。',btns:[['🚄 東京へ行く(新幹線)',()=>switchMap('tokyo')],['🍴 飲食メニュー(保有店の管理)',()=>{menuTab='food';openMenu();}]]},2.0);
-  // v69: 丹波駅の停車中の新幹線ふうの車両(白い車体+青帯+先頭ノーズ)とレール2本(線路の砂利 z20-21 の上)
+  // v68: 🚄 丹波駅=新幹線で東京へ v70: 駅は街の北端へ移設。看板は駅舎の前(駅前広場)。駅舎・ホーム・線路はgenTown、車両とレールはこの下で装飾
+  addSign(33,10.5,'🚄',{t:'🚄 丹波駅(新幹線)',b:'赤レンガの駅舎の奥がホーム。新幹線で🗼<b>東京駅</b>へ行けるよ(駅→駅で発着)。東京には⚾野球場・🏢オフィス街・🛍モール・🚉東京駅・🍜高架下の飲食店街・🛎ホテルがあって、🐙たこ焼き/🍤天ぷら/🍣寿司/🥩焼肉の<b>飲食店を出店して経営</b>できる(帰りは東京駅の🚄看板から丹波駅へ)。',btns:[['🚄 東京へ行く(新幹線)',()=>switchMap('tokyo')],['🍴 飲食メニュー(保有店の管理)',()=>{menuTab='food';openMenu();}]]},2.0);
+  // v70: 丹波駅の停車中の新幹線ふうの車両(白い車体+青帯+先頭ノーズ)とレール2本(北端の線路砂利 z0-1 の上・両端は丘の中へ=場外へ抜ける見た目)
   (function(){
     const railM=new THREE.MeshLambertMaterial({color:0x777d86});
-    for(const rz of[20.35,21.15]){const r=new THREE.Mesh(new THREE.BoxGeometry(14.6,0.08,0.12),railM);r.position.set(39,3.04,rz);decoGroup.add(r);}
+    for(const rz of[0.35,1.15]){const r=new THREE.Mesh(new THREE.BoxGeometry(14.6,0.08,0.12),railM);r.position.set(33.5,3.04,rz);decoGroup.add(r);}
     const bodyM=new THREE.MeshLambertMaterial({color:0xf4f6f8});
-    const body=new THREE.Mesh(new THREE.BoxGeometry(10,1.25,1.5),bodyM);body.position.set(38.5,3.72,20.75);body.castShadow=true;decoGroup.add(body);
-    const stripe=new THREE.Mesh(new THREE.BoxGeometry(10.04,0.22,1.54),new THREE.MeshLambertMaterial({color:0x2a5aa8}));stripe.position.set(38.5,3.95,20.75);decoGroup.add(stripe);
-    for(const s of[-1,1]){const nose=new THREE.Mesh(new THREE.BoxGeometry(1.5,0.85,1.3),bodyM);nose.position.set(38.5+s*5.7,3.52,20.75);decoGroup.add(nose);}
+    const body=new THREE.Mesh(new THREE.BoxGeometry(10,1.25,1.5),bodyM);body.position.set(33,3.72,0.75);body.castShadow=true;decoGroup.add(body);
+    const stripe=new THREE.Mesh(new THREE.BoxGeometry(10.04,0.22,1.54),new THREE.MeshLambertMaterial({color:0x2a5aa8}));stripe.position.set(33,3.95,0.75);decoGroup.add(stripe);
+    for(const s of[-1,1]){const nose=new THREE.Mesh(new THREE.BoxGeometry(1.5,0.85,1.3),bodyM);nose.position.set(33+s*5.7,3.52,0.75);decoGroup.add(nose);}
     const winM=new THREE.MeshLambertMaterial({color:0x35485e});
-    for(let i=0;i<6;i++){const w=new THREE.Mesh(new THREE.BoxGeometry(0.7,0.34,0.06),winM);w.position.set(34.7+i*1.5,4.0,21.53);decoGroup.add(w);}
-    for(let x=33;x<=44;x+=1.6)addDecoCollider(x,20.75,0.9,3); // 車両はすり抜け不可
+    for(let i=0;i<6;i++){const w=new THREE.Mesh(new THREE.BoxGeometry(0.7,0.34,0.06),winM);w.position.set(29.2+i*1.5,4.0,1.53);decoGroup.add(w);}
+    for(let x=28;x<=38;x+=1.6)addDecoCollider(x,0.75,0.9,3); // 車両はすり抜け不可
   })();
-  // 街灯(大通り沿い)
-  [[9,29.2],[17,29.2],[25,29.2],[31,29.2],[46,29.2],[54,29.2],[30.2,12],[30.2,20],[30.2,40],[30.2,48],[30.2,56],[35.8,50],[45,43.2],[22,34.8]].forEach(p=>townLamp(p[0],p[1])); // v69: [38,29.2]は丹波駅の駅舎の出入口の正面なので東へ移動
+  // 街灯(大通り沿い) v70: 旧駅撤去で[38,29.2]を復活。[30.2,12]は新駅前広場の西端(通路x31-34は塞がない)
+  [[9,29.2],[17,29.2],[25,29.2],[31,29.2],[38,29.2],[46,29.2],[54,29.2],[30.2,12],[30.2,20],[30.2,40],[30.2,48],[30.2,56],[35.8,50],[45,43.2],[22,34.8]].forEach(p=>townLamp(p[0],p[1]));
   // 広場のベンチ
   townBench(22.5,22.2,0);townBench(29.2,25.5,Math.PI/2);townBench(22.5,27.8,Math.PI);
   // セリ市場の展示牛(飾り)
@@ -6168,7 +6169,7 @@ function areaNameTown(x,z){
   if(x>=38&&x<=46&&z>=36&&z<=42)return'🚜 農協';
   if(x>=8&&x<=14&&z>=22&&z<=27)return'🔧 修理屋';
   if(x>=44&&x<=56&&z>=44&&z<=58)return'🐂 セリ市場';
-  if(x>=32&&x<=46&&z>=19.5&&z<=29.5)return'🚄 丹波駅'; // v69
+  if(x>=27&&x<=39&&z>=0&&z<=12)return'🚄 丹波駅'; // v70: 街の北端へ移設
   if(x>=21&&x<=30&&z>=21&&z<=29)return'⛲ 中央広場';
   if(x>=57&&z>=29&&z<=34)return'🌉 農場への道(橋)'; // v61: 東の門
   if((z>=30&&z<=33)||(x>=31&&x<=34))return'🛣 大通り';
@@ -6178,8 +6179,8 @@ function areaNameTown(x,z){
 // ========== v68: 東京マップ＋飲食店経営 ==========
 // 🚄 丹波の街の駅の看板⇄東京駅の看板で行き来(mapBtnは丹波へ帰る保険)。
 // 区画: ⚾野球場(x5-31,z5-29)/🏢オフィス街(x48-73,z5-29)/🍜高架下の飲食店街(x34-64,z34-42)/
-//       🛍モール(x8-30,z46-66)/🚉東京駅(x40-60,z54-70)/🛎ホテル(x64-74,z46-58)
-const TOKYO_SPAWN={x:46.5,z:55.5}; // 東京駅の駅前広場に着地
+//       🛍モール(x8-30,z46-66)/🚉東京駅(x64-77,z33-43=高架線の東端)/🛎ホテル(x64-74,z46-58)
+const TOKYO_SPAWN={x:70,z:38}; // v70: 東京駅のホーム(高架下通路の東端)に着地
 // 料理データ(月商・原価率・必要社員・出店費用)
 const CUISINE={
   takoyaki:{name:'たこ焼き屋',em:'🐙',sales: 8000000,cogs:0.25,staff:2,setup:30000000},
@@ -6348,8 +6349,7 @@ function genTokyo(){
   const road=(x0,x1,z0,z1)=>{for(let x=x0;x<=x1;x++)for(let z=z0;z<=z1;z++)gset(x,2,z,B.PATH);};
   road(3,74,31,33);   // 大通り(東西・北)
   road(3,74,43,45);   // 大通り(東西・南)
-  road(35,37,3,74);   // 大通り(南北)
-  road(49,51,46,53);  // 駅への道
+  road(35,37,3,74);   // 大通り(南北) v70: 旧「駅への道」(49-51,z46-53)は東京駅の東端移設で廃止
   // ⚾ 野球場(x5-31,z5-29): 楕円の観客席リング+緑のフィールド+ダイヤモンド
   const scx=18,scz=17;
   for(let x=5;x<=31;x++)for(let z=5;z<=29;z++){
@@ -6381,13 +6381,12 @@ function genTokyo(){
   for(let x=34;x<=64;x+=5)for(const z of[36,40])for(let y=3;y<=7;y++)gset(x,y,z,B.STONE); // 柱
   for(let x=34;x<=64;x++)for(let z=36;z<=40;z++)gset(x,8,z,B.STONE); // 高架のデッキ
   for(let x=34;x<=64;x++){gset(x,9,36,B.BRICK);gset(x,9,40,B.BRICK);} // 欄干
-  // v69: 高架を東京駅(z58)まで南へ延伸(x47-53)=🍜高架下と🚉東京駅を直結。
-  //      真下(x49-51)は地上通路(PATH)で、柱の間をくぐって駅⇄高架下を直行できる
-  for(let x=49;x<=51;x++)for(let z=41;z<=45;z++)gset(x,2,z,B.PATH); // 高架下→既存の駅への道(z46-53)へつなぐ地上通路
-  for(const cz of[42,46,50,54])for(const cx of[47,53])for(let y=3;y<=7;y++)gset(cx,y,cz,B.STONE); // 延伸部の柱(通路と大通りは塞がない)
-  for(let x=47;x<=53;x++)for(let z=41;z<=58;z++)gset(x,8,z,B.STONE); // 延伸デッキ(既存の高架z40から駅舎の北壁z58まで連続)
-  for(let z=41;z<=58;z++){gset(47,9,z,B.BRICK);gset(53,9,z,B.BRICK);} // 延伸部の欄干
-  for(let x=48;x<=52;x++)gset(x,9,40,0); // 合流部(高架の南の欄干)を開けて線路がつながる見た目に
+  // v70: 高架を東端(x77=map外)へ延伸=線路が東の場外へ抜け、その東端に🚉東京駅が乗る(駅を出て西へ歩けばそのまま高架下)
+  for(let x=64;x<=77;x++)for(let z=32;z<=44;z++){for(let y=3;y<=WH;y++)gset(x,y,z,0);gset(x,2,z,B.PAVE);} // 東の丘を平坦化
+  for(let x=64;x<=77;x++)for(let z=36;z<=40;z++)gset(x,8,z,B.STONE); // デッキ延長(map東端まで)
+  for(const cx of[64,69,74])for(const cz of[36,40])for(let y=3;y<=7;y++)gset(cx,y,cz,B.STONE); // 延伸部の柱(x64は平坦化で消えた既存柱の再設置)
+  for(let x=64;x<=76;x++){gset(x,9,36,B.BRICK);gset(x,9,40,B.BRICK);} // 延伸部の欄干
+  for(let x=34;x<=76;x++)for(let z=37;z<=39;z++)gset(x,2,z,B.PATH); // 高架の真下の地上通路(東京駅⇄高架下を東西に直行。柱の間を歩ける)
   // 🛍 ショッピングモール(x8-30,z46-66): 横長の大箱+カラフルなファサード+北の入口
   for(let x=9;x<=29;x++)for(let z=48;z<=64;z++){
     gset(x,2,z,B.PAVE);
@@ -6398,27 +6397,25 @@ function genTokyo(){
     }
   }
   for(const dx of[18,19,20]){gset(dx,3,48,0);gset(dx,4,48,0);} // 入口(北)
-  // 🚉 東京駅(x40-60,z58-69): 赤レンガの長い駅舎+白い帯+中央ドーム。北は駅前広場
-  for(let x=40;x<=60;x++)for(let z=54;z<=57;z++)gset(x,2,z,B.PAVE); // 駅前広場
-  for(let x=40;x<=60;x++)for(let z=58;z<=69;z++){
-    gset(x,2,z,B.PAVE);
-    if(x===40||x===60||z===58||z===69){
+  // v70: 🚉 東京駅(x66-76,z33-43): 高架線の東端に赤レンガ駅舎。高架デッキ(y8)が駅の上を貫き、線路はそのままmap東端の場外へ。
+  //      西壁x66のz37-39は開口=改札。出て西へ歩けば高架の真下の通路で🍜高架下の飲食店街に直行(旧駅x40-60,z54-69は撤去=生成しない)
+  for(let x=66;x<=76;x++)for(let z=33;z<=43;z++){
+    if(x===66||x===76||z===33||z===43){
+      if(x===66&&z>=37&&z<=39){gset(x,6,z,B.WHITE);continue;} // 西の開口(高架下側への出入口。y6は白帯のまぐさ)
       for(let y=3;y<=5;y++)gset(x,y,z,B.BRICK);
-      const corner=(x===40||x===60)&&(z===58||z===69);
-      if(!corner&&((z===58||z===69)?x%2===0:z%2===0))gset(x,4,z,B.WATER); // 窓
+      const corner=(x===66||x===76)&&(z===33||z===43);
+      if(!corner&&((z===33||z===43)?x%2===0:z%2===0))gset(x,4,z,B.WATER); // 窓
       gset(x,6,z,B.WHITE); // 白い帯
     }
   }
-  for(let x=47;x<=53;x++)for(let z=61;z<=66;z++)if(x===47||x===53||z===61||z===66)for(let y=3;y<=7;y++)gset(x,y,z,B.BRICK); // 中央タワー
-  for(let x=47;x<=53;x++)for(let z=61;z<=66;z++)gset(x,8,z,B.BROOF); // ドーム(3段)
-  for(let x=48;x<=52;x++)for(let z=62;z<=65;z++)gset(x,9,z,B.BROOF);
-  for(let x=49;x<=51;x++)for(let z=63;z<=64;z++)gset(x,10,z,B.BROOF);
-  for(const dx of[44,45,49,50,51,55,56]){gset(dx,3,58,0);gset(dx,4,58,0);} // 入口(北・広場側)
+  for(const p of[[69,35],[73,35],[69,41],[73,41]]){for(let y=3;y<=6;y++)gset(p[0],y,p[1],B.BRICK);gset(p[0],7,p[1],B.BROOF);} // 駅中央の低い小塔4本(ホームz37-39は塞がない)
+  // ホーム(着地面)は x67-75,z37-39 の地上PATH(上の高架下通路と共通)
+  // v70: 旧駅の跡地(中央 z46-72)はPAVE広場+並木(モールとホテルは既存のまま)
   // 🛎 ホテル(x64-74,z46-58): 高層1棟
   tower(66,73,48,56,16,B.WHITE);
   for(const dx of[69,70]){gset(dx,3,48,0);gset(dx,4,48,0);} // 玄関
-  // 並木(大通り沿い)
-  [[6,30],[14,30],[26,30],[42,30],[58,30],[66,30],[6,46],[14,46],[26,46],[56,46],[62,46],[33,50],[33,60],[33,70],[39,50],[72,30]].forEach(p=>normalTree(p[0],p[1]));
+  // 並木(大通り沿い) v70: 旧東京駅の跡地(中央南側)にも並木を数本(PAVE広場化)
+  [[6,30],[14,30],[26,30],[42,30],[58,30],[66,30],[6,46],[14,46],[26,46],[56,46],[62,46],[33,50],[33,60],[33,70],[39,50],[72,30],[44,52],[56,52],[50,58],[44,64],[56,64],[50,68]].forEach(p=>normalTree(p[0],p[1]));
 }
 // 東京の装飾(区画の看板・スロット看板・街灯・ベンチ・高架下のブース・群衆)
 function buildTokyoDecor(){
@@ -6429,9 +6426,9 @@ function buildTokyoDecor(){
   addSign(19,47,'🛍',{t:'🛍 ショッピングモール',b:'カラフルな横長の大型モール。中の<b>フードコート</b>に出店スロットが1ヶ所あるよ(北の入口から入れる)。',btns:[['🍴 飲食メニューを開く',()=>{menuTab='food';openMenu();}]]},1.8);
   addSign(34,42.5,'🍜',{t:'🍜 高架下の飲食店街',b:'線路の高架下に小さな飲食ブースが並ぶ、東京出店の主戦場(通常出店スロット×5)。<br>通常出店: 出店費用は料理ごと(3000万〜6000万)・家賃 月'+man(ECON.REST_RENT)+'・広告3%・手数料3%。',btns:[['🍴 飲食メニューを開く',()=>{menuTab='food';openMenu();}]]},1.8);
   addSign(65.5,47,'🛎',{t:'🛎 ホテル',b:'高層ホテル。1階に出店スロットが1ヶ所(宿泊客でにぎわう)。',btns:[['🍴 飲食メニューを開く',()=>{menuTab='food';openMenu();}]]},1.6);
-  addSign(44,57,'🚉',{t:'🚉 東京駅',b:'赤レンガの東京の玄関口。🚄の看板から新幹線で丹波駅へ帰れるよ。駅から北へ伸びる高架の真下の通路を歩くと、そのまま🍜高架下の飲食店街に直行できるよ。'},1.6);
-  // 🚄 丹波へ帰る(駅前広場)
-  addSign(50.5,55.5,'🚄',{t:'🚄 新幹線のりば(東京駅)',b:'新幹線に乗って🏘丹波の街へ帰るよ(農場へはさらに街の東の門から)。',btns:[['🚄 丹波へ帰る(新幹線)',()=>switchMap('town')]]},2.0);
+  addSign(67,34.5,'🚉',{t:'🚉 東京駅',b:'東京の玄関口。高架下(飲食店街)の東の端にあるよ。改札を出て西へ歩けば、そのまま🍜高架下の飲食店街に直行できる。🚄の看板から新幹線で丹波駅へ帰れる。'},1.6);
+  // 🚄 丹波へ帰る(東京駅のホーム) v70: 駅は高架線の東端へ移設
+  addSign(70,38.5,'🚄',{t:'🚄 新幹線のりば(東京駅)',b:'新幹線で🏘丹波駅へ帰るよ(農場へはさらに丹波の街の東の門から)。',btns:[['🚄 丹波へ帰る(新幹線)',()=>switchMap('town')]]},2.0);
   // 高架下のブース(カウンター+赤いひさし+ちょうちん)
   for(const s of TOKYO_SLOTS){
     if(!s.id.startsWith('g'))continue;
@@ -6444,13 +6441,13 @@ function buildTokyoDecor(){
   [[17,55],[22,55],[17,61],[22,61]].forEach(p=>{tiBox(p[0],p[1],1.0,0.75,1.0,0xf2ede2);addDecoCollider(p[0],p[1],0.6,3);});
   // ホテルのロビーカウンター(玄関前)
   tiBox(69.5,46.8,2.2,0.95,0.7,0x8a6a3a);
-  // 街灯(大通り・駅前・高架下)
+  // 街灯(大通り・駅前・高架下) v70: 旧駅前(z53.6)の2本を新しい東京駅前(西の改札の両脇)へ移設
   [[8,30.2],[16,30.2],[24,30.2],[40,30.2],[48,30.2],[56,30.2],[64,30.2],[72,30.2],
    [8,46],[20,46],[30,46],[58,46],[72,46],
    [34.2,8],[34.2,16],[34.2,24],[38.8,52],[34.2,60],[34.2,68],
-   [42,53.6],[58,53.6],[39,42],[59,42]].forEach(p=>townLamp(p[0],p[1]));
-  // ベンチ(駅前広場・球場ゲート・モール前)
-  townBench(44,55,0);townBench(56,55,0);townBench(14,28.4,0);townBench(22,28.4,0);townBench(24,46.8,0);
+   [65,35],[65,41],[39,42],[59,42]].forEach(p=>townLamp(p[0],p[1]));
+  // ベンチ(球場ゲート・モール前) v70: 旧駅前広場の2脚は新しい東京駅前(高架下通路の脇)へ移設
+  townBench(64.5,34.4,0);townBench(64.5,41.6,Math.PI);townBench(14,28.4,0);townBench(22,28.4,0);townBench(24,46.8,0);
   // 出店スロットの看板(空き=🍴/出店済み=料理の絵文字で出し分け)
   buildTokyoSlotSigns();
   // 大勢の歩く人(軽量ボックス人間の群衆)
@@ -6463,7 +6460,7 @@ function areaNameTokyo(x,z){
   if(x>=34&&x<=64&&z>=34&&z<=42)return'🍜 高架下の飲食店街';
   if(x>=8&&x<=30&&z>=46&&z<=66)return'🛍 ショッピングモール';
   if(x>=64&&x<=74&&z>=46&&z<=58)return'🛎 ホテル';
-  if(x>=40&&x<=60&&z>=54&&z<=70)return'🚉 東京駅';
+  if(x>=64&&x<=77&&z>=33&&z<=43)return'🚉 東京駅'; // v70: 高架線の東端へ移設
   if((z>=31&&z<=33)||(z>=43&&z<=45)||(x>=35&&x<=37))return'🛣 大通り';
   return'🗼 東京';
 }
@@ -6475,8 +6472,8 @@ const TOKYO_ROUTES=[ // 道(PATH)沿いの巡回ルート(往復 or 周回)
   [[36,4],[36,73]],           // 南北の大通り(高架下をくぐる)
   [[4,44],[74,44]],           // 南の大通り(東西)
   [[36,32],[70,32],[70,44],[36,44]], // オフィス街〜高架下の周回
-  [[41,55.5],[59,55.5]],      // 駅前広場
-  [[50,46.5],[50,55]],        // 駅への道
+  [[36,38],[75,38]],          // v70: 高架の真下の通路(東京駅⇔高架下の東西往来)
+  [[64,35],[64,43]],          // v70: 東京駅前の南北
   [[18,29.5],[18,21]],        // 球場ゲート〜内野
   [[10,44],[32,44],[19.5,46.8]], // モール前
 ];
@@ -6624,8 +6621,8 @@ function switchMap(target){
     let sp,yaw=null;
     if(from==='farm'&&target==='town'){sp={x:61.0,z:31.5};yaw=-Math.PI/2;}      // 農場の西端→街の東端(門のすぐ内側)・西向き
     else if(from==='town'&&target==='farm'){sp={x:4.5,z:22.0};yaw=Math.PI/2;}   // 街の東の門→農場の西端(中央橋の上)・東向き
-    else if(from==='tokyo'&&target==='town'){sp={x:37.5,z:22.5};yaw=0;}         // 東京駅→🚄丹波駅のホーム・南向き(駅舎を抜けて大通りへ)
-    else if(target==='tokyo'){sp=TOKYO_SPAWN;yaw=Math.PI;}                      // 丹波駅→🚉東京駅の駅前広場・北向き(高架下/街の中心へ)
+    else if(from==='tokyo'&&target==='town'){sp={x:33,z:4};yaw=0;}              // v70: 東京駅→🚄丹波駅(北端)のホーム・南向き(駅舎を抜けて街の中心へ)
+    else if(target==='tokyo'){sp=TOKYO_SPAWN;yaw=-Math.PI/2;}                   // v70: 丹波駅→🚉東京駅(東端)のホーム・西向き(改札を出て高架下方面へ)
     else sp=target==='town'?TOWN_SPAWN:FARM_SPAWN;                              // その他(保険)は従来の着地
     player.x=sp.x;player.z=sp.z;
     if(walkY(Math.floor(player.x),Math.floor(player.z),WH)>WH){ // 保険
@@ -6634,7 +6631,8 @@ function switchMap(target){
       else{player.x=27.5;player.z=34.5;}
     }
     if(yaw!==null)camYaw=yaw; // v69: 着地の向き=マップの内側(進行方向が続く感覚)
-    player.y=topY(Math.floor(player.x),Math.floor(player.z))+1;player.vy=0;player.onGround=true;
+    const gLand=walkY(Math.floor(player.x),Math.floor(player.z),3.2); // v70: 東京駅ホームは高架デッキ(y8)の真下=topYだとデッキの上に乗ってしまうので、一番下の歩ける床に着地
+    player.y=(gLand<=WH)?gLand:topY(Math.floor(player.x),Math.floor(player.z))+1;player.vy=0;player.onGround=true;
     camera.position.set(player.x-Math.sin(camYaw)*8,player.y+6,player.z-Math.cos(camYaw)*8);
     toast(target==='town'?'🏘 丹波の街に着いた！役場・銀行・農協・修理屋・セリ市場・不動産屋があるよ'
       :(target==='tokyo'?'🗼 東京に着いた！⚾野球場・🍜高架下・🛍モール・🛎ホテルに🍴飲食店を出店できるよ(帰りは東京駅の🚄看板)'
