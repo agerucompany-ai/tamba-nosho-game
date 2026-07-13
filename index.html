@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v68: 東京マップ＋飲食店経営 — ⚾野球場/🏢オフィス街/🛍モール/🚉東京駅/🍜高架下の飲食店街/🏨ホテルを新設。🐙たこ焼き/🍤天ぷら/🍣寿司/🥩焼肉を出店経営(月商1000万・家賃100万・原価率と社員数を料理別に設定)。⚾球場出店は出店300万・家賃なし・売上40%を球場へ。人が大勢歩く街</title>
+<title>丹波農商 牧場物語 v69: 移動を地続きに — 農場⇄街は端と端で接続着地、🚄丹波駅を新設して新幹線は駅→駅で発着、🍜高架下と🚉東京駅を高架+地上通路で直結。ホテルの絵文字を🛎に変更、東京の群衆をチビで可愛いボクセル人間(目・腕・2本脚の歩き)に一新、飲食のバイト人件費率15%→10%で🥩焼肉の赤字解消</title>
 <link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -716,7 +716,7 @@ const ECON={
   // ---- v68: 東京の飲食店経営 ----
   REST_RENT:1000000,         // 通常出店の家賃(月・球場出店はゼロ)
   REST_STAFF_SAL:400000,     // 飲食の社員1人の月給
-  REST_PART_RATE:0.15,       // アルバイト人件費(売上比・全店)
+  REST_PART_RATE:0.10,       // アルバイト人件費(売上比・全店) v69: 0.15→0.10(🥩焼肉の通常出店が赤字だったため全店一律で引き下げ)
   REST_UTIL_RATE:0.02,       // 水道光熱費(売上比・全店)
   REST_AD_RATE:0.03,         // 広告宣伝費(売上比・通常のみ)
   REST_FEE_RATE:0.03,        // 支払手数料(売上比・通常のみ)
@@ -6021,8 +6021,14 @@ function genTown(){
   for(let x=63;x<=66;x++)for(let z=30;z<=33;z++)gset(x,2,z,B.PATH); // 道を東へ延長
   for(let y=3;y<=5;y++){gset(63,y,29,B.WOOD);gset(63,y,34,B.WOOD);} // 門柱
   for(let z=29;z<=34;z++)gset(63,6,z,B.PLANK); // 門の梁
-  // 並木
-  [[7,28],[13,28],[19,28],[38,28],[44,28],[50,28],[56,28],[59,36],[7,35],[36,50],[38,58],[16,44],[28,44],[7,41],[60,41]].forEach(p=>normalTree(p[0],p[1]));
+  // v69: 🚄 丹波駅(大通りの北側 x33-43)。駅前広場+赤レンガ駅舎(南北に通り抜け)+1段高いホーム+線路の砂利敷き。
+  //      東京と「駅→駅」で行き来する導線(新幹線の車両とレールは buildTownDecor で装飾)
+  for(let x=33;x<=43;x++)for(let z=28;z<=29;z++)gset(x,2,z,B.PAVE); // 駅前広場(大通りz30に接続)
+  for(let x=32;x<=46;x++)for(let z=20;z<=21;z++)gset(x,2,z,B.STONE); // 線路の砂利敷き
+  for(let x=33;x<=43;x++)for(let z=22;z<=23;z++){gset(x,2,z,B.PAVE);gset(x,3,z,B.PAVE);} // ホーム(1段高い・東京からの着地点)
+  townBuilding(33,43,24,27,B.BRICK,B.BROOF,[[36,27],[37,27],[38,27],[39,27],[36,24],[37,24],[38,24],[39,24]]); // 赤レンガ駅舎(広場⇄ホームを通り抜け)
+  // 並木(v69: [38,28]は丹波駅の駅前広場と重なるため撤去)
+  [[7,28],[13,28],[19,28],[44,28],[50,28],[56,28],[59,36],[7,35],[36,50],[38,58],[16,44],[28,44],[7,41],[60,41]].forEach(p=>normalTree(p[0],p[1]));
 }
 // 建物ヘルパ: 壁3段(y3-5)+窓(y4に水ガラス)+屋根(y6)+石畳の床
 function townBuilding(x0,x1,z0,z1,wallB,roofB,doors){
@@ -6131,10 +6137,22 @@ function buildTownDecor(){
   addSign(47.5,44.3,'🐂',{t:'🐂 セリ市場',b:'メス牛を預託制度で導入できるよ(担当: 勝さん)。牛代100万は現金が減らず借金に(初回手数料2%＝2万だけ支払い・預託残高に年利1.8%)。預託の上限は50頭で、借金を完済すると枠が空く。子牛はベース♀100万/♂120万+状態補正、8産後の親牛は50万+補正で売却。',btns:[['🐂 セリ(牛の売買)',()=>{menuTab='auction';openMenu();}]]});
   // v61: 東の大通りの突き当たり=「農場への道」(右の門をくぐると農場の橋のたもとへ)
   addSign(61,27.5,'🌉',{t:'🌉 農場への道(橋)',b:'東(右)の道を進むと🌾農場へ続く川の橋に出るよ。門をくぐると自動で農場へ帰る。',btns:[['🌾 農場へ帰る',()=>switchMap('farm')]]});
-  // v68: 🚄 丹波駅(大通り沿い)=新幹線で東京へ
-  addSign(35,29.4,'🚄',{t:'🚄 丹波駅(新幹線)',b:'新幹線で🗼<b>東京</b>へ行けるよ。東京には⚾野球場・🏢オフィス街・🛍モール・🚉東京駅・🍜高架下の飲食店街・🏨ホテルがあって、🐙たこ焼き/🍤天ぷら/🍣寿司/🥩焼肉の<b>飲食店を出店して経営</b>できる(帰りは東京駅の🚄看板から)。',btns:[['🚄 東京へ行く(新幹線)',()=>switchMap('tokyo')],['🍴 飲食メニュー(保有店の管理)',()=>{menuTab='food';openMenu();}]]},2.0);
+  // v68: 🚄 丹波駅=新幹線で東京へ v69: 看板は駅舎の前(駅前広場)。駅舎・ホーム・線路はgenTown、車両とレールはこの下で装飾
+  addSign(35,29.4,'🚄',{t:'🚄 丹波駅(新幹線)',b:'赤レンガの駅舎の奥がホーム。新幹線で🗼<b>東京駅</b>へ行けるよ(駅→駅で発着)。東京には⚾野球場・🏢オフィス街・🛍モール・🚉東京駅・🍜高架下の飲食店街・🛎ホテルがあって、🐙たこ焼き/🍤天ぷら/🍣寿司/🥩焼肉の<b>飲食店を出店して経営</b>できる(帰りは東京駅の🚄看板から丹波駅へ)。',btns:[['🚄 東京へ行く(新幹線)',()=>switchMap('tokyo')],['🍴 飲食メニュー(保有店の管理)',()=>{menuTab='food';openMenu();}]]},2.0);
+  // v69: 丹波駅の停車中の新幹線ふうの車両(白い車体+青帯+先頭ノーズ)とレール2本(線路の砂利 z20-21 の上)
+  (function(){
+    const railM=new THREE.MeshLambertMaterial({color:0x777d86});
+    for(const rz of[20.35,21.15]){const r=new THREE.Mesh(new THREE.BoxGeometry(14.6,0.08,0.12),railM);r.position.set(39,3.04,rz);decoGroup.add(r);}
+    const bodyM=new THREE.MeshLambertMaterial({color:0xf4f6f8});
+    const body=new THREE.Mesh(new THREE.BoxGeometry(10,1.25,1.5),bodyM);body.position.set(38.5,3.72,20.75);body.castShadow=true;decoGroup.add(body);
+    const stripe=new THREE.Mesh(new THREE.BoxGeometry(10.04,0.22,1.54),new THREE.MeshLambertMaterial({color:0x2a5aa8}));stripe.position.set(38.5,3.95,20.75);decoGroup.add(stripe);
+    for(const s of[-1,1]){const nose=new THREE.Mesh(new THREE.BoxGeometry(1.5,0.85,1.3),bodyM);nose.position.set(38.5+s*5.7,3.52,20.75);decoGroup.add(nose);}
+    const winM=new THREE.MeshLambertMaterial({color:0x35485e});
+    for(let i=0;i<6;i++){const w=new THREE.Mesh(new THREE.BoxGeometry(0.7,0.34,0.06),winM);w.position.set(34.7+i*1.5,4.0,21.53);decoGroup.add(w);}
+    for(let x=33;x<=44;x+=1.6)addDecoCollider(x,20.75,0.9,3); // 車両はすり抜け不可
+  })();
   // 街灯(大通り沿い)
-  [[9,29.2],[17,29.2],[25,29.2],[38,29.2],[46,29.2],[54,29.2],[30.2,12],[30.2,20],[30.2,40],[30.2,48],[30.2,56],[35.8,50],[45,43.2],[22,34.8]].forEach(p=>townLamp(p[0],p[1]));
+  [[9,29.2],[17,29.2],[25,29.2],[31,29.2],[46,29.2],[54,29.2],[30.2,12],[30.2,20],[30.2,40],[30.2,48],[30.2,56],[35.8,50],[45,43.2],[22,34.8]].forEach(p=>townLamp(p[0],p[1])); // v69: [38,29.2]は丹波駅の駅舎の出入口の正面なので東へ移動
   // 広場のベンチ
   townBench(22.5,22.2,0);townBench(29.2,25.5,Math.PI/2);townBench(22.5,27.8,Math.PI);
   // セリ市場の展示牛(飾り)
@@ -6150,6 +6168,7 @@ function areaNameTown(x,z){
   if(x>=38&&x<=46&&z>=36&&z<=42)return'🚜 農協';
   if(x>=8&&x<=14&&z>=22&&z<=27)return'🔧 修理屋';
   if(x>=44&&x<=56&&z>=44&&z<=58)return'🐂 セリ市場';
+  if(x>=32&&x<=46&&z>=19.5&&z<=29.5)return'🚄 丹波駅'; // v69
   if(x>=21&&x<=30&&z>=21&&z<=29)return'⛲ 中央広場';
   if(x>=57&&z>=29&&z<=34)return'🌉 農場への道(橋)'; // v61: 東の門
   if((z>=30&&z<=33)||(x>=31&&x<=34))return'🛣 大通り';
@@ -6159,7 +6178,7 @@ function areaNameTown(x,z){
 // ========== v68: 東京マップ＋飲食店経営 ==========
 // 🚄 丹波の街の駅の看板⇄東京駅の看板で行き来(mapBtnは丹波へ帰る保険)。
 // 区画: ⚾野球場(x5-31,z5-29)/🏢オフィス街(x48-73,z5-29)/🍜高架下の飲食店街(x34-64,z34-42)/
-//       🛍モール(x8-30,z46-66)/🚉東京駅(x40-60,z54-70)/🏨ホテル(x64-74,z46-58)
+//       🛍モール(x8-30,z46-66)/🚉東京駅(x40-60,z54-70)/🛎ホテル(x64-74,z46-58)
 const TOKYO_SPAWN={x:46.5,z:55.5}; // 東京駅の駅前広場に着地
 // 料理データ(月商・原価率・必要社員・出店費用)
 const CUISINE={
@@ -6179,12 +6198,12 @@ const TOKYO_SLOTS=[
   {id:'g4',   x:56.5,z:41.3,venue:'normal', n:'🍜 高架下4号'},
   {id:'g5',   x:61.5,z:41.3,venue:'normal', n:'🍜 高架下5号'},
   {id:'mall1',x:19.5,z:58,  venue:'normal', n:'🛍 モール・フードコート'},
-  {id:'hotel1',x:64.5,z:52.5,venue:'normal',n:'🏨 ホテル1階'},
+  {id:'hotel1',x:64.5,z:52.5,venue:'normal',n:'🛎 ホテル1階'},
 ];
 function slotOf(id){return TOKYO_SLOTS.find(s=>s.id===id);}
 function restAt(slotId){return (state&&state.restaurants||[]).find(r=>r.slot===slotId);}
 function restSetupCost(type,venue){return venue==='stadium'?ECON.REST_STADIUM_SETUP:CUISINE[type].setup;}
-// 月次P&L(仕様の式そのまま): 売上−原価−バイト15%−社員40万×人数−光熱2%−家賃−広告3%−手数料3%−球場40%
+// 月次P&L(仕様の式そのまま): 売上−原価−バイト10%−社員40万×人数−光熱2%−家賃−広告3%−手数料3%−球場40%
 function computeRestaurantPL(shop){
   const cu=CUISINE[shop.type],S=cu.sales;
   const cogs=S*cu.cogs,part=S*ECON.REST_PART_RATE,staff=cu.staff*ECON.REST_STAFF_SAL,util=S*ECON.REST_UTIL_RATE;
@@ -6263,7 +6282,7 @@ function foodHTML(){
   h+='<table class="fs"><tr class="hd"><td>料理</td><td class="amt">月商 / 原価率 / 社員 / 出店費用</td></tr>';
   for(const k in CUISINE){const c=CUISINE[k];h+='<tr><td>'+c.em+' '+c.name+'</td><td class="amt">'+man(c.sales)+' / '+Math.round(c.cogs*100)+'% / '+c.staff+'人 / '+man(c.setup)+'</td></tr>';}
   h+='</table>';
-  h+='<p style="font-size:11.5px;color:#8a6a45">共通コスト: バイト人件費=売上15%・社員 月'+man(ECON.REST_STAFF_SAL)+'/人・水道光熱=売上2%。通常出店はさらに家賃 月'+man(ECON.REST_RENT)+'・広告3%・手数料3%。⚾球場出店は出店一律'+man(ECON.REST_STADIUM_SETUP)+'・家賃/広告/手数料なしのかわり<b>売上の40%を球場へ</b>。</p>';
+  h+='<p style="font-size:11.5px;color:#8a6a45">共通コスト: バイト人件費=売上10%・社員 月'+man(ECON.REST_STAFF_SAL)+'/人・水道光熱=売上2%。通常出店はさらに家賃 月'+man(ECON.REST_RENT)+'・広告3%・手数料3%。⚾球場出店は出店一律'+man(ECON.REST_STADIUM_SETUP)+'・家賃/広告/手数料なしのかわり<b>売上の40%を球場へ</b>。</p>';
   if(curMap==='tokyo'){
     let ns=null,nd=1e9;
     for(const s of TOKYO_SLOTS){const d=Math.hypot(s.x-player.x,s.z-player.z);if(d<nd){nd=d;ns=s;}}
@@ -6274,7 +6293,7 @@ function foodHTML(){
         h+='<div class="row"><div class="em">'+c.em+'</div><div class="info"><b>'+c.name+'</b><small>出店'+man(setup)+'・月商'+man(c.sales)+' → 見込み月次利益 <span class="'+(pl.profit>=0?'prof':'loss')+'">'+(pl.profit>=0?'+':'−')+man(Math.abs(pl.profit))+'</span></small></div><button class="buy orange" '+(state.money>=setup?'':'disabled')+' onclick="confirmOpenRestaurant(\''+k+'\',\''+ns.id+'\')">出店</button></div>';
       }
     }else if(ns&&nd<7)h+='<p style="margin-top:8px">📍 いまの場所「'+ns.n+'」は出店済みだよ(下の一覧から閉店できる)。</p>';
-    else h+='<p style="font-size:12px;color:#8a6a45;margin-top:8px">📍 空きスロット(🍴の看板: ⚾球場の中・🍜高架下・🛍モール・🏨ホテル)に近づくと、ここから出店できるよ。</p>';
+    else h+='<p style="font-size:12px;color:#8a6a45;margin-top:8px">📍 空きスロット(🍴の看板: ⚾球場の中・🍜高架下・🛍モール・🛎ホテル)に近づくと、ここから出店できるよ。</p>';
   }else{
     h+='<p style="font-size:12px;color:#8a6a45;margin-top:8px">🚄 出店するにはまず東京へ(丹波の街の大通り・駅の🚄看板から新幹線)。</p>';
   }
@@ -6362,6 +6381,13 @@ function genTokyo(){
   for(let x=34;x<=64;x+=5)for(const z of[36,40])for(let y=3;y<=7;y++)gset(x,y,z,B.STONE); // 柱
   for(let x=34;x<=64;x++)for(let z=36;z<=40;z++)gset(x,8,z,B.STONE); // 高架のデッキ
   for(let x=34;x<=64;x++){gset(x,9,36,B.BRICK);gset(x,9,40,B.BRICK);} // 欄干
+  // v69: 高架を東京駅(z58)まで南へ延伸(x47-53)=🍜高架下と🚉東京駅を直結。
+  //      真下(x49-51)は地上通路(PATH)で、柱の間をくぐって駅⇄高架下を直行できる
+  for(let x=49;x<=51;x++)for(let z=41;z<=45;z++)gset(x,2,z,B.PATH); // 高架下→既存の駅への道(z46-53)へつなぐ地上通路
+  for(const cz of[42,46,50,54])for(const cx of[47,53])for(let y=3;y<=7;y++)gset(cx,y,cz,B.STONE); // 延伸部の柱(通路と大通りは塞がない)
+  for(let x=47;x<=53;x++)for(let z=41;z<=58;z++)gset(x,8,z,B.STONE); // 延伸デッキ(既存の高架z40から駅舎の北壁z58まで連続)
+  for(let z=41;z<=58;z++){gset(47,9,z,B.BRICK);gset(53,9,z,B.BRICK);} // 延伸部の欄干
+  for(let x=48;x<=52;x++)gset(x,9,40,0); // 合流部(高架の南の欄干)を開けて線路がつながる見た目に
   // 🛍 ショッピングモール(x8-30,z46-66): 横長の大箱+カラフルなファサード+北の入口
   for(let x=9;x<=29;x++)for(let z=48;z<=64;z++){
     gset(x,2,z,B.PAVE);
@@ -6388,7 +6414,7 @@ function genTokyo(){
   for(let x=48;x<=52;x++)for(let z=62;z<=65;z++)gset(x,9,z,B.BROOF);
   for(let x=49;x<=51;x++)for(let z=63;z<=64;z++)gset(x,10,z,B.BROOF);
   for(const dx of[44,45,49,50,51,55,56]){gset(dx,3,58,0);gset(dx,4,58,0);} // 入口(北・広場側)
-  // 🏨 ホテル(x64-74,z46-58): 高層1棟
+  // 🛎 ホテル(x64-74,z46-58): 高層1棟
   tower(66,73,48,56,16,B.WHITE);
   for(const dx of[69,70]){gset(dx,3,48,0);gset(dx,4,48,0);} // 玄関
   // 並木(大通り沿い)
@@ -6402,8 +6428,8 @@ function buildTokyoDecor(){
   addSign(57,29.5,'🏢',{t:'🏢 オフィス街',b:'高層ビルが立ち並ぶオフィス街。ランチと帰りのサラリーマンが🍜高架下の飲食店街に流れてくるよ。'},1.6);
   addSign(19,47,'🛍',{t:'🛍 ショッピングモール',b:'カラフルな横長の大型モール。中の<b>フードコート</b>に出店スロットが1ヶ所あるよ(北の入口から入れる)。',btns:[['🍴 飲食メニューを開く',()=>{menuTab='food';openMenu();}]]},1.8);
   addSign(34,42.5,'🍜',{t:'🍜 高架下の飲食店街',b:'線路の高架下に小さな飲食ブースが並ぶ、東京出店の主戦場(通常出店スロット×5)。<br>通常出店: 出店費用は料理ごと(3000万〜6000万)・家賃 月'+man(ECON.REST_RENT)+'・広告3%・手数料3%。',btns:[['🍴 飲食メニューを開く',()=>{menuTab='food';openMenu();}]]},1.8);
-  addSign(65.5,47,'🏨',{t:'🏨 ホテル',b:'高層ホテル。1階に出店スロットが1ヶ所(宿泊客でにぎわう)。',btns:[['🍴 飲食メニューを開く',()=>{menuTab='food';openMenu();}]]},1.6);
-  addSign(44,57,'🚉',{t:'🚉 東京駅',b:'赤レンガの東京の玄関口。🚄の看板から新幹線で丹波へ帰れるよ。'},1.6);
+  addSign(65.5,47,'🛎',{t:'🛎 ホテル',b:'高層ホテル。1階に出店スロットが1ヶ所(宿泊客でにぎわう)。',btns:[['🍴 飲食メニューを開く',()=>{menuTab='food';openMenu();}]]},1.6);
+  addSign(44,57,'🚉',{t:'🚉 東京駅',b:'赤レンガの東京の玄関口。🚄の看板から新幹線で丹波駅へ帰れるよ。駅から北へ伸びる高架の真下の通路を歩くと、そのまま🍜高架下の飲食店街に直行できるよ。'},1.6);
   // 🚄 丹波へ帰る(駅前広場)
   addSign(50.5,55.5,'🚄',{t:'🚄 新幹線のりば(東京駅)',b:'新幹線に乗って🏘丹波の街へ帰るよ(農場へはさらに街の東の門から)。',btns:[['🚄 丹波へ帰る(新幹線)',()=>switchMap('town')]]},2.0);
   // 高架下のブース(カウンター+赤いひさし+ちょうちん)
@@ -6436,7 +6462,7 @@ function areaNameTokyo(x,z){
   if(x>=48&&x<=74&&z>=5&&z<=29)return'🏢 オフィス街';
   if(x>=34&&x<=64&&z>=34&&z<=42)return'🍜 高架下の飲食店街';
   if(x>=8&&x<=30&&z>=46&&z<=66)return'🛍 ショッピングモール';
-  if(x>=64&&x<=74&&z>=46&&z<=58)return'🏨 ホテル';
+  if(x>=64&&x<=74&&z>=46&&z<=58)return'🛎 ホテル';
   if(x>=40&&x<=60&&z>=54&&z<=70)return'🚉 東京駅';
   if((z>=31&&z<=33)||(z>=43&&z<=45)||(x>=35&&x<=37))return'🛣 大通り';
   return'🗼 東京';
@@ -6454,12 +6480,30 @@ const TOKYO_ROUTES=[ // 道(PATH)沿いの巡回ルート(往復 or 周回)
   [[18,29.5],[18,21]],        // 球場ゲート〜内野
   [[10,44],[32,44],[19.5,46.8]], // モール前
 ];
+// v69: チビで可愛いボクセル人間に一新(頭大きめ+目+髪+腕2本+左右の脚)。1体9メッシュ・MeshLambertのまま軽量
 function crowdPerson(){
   const cols=[0x3a5aa8,0x8a4a4a,0x2f8a4a,0x555a66,0xb5843f,0xd87a8a,0xe8b83f,0x6a4a8a,0x35485e,0xc9a86f];
+  const hairCols=[0x2a1f16,0x1e1e24,0x6b4a2a,0x8a6a3a,0xb5843f,0x4a3a5a,0x9a5f2f];
+  const pick=a=>a[Math.floor(Math.random()*a.length)];
+  const shirtM=new THREE.MeshLambertMaterial({color:pick(cols)});
+  const pantsM=new THREE.MeshLambertMaterial({color:pick(cols)});
+  const skinM=new THREE.MeshLambertMaterial({color:0xf0c8a8});
+  const hairM=new THREE.MeshLambertMaterial({color:pick(hairCols)});
+  const eyeM=new THREE.MeshLambertMaterial({color:0x26221e});
   const g=new THREE.Group();
-  const legs=new THREE.Mesh(new THREE.BoxGeometry(0.34,0.55,0.24),new THREE.MeshLambertMaterial({color:cols[Math.floor(Math.random()*cols.length)]}));legs.position.y=0.28;g.add(legs);
-  const body=new THREE.Mesh(new THREE.BoxGeometry(0.46,0.6,0.3),new THREE.MeshLambertMaterial({color:cols[Math.floor(Math.random()*cols.length)]}));body.position.y=0.86;g.add(body);
-  const head=new THREE.Mesh(new THREE.BoxGeometry(0.3,0.3,0.28),new THREE.MeshLambertMaterial({color:0xf0c8a8}));head.position.y=1.33;g.add(head);
+  // 付け根(上端)で回るパーツ: geometryを下へずらしてrotation.xで前後に振れる
+  const limb=(w,h,d,m,x,y)=>{const geo=new THREE.BoxGeometry(w,h,d);geo.translate(0,-h/2,0);const mm=new THREE.Mesh(geo,m);mm.position.set(x,y,0);g.add(mm);return mm;};
+  const legL=limb(0.16,0.34,0.18,pantsM,-0.11,0.34); // 脚は左右2本・交互に振る
+  const legR=limb(0.16,0.34,0.18,pantsM, 0.11,0.34);
+  const body=new THREE.Mesh(new THREE.BoxGeometry(0.44,0.42,0.28),shirtM);body.position.y=0.55;g.add(body);
+  const armL=limb(0.12,0.36,0.14,shirtM,-0.28,0.74); // 腕2本・歩きで前後に振る
+  const armR=limb(0.12,0.36,0.14,shirtM, 0.28,0.74);
+  const head=new THREE.Mesh(new THREE.BoxGeometry(0.42,0.4,0.4),skinM);head.position.y=0.97;g.add(head); // 大きめの頭(チビ体型)
+  const eyeGeo=new THREE.BoxGeometry(0.055,0.08,0.03);
+  const eyeL=new THREE.Mesh(eyeGeo,eyeM);eyeL.position.set(-0.095,0.99,0.2);g.add(eyeL); // 目(進行方向=+Z面)
+  const eyeR=new THREE.Mesh(eyeGeo,eyeM);eyeR.position.set( 0.095,0.99,0.2);g.add(eyeR);
+  const hair=new THREE.Mesh(new THREE.BoxGeometry(0.46,0.16,0.44),hairM);hair.position.y=1.22;g.add(hair); // 髪(色で個体差)
+  g.userData.limbs={armL,armR,legL,legR};
   return g;
 }
 function clearTokyoCrowd(){
@@ -6491,6 +6535,8 @@ function updateTokyoCrowd(dt){
     c.m.position.x+=dx/dl*c.spd*dt;
     c.m.position.z+=dz/dl*c.spd*dt;
     c.m.position.y=3+Math.abs(Math.sin(c.ph))*0.05; // 歩きの上下動
+    const L=c.m.userData.limbs; // v69: 位相c.phで腕と左右の脚を交互に振る
+    if(L){const sw=Math.sin(c.ph)*0.55;L.legL.rotation.x=sw;L.legR.rotation.x=-sw;L.armL.rotation.x=-sw*0.7;L.armR.rotation.x=sw*0.7;}
     const ty=Math.atan2(dx,dz);
     let dr=ty-c.m.rotation.y;
     while(dr>Math.PI)dr-=Math.PI*2;while(dr<-Math.PI)dr+=Math.PI*2;
@@ -6567,23 +6613,31 @@ function showTravel(text,mid){
 function switchMap(target){
   if(mapBusy||isGameOver||!state||target===curMap)return;
   mapBusy=true;
+  const from=curMap; // v69: 出発マップ(端で繋がる着地の分岐に使う)
   sfxSeq([[520,.08],[660,.1]]);
   showTravel((target==='tokyo'||curMap==='tokyo')?'🚄 新幹線で移動中…':(target==='town'?'🌉 橋を渡って街へ…':'🌉 橋を渡って農場へ…'),()=>{ // v68: 東京は新幹線
     teardownMap();
     curMap=target;state.map=target;
     updateMapBtn(); // v33
     buildMapWorld();
-    const sp=target==='town'?TOWN_SPAWN:(target==='tokyo'?TOKYO_SPAWN:FARM_SPAWN); // v68: 3マップ対応
+    // v69: ワープ感をなくす=「出た側に対応する反対マップの端/駅」に着地し、進行方向(camYaw)も内側へ向ける
+    let sp,yaw=null;
+    if(from==='farm'&&target==='town'){sp={x:61.0,z:31.5};yaw=-Math.PI/2;}      // 農場の西端→街の東端(門のすぐ内側)・西向き
+    else if(from==='town'&&target==='farm'){sp={x:4.5,z:22.0};yaw=Math.PI/2;}   // 街の東の門→農場の西端(中央橋の上)・東向き
+    else if(from==='tokyo'&&target==='town'){sp={x:37.5,z:22.5};yaw=0;}         // 東京駅→🚄丹波駅のホーム・南向き(駅舎を抜けて大通りへ)
+    else if(target==='tokyo'){sp=TOKYO_SPAWN;yaw=Math.PI;}                      // 丹波駅→🚉東京駅の駅前広場・北向き(高架下/街の中心へ)
+    else sp=target==='town'?TOWN_SPAWN:FARM_SPAWN;                              // その他(保険)は従来の着地
     player.x=sp.x;player.z=sp.z;
     if(walkY(Math.floor(player.x),Math.floor(player.z),WH)>WH){ // 保険
       if(target==='town'){player.x=32.5;player.z=40.5;}
       else if(target==='tokyo'){player.x=50.5;player.z=44.0;}
       else{player.x=27.5;player.z=34.5;}
     }
+    if(yaw!==null)camYaw=yaw; // v69: 着地の向き=マップの内側(進行方向が続く感覚)
     player.y=topY(Math.floor(player.x),Math.floor(player.z))+1;player.vy=0;player.onGround=true;
     camera.position.set(player.x-Math.sin(camYaw)*8,player.y+6,player.z-Math.cos(camYaw)*8);
     toast(target==='town'?'🏘 丹波の街に着いた！役場・銀行・農協・修理屋・セリ市場・不動産屋があるよ'
-      :(target==='tokyo'?'🗼 東京に着いた！⚾野球場・🍜高架下・🛍モール・🏨ホテルに🍴飲食店を出店できるよ(帰りは東京駅の🚄看板)'
+      :(target==='tokyo'?'🗼 東京に着いた！⚾野球場・🍜高架下・🛍モール・🛎ホテルに🍴飲食店を出店できるよ(帰りは東京駅の🚄看板)'
       :'🌾 橋を渡って農場に帰ってきた！'));
     updateHUD();updateMachineBadges();saveGame(false);
     mapBusy=false;
