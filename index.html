@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v66: 導線の見直し — ①雇用促進クエスト(従業員を新規に雇うたび年収の半分=180万円を協力金として支給・各人1回) ②仔牛の自己保留(母牛に残す)を廃止=子牛は雌雄とも育ったら全頭セリ出荷・増頭はセリ購入で(指示の手間をなくす) ③クエストを22ステップに細分化=常に「次の一手」と場所が分かるチュートリアル導線に再設計</title>
+<title>丹波農商 牧場物語 v68: 東京マップ＋飲食店経営 — ⚾野球場/🏢オフィス街/🛍モール/🚉東京駅/🍜高架下の飲食店街/🏨ホテルを新設。🐙たこ焼き/🍤天ぷら/🍣寿司/🥩焼肉を出店経営(月商1000万・家賃100万・原価率と社員数を料理別に設定)。⚾球場出店は出店300万・家賃なし・売上40%を球場へ。人が大勢歩く街</title>
 <link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -598,6 +598,9 @@ const ECON={
   CALF_PRICE_F:1000000,  // v20: メスの子牛のベース売却価格
   CALF_PRICE_M:1200000,  // v20: オスの子牛のベース売却価格
   CALF_REPAY:500000,     // 子牛売却時に母牛の借金へ充当する額
+  YOTAKU_CAP:50,         // v67: 牛の預託制度の上限(与信で預かれる頭数)。返済完了(借金0)で枠が空く
+  YOTAKU_FEE:0.02,       // v67: 預託の初回手数料(購入時に牛価格の2%を現金で支払い)
+  YOTAKU_RATE:0.018,     // v67: 預託の年利(期末に預託残高の1.8%を利息として支払い)
   MOTHER_PRICE:500000,   // 8産後の親牛のベース売却価格(状態で±)
   BREED_RATE:0.8,        // 種付け成功率
   BREED_COST:10000,      // v38: 種付け代(人工授精)1回1万円
@@ -710,6 +713,15 @@ const ECON={
   SUB_RATE:0.5,          // 役場の補助率(半額)
   SUB_DAYS:2,            // 申請から承認までの日数
   SUB_VALID:90,          // 承認の有効日数(期間内の購入1回が半額)
+  // ---- v68: 東京の飲食店経営 ----
+  REST_RENT:1000000,         // 通常出店の家賃(月・球場出店はゼロ)
+  REST_STAFF_SAL:400000,     // 飲食の社員1人の月給
+  REST_PART_RATE:0.15,       // アルバイト人件費(売上比・全店)
+  REST_UTIL_RATE:0.02,       // 水道光熱費(売上比・全店)
+  REST_AD_RATE:0.03,         // 広告宣伝費(売上比・通常のみ)
+  REST_FEE_RATE:0.03,        // 支払手数料(売上比・通常のみ)
+  REST_STADIUM_SETUP:3000000,// 球場出店の出店費用(料理によらず一律300万)
+  REST_STADIUM_COMM:0.40,    // 球場の売上手数料(売上の40%)
 };
 function fmt(n){return '￥'+Math.round(n).toLocaleString();}
 function man(n){const v=n/10000;return (v%1===0?v:v.toFixed(1))+'万円';}
@@ -773,6 +785,7 @@ function freshState(){return{
   newBarns:0,newBarnCosts:[],     // v20: 新築牛舎の棟数と取得原価
   ricePlanterBonus:false,         // v20: 田植え機で植えたか(収量+10%)
   vetVisitDay:-1,ricePlantWeekN:-1,
+  restaurants:[],restSeq:1, // v68: 東京の飲食店 {id,slot,type,venue}
 };}
 // ---- v16: 規模ヘルパ(土地・堆肥舎の効果) ----
 function riceScale(){const n=state.rice3N||(state.land.rice3?1:0);return (state.land.rice2?ECON.RICE_SCALE2:1)+(n>0?0.5+0.25*(n-1):0);} // v58: 南の棚田拡張は繰り返し購入(1回目+50%、以降+25%ずつ・最大4回)
@@ -1089,24 +1102,28 @@ function migrateV25(){
 // 自分の給与(役員報酬)と土地の購入は「共通/本部」。
 const SEG_META={
   rice:{n:'米',em:'🌾'},grass:{n:'牧草',em:'🌿'},cow:{n:'牛(繁殖)',em:'🐂'},
-  compost:{n:'堆肥(肥料)',em:'🟫'},other:{n:'加工・野菜',em:'🥬'},common:{n:'共通/本部',em:'🏢'},
+  compost:{n:'堆肥(肥料)',em:'🟫'},other:{n:'加工・野菜',em:'🥬'},food:{n:'飲食',em:'🍴'},common:{n:'共通/本部',em:'🏢'}, // v68: 飲食(東京の飲食店)
 };
-const SALE_SEG={rice:'rice',calf:'cow',mother:'cow',grass:'grass',fert:'compost',proc:'other',grant:'common'}; // v28: grant=クエスト協力金(共通)
+const SALE_SEG={rice:'rice',calf:'cow',mother:'cow',grass:'grass',fert:'compost',proc:'other',grant:'common',food:'food'}; // v28: grant=クエスト協力金(共通) v68: food=飲食店の売上
 const EXP_SEG={owner:'common',emp:'common',rent:'cow',feed:'cow',manure:'cow',seed:'rice',grassSow:'grass',shed:'compost',land:'common',other:'common',
-  machine:'rice',barn:'cow',repair:'rice',vet:'cow',loss:'cow',dung:'cow',breed:'cow'}; // v19: 機械/牛舎/修理/獣医/死亡損失 v20: 糞置き場 v38: 種付け代
+  machine:'rice',barn:'cow',repair:'rice',vet:'cow',loss:'cow',dung:'cow',breed:'cow',yotaku:'cow',
+  foodcogs:'food',foodlabor:'food',foodrent:'food',foodutil:'food',foodad:'food',foodfee:'food',foodcomm:'food',foodopen:'food'}; // v19: 機械/牛舎/修理/獣医/死亡損失 v20: 糞置き場 v38: 種付け代 v67: 預託手数料・利息 v68: 飲食8勘定
 // v60: 従業員の担当ジョブ→事業セグメントの対応表。給与を担当事業へ配賦する時に使う。
 // (旧コードはジョブキーをそのままセグメントに渡していて、veg/proc/pig担当がいると
 //  state.fy.segに無いキーを参照して週送り(weekEnd)が例外で止まる致命バグだった)
 const JOB_SEG={rice:'rice',grass:'grass',cow:'cow',cow2:'cow',veg:'other',proc:'other',pig:'other',compost:'compost'};
 function freshSeg(){const o={};for(const k in SEG_META)o[k]={s:0,e:0,sd:{},ed:{}};return o;}
 function freshFy(){return{sales:0,exp:0,
-  sd:{rice:0,calf:0,mother:0,grass:0,proc:0,fert:0,grant:0},
-  ed:{owner:0,emp:0,rent:0,feed:0,seed:0,grassSow:0,shed:0,land:0,other:0,manure:0,machine:0,barn:0,repair:0,vet:0,loss:0,dung:0},
+  sd:{rice:0,calf:0,mother:0,grass:0,proc:0,fert:0,grant:0,food:0},
+  ed:{owner:0,emp:0,rent:0,feed:0,seed:0,grassSow:0,shed:0,land:0,other:0,manure:0,machine:0,barn:0,repair:0,vet:0,loss:0,dung:0,yotaku:0,
+    foodcogs:0,foodlabor:0,foodrent:0,foodutil:0,foodad:0,foodfee:0,foodcomm:0,foodopen:0}, // v68: 飲食8勘定
   seg:freshSeg()};}
 // v16セーブ(セグメント帳簿なし)の引き継ぎ: 既存fyの勘定別集計からセグメント帳簿を再構成
 function migrateFy(){
   const f=state.fy;if(!f)return;
-  for(const k of['grassSow','shed','land','machine','barn','repair','vet','loss','dung'])if(f.ed[k]===undefined)f.ed[k]=0; // v19/v20: 新勘定も追補
+  for(const k of['grassSow','shed','land','machine','barn','repair','vet','loss','dung','yotaku','foodcogs','foodlabor','foodrent','foodutil','foodad','foodfee','foodcomm','foodopen'])if(f.ed[k]===undefined)f.ed[k]=0; // v19/v20: 新勘定も追補 v67: 預託手数料・利息 v68: 飲食8勘定
+  if(f.sd&&f.sd.food===undefined)f.sd.food=0; // v68: 飲食売上の勘定を旧セーブに追補
+  if(f.seg)for(const k in SEG_META)if(!f.seg[k])f.seg[k]={s:0,e:0,sd:{},ed:{}}; // v68: 新セグメント(飲食)を旧セーブに追補
   if(!f.seg){
     f.seg=freshSeg();
     for(const c in f.sd){const v=f.sd[c]||0;if(v>0){const g=f.seg[SALE_SEG[c]||'other'];g.s+=v;g.sd[c]=(g.sd[c]||0)+v;}}
@@ -1116,7 +1133,7 @@ function migrateFy(){
 function addSale(a,cat){
   state.money+=a;state.fy.sales+=a;state.fy.sd[cat]=(state.fy.sd[cat]||0)+a;state.soldN++;
   const g=state.fy.seg[SALE_SEG[cat]||'other']||state.fy.seg.other;g.s+=a;g.sd[cat]=(g.sd[cat]||0)+a; // v17: 事業別に記帳 / v60: 未知セグは加工・野菜へ(週送りを止めない)
-  if(state.cumSales){if(cat==='proc')state.cumSales.proc+=a;else if(cat!=='grant')state.cumSales.farm+=a;} // v28: 累計売上(認定農業者の判定)
+  if(state.cumSales){if(cat==='proc')state.cumSales.proc+=a;else if(cat!=='grant'&&cat!=='food')state.cumSales.farm+=a;} // v28: 累計売上(認定農業者の判定) v68: 飲食売上は農業の累計に入れない
 }
 function addExpense(a,cat,seg){
   state.money-=a;state.fy.exp+=a;state.fy.ed[cat]=(state.fy.ed[cat]||0)+a;
@@ -1167,6 +1184,8 @@ function computeBS(){
   return b;
 }
 function cowDebtTotal(){let s=0;for(const c of state.cows)s+=c.debt;return s;}
+function yotakuCount(){let n=0;for(const c of state.cows)if(c.debt>0)n++;return n;} // v67: 預託中(借金あり)の頭数。返済完了で枠が空く
+function yotakuFull(){return yotakuCount()>=ECON.YOTAKU_CAP;}
 function instLoanTotal(){return (state.startupLoan?state.startupLoan.remain:0)+(state.superL?state.superL.remain:0);} // v28: 制度融資残
 function totalDebt(){return state.bankLoan+cowDebtTotal()+instLoanTotal();}
 function herdCount(){return state.cows.length+state.calves.length;}
@@ -1374,7 +1393,7 @@ const grid={};
 function key(x,y,z){return x+','+y+','+z;}
 function getB(x,y,z){return grid[key(x,y,z)]||0;}
 function gset(x,y,z,t){const k=key(x,y,z);if(t)grid[k]=t;else delete grid[k];}
-function inWorld(x,z){return x>=0&&x<WS&&z>=(typeof curMap!=='undefined'&&curMap==='town'?0:ZMIN)&&z<WS;} // v57: 農場は北(z<0)へ拡張済み
+function inWorld(x,z){return x>=0&&x<WS&&z>=((typeof curMap!=='undefined'&&curMap!=='farm')?0:ZMIN)&&z<WS;} // v57: 農場は北(z<0)へ拡張済み v68: 街/東京はz>=0
 function topY(x,z){for(let y=WH;y>=0;y--){const t=getB(x,y,z);if(t&&!BI[t].water)return y;}return -1;}
 // 屋根の下も歩けるように：今の高さから近い「頭上が空いた床」を探す
 // v7: 立てる床が無い柱(建物の壁・木の幹など)は 0 ではなく WH+3 を返す。
@@ -3631,9 +3650,9 @@ function toggleCowMode(){
   sfx(600,.07,'sine',.05);
   updateCowModeBtn();
 }
-function updateMapBtn(){ // v33: 農場⇄街のワンタップ切替ボタンの表示
+function updateMapBtn(){ // v33: 農場⇄街のワンタップ切替ボタンの表示 v68: 3マップ対応(東京からは必ず街へ戻れる保険)
   const el=document.getElementById('mapBtn');if(!el)return;
-  el.textContent=(curMap==='town')?'🌾 農場へ帰る':'🏘 街へ行く';
+  el.textContent=(curMap==='town')?'🌾 農場へ帰る':(curMap==='tokyo'?'🏘 丹波へ帰る':'🏘 街へ行く');
 }
 function updateCowModeBtn(){} // v61: 浮きボタン撤去(切替は🐂牛メニュー/🏚牛舎メニュー内のボタンで)
 // ---------- v20: 糞置き場(簡易・200万)＝糞の処理のみ。牛舎増築の必須条件 ----------
@@ -3689,6 +3708,15 @@ function nearestAction(wx,wz){
     const d=Math.hypot(x-wx,z-wz);
     if(d<r&&(!best||d<best.d))best={d,tx:x,tz:z,label,fn};
   };
+  // ---- v68: 東京マップの対象(出店スロット・新幹線) ----
+  if(curMap==='tokyo'){
+    for(const s of TOKYO_SLOTS){
+      const r=restAt(s.id);
+      cand(s.x,s.z,2.4,r?(CUISINE[r.type].em+' '+CUISINE[r.type].name+'(店舗の管理)'):'🍴 ここに出店する('+(s.venue==='stadium'?'⚾球場':'通常')+')',()=>{menuTab='food';openMenu();});
+    }
+    cand(50.5,55.5,3.0,'🚄 丹波へ帰る(新幹線)',()=>switchMap('town'));
+    return best;
+  }
   // ---- v19: 街マップの対象(施設・NPC) / v22: 農場への道 ----
   if(curMap==='town'){
     for(const n of npcs){
@@ -3702,6 +3730,7 @@ function nearestAction(wx,wz){
     cand(13.5,28.6,2.4,'🔧 修理屋(機械の修理)',()=>{menuTab='repair';openMenu();});
     cand(47.5,44.3,2.6,'🐂 セリ市場',()=>{menuTab='auction';openMenu();});
     cand(64.5,31.5,3.2,'🌉 農場へ帰る(橋への道)',()=>switchMap('farm')); // v61: 街の右(東)の門から農場へ
+    cand(35,29.4,2.6,'🚄 東京へ行く(新幹線)',()=>switchMap('tokyo')); // v68: 大通り沿いの駅の看板
     return best;
   }
   // ---- 農場マップの対象 ----
@@ -4043,14 +4072,17 @@ function diyHTML(){
 function buyCowCredit(){
   if(!hasBarn()){toast('🏚 まず牛舎が必要だよ(古い牛舎を借りる 月3万円 / 農協で新築牛舎を建てる)');return;} // v19
   if(state.cows.length>=moCap()){toast(capMsgMo()+'。これ以上は買えないよ');return;} // v53: 牛舎の枠 or 世話の枠の少ない方を厳守
+  if(yotakuFull()){toast('🐂 預託制度の上限'+ECON.YOTAKU_CAP+'頭('+yotakuCount()+'/'+ECON.YOTAKU_CAP+')に達したよ。借金を完済した牛が出ると枠が空く(子牛の売却で返済しよう)');return;} // v67: 預託枠は50頭・返済完了で空く
+  const fee=Math.round(ECON.COW_PRICE*ECON.YOTAKU_FEE); // v67: 初回手数料2%(現金で支払い)
+  addExpense(fee,'yotaku','cow');
   const id=state.cowSeq++;
   const cow={id,name:'牛'+id,preg:-1,births:0,debt:ECON.COW_PRICE,retired:false,bredMonth:-1,sick:false,sickDays:0,fat:60,sickCount:0}; // v19: 病気 v20: 肥育度・病歴
   state.cows.push(cow);
   spawnCowMesh(cow,false);
   assignCowSlots(); // v24: 新入りに定位置(繋留スロット)を割り当て
   mooSfx();
-  toast('🐂 '+cow.name+'を与信で購入！現金は減らず、この牛に借金'+man(ECON.COW_PRICE));
-  toast('💡 子牛を売ると半分が返済に充当。2頭で完済だよ');
+  toast('🐂 '+cow.name+'を預託で導入！牛代'+man(ECON.COW_PRICE)+'は現金が減らず借金に(初回手数料2%＝'+man(fee)+'だけ支払い)。預託枠 '+yotakuCount()+'/'+ECON.YOTAKU_CAP+'頭');
+  toast('💡 子牛を売ると半分が返済に充当(2頭で完済)。完済すると預託枠が空く。預託残高には年利1.8%');
   updateHUD();renderMenu();
 }
 function breedCow(id){
@@ -5050,6 +5082,7 @@ function weekEnd(notes){
   progressCows(notes);
   progressPigs(notes); // v50: 豚の月次成長(ローテーションできていれば)
   shipChestnutWeekly(notes); // v50: 栗の瓶詰めを1年かけて徐々に出荷
+  if(state.weekN>0&&state.weekN%4===0)postRestaurants(notes); // v68: 東京の飲食店の月次計上(4週=1ヶ月ごと)
   // 6) 年度末決算(3月末=4月の田植え直前の週。会計年度は4月〜翌3月) v44
   if(state.week===ECON.RICE_PLANT_WEEK-1){
     doFiscalClose();
@@ -5075,6 +5108,9 @@ function weekEnd(notes){
 // ---------- v14: 決算（損益計算書） ----------
 function doFiscalClose(){
   const f=state.fy;
+  // v67: 預託の年利1.8%。期末の預託残高(牛の借金合計)に対して利息を現金で支払い(当期の経費に計上)。
+  const yInt=Math.round(cowDebtTotal()*ECON.YOTAKU_RATE);
+  if(yInt>0){addExpense(yInt,'yotaku','cow');}
   // v15: 税金。牛の利益は非課税＝牛の売上(子牛+親牛)と牛の餌代を除いて計算。
   // 課税所得 = (総売上 − 牛の売上) − (総経費 − 牛の餌代)
   // 税額 = 30% × max(0, 課税所得)。赤字なら税0。決算時に現金から差引く。
@@ -5097,12 +5133,14 @@ function doFiscalClose(){
   state.fyArchive.push(JSON.parse(JSON.stringify(r)));
   state.fy=freshFy();
   showFiscal(r);
+  if(yInt>0)toast('🐂 牛の預託利息(年利1.8%)'+fmt(yInt)+'を支払った(預託残高'+fmt(r.cowDebt)+')');
   if(tax>0)toast('🏛 税金'+fmt(tax)+'を納付した(牛の利益は非課税)');
   if(r.profit>=0)fanfare();
 }
-const SD_LABEL={rice:'米の出荷',calf:'子牛の売却',mother:'親牛の売却',grass:'牧草の売却',fert:'肥料の売却(堆肥舎)',proc:'加工品・農産物',pig:'🐖 豚の出荷',grant:'協力金・補助'};
+const SD_LABEL={rice:'米の出荷',calf:'子牛の売却',mother:'親牛の売却',grass:'牧草の売却',fert:'肥料の売却(堆肥舎)',proc:'加工品・農産物',pig:'🐖 豚の出荷',grant:'協力金・補助',food:'飲食店の売上'}; // v68: 飲食
 const ED_LABEL={owner:'自分の給与(役員報酬)',emp:'従業員の給与',rent:'牛舎の家賃',feed:'牛の餌代',manure:'牛糞の処分費',seed:'苗代(米の作付け)',grassSow:'牧草の作付け',shed:'本格堆肥舎の建設',dung:'糞置き場の建設',land:'土地の購入',other:'その他(種代等)',
-  machine:'機械の購入(新品)',barn:'新築牛舎の建設',repair:'機械の修理代',vet:'獣医の往診・治療費',loss:'牛の死亡損失(与信精算)',breed:'種付け代(人工授精)'}; // v19/v20 v38
+  machine:'機械の購入(新品)',barn:'新築牛舎の建設',repair:'機械の修理代',vet:'獣医の往診・治療費',loss:'牛の死亡損失(与信精算)',breed:'種付け代(人工授精)',yotaku:'牛の預託手数料・利息',
+  foodcogs:'飲食の原価',foodlabor:'飲食の人件費(社員+バイト)',foodrent:'飲食店の家賃',foodutil:'水道光熱費',foodad:'広告宣伝費',foodfee:'支払手数料',foodcomm:'球場の売上手数料',foodopen:'飲食店の出店費用'}; // v19/v20 v38 v67 v68: 飲食8勘定
 function plRows(obj,labels){
   let h='';
   for(const k in labels){
@@ -5278,7 +5316,7 @@ function renderMenu(){
   const box=document.getElementById('menuBox');
   const tab=(id,label)=>'<div class="tab '+(menuTab===id?'on':'')+'" onclick="menuTab=\''+id+'\';renderMenu()">'+label+'</div>';
   let html='<h2>🌾 丹波農商 <span style="font-size:13px;color:#8a6a45">'+ymdLabel()+'・'+fmt(state.money)+'</span></h2>'+
-    '<div class="tabs">'+tab('ach','🏆 実績')+tab('ledger','📒 帳簿')+tab('biz','📊 分析')+tab('wh','📦 倉庫')+tab('cows','🏚 牛舎')+tab('herd','🐂 牛')+((state.abandonedLand>0||state.pigs.length>0)?tab('pig','🐖 豚'):'')+tab('auction','🐂 セリ')+tab('bank','🏦 銀行')+tab('staff','🤝 指示')+tab('land','🏠 不動産屋')+tab('diy','🔨 DIY')+
+    '<div class="tabs">'+tab('ach','🏆 実績')+tab('ledger','📒 帳簿')+tab('biz','📊 分析')+tab('wh','📦 倉庫')+tab('cows','🏚 牛舎')+tab('herd','🐂 牛')+((state.abandonedLand>0||state.pigs.length>0)?tab('pig','🐖 豚'):'')+tab('auction','🐂 セリ')+tab('bank','🏦 銀行')+tab('staff','🤝 指示')+tab('land','🏠 不動産屋')+tab('diy','🔨 DIY')+(((state.restaurants&&state.restaurants.length)||curMap==='tokyo'||menuTab==='food')?tab('food','🍴 飲食'):'')+
     (menuTab==='yakuba'?tab('yakuba','🏛 役場'):'')+(menuTab==='ja'?tab('ja','🚜 農協'):'')+(menuTab==='repair'?tab('repair','🔧 修理屋'):'')+ // v19: 街の施設タブ(現地でだけ開く)
     tab('set','⚙')+'</div>';
   if(menuTab==='ach')html+=achHTML();
@@ -5292,6 +5330,7 @@ function renderMenu(){
   else if(menuTab==='staff')html+=staffHTML();
   else if(menuTab==='pig')html+=pigHTML();
   else if(menuTab==='land')html+=landHTML();
+  else if(menuTab==='food')html+=foodHTML(); // v68: 東京の飲食店経営
   else if(menuTab==='diy')html+=diyHTML(); // v58
   else if(menuTab==='yakuba')html+=yakubaHTML();   // v19
   else if(menuTab==='ja')html+=jaHTML();           // v19
@@ -5805,10 +5844,12 @@ function cowListHTML(){
 }
 // セリ市場: メス牛の与信購入・子牛/親牛の売却
 function auctionHTML(){
-  const canBuy=hasBarn()&&state.cows.length<barnCapNow(); // v19
-  let h='<p>🐂 セリ市場(街・担当: 競り人の勝さん)。メス牛は「与信(その牛の借金)」で購入=現金は減らないよ。</p>'+
-  '<div class="row"><div class="em">🐂</div><div class="info"><b>メス牛を買う(与信100万円)</b><small>'+(hasBarn()?('母牛の枠の空き '+(barnCapNow()-state.cows.length)+'頭分。現金は出て行かず、この牛に借金100万円が付く'):'先に🏚古い牛舎を借りるか、🚜農協で⛰新築牛舎を建ててね')+'</small></div>'+
-  '<button class="buy orange" '+(canBuy?'':'disabled')+' onclick="buyCowCredit()">与信で購入</button></div>';
+  const yFee=Math.round(ECON.COW_PRICE*ECON.YOTAKU_FEE);
+  const canBuy=hasBarn()&&state.cows.length<barnCapNow()&&!yotakuFull(); // v19 / v67: 預託枠も厳守
+  let h='<p>🐂 セリ市場(街・担当: 競り人の勝さん)。メス牛は<b>預託制度</b>で導入=牛代は現金が減らず借金(その牛の預託残高)になるよ。</p>'+
+  '<p style="font-size:11.5px;color:#8a6a45">📋 預託の上限 <b>'+yotakuCount()+'/'+ECON.YOTAKU_CAP+'頭</b>(借金を完済すると枠が空く)／初回手数料 牛代の<b>2%='+man(yFee)+'</b>／預託残高に<b>年利1.8%</b>(期末に支払い)</p>'+
+  '<div class="row"><div class="em">🐂</div><div class="info"><b>メス牛を預託で買う(牛代100万円)</b><small>'+(!hasBarn()?'先に🏚古い牛舎を借りるか、🚜農協で⛰新築牛舎を建ててね':yotakuFull()?('⚠ 預託の上限'+ECON.YOTAKU_CAP+'頭に達したよ。子牛の売却で借金を完済すると枠が空く'):('母牛の枠の空き '+(barnCapNow()-state.cows.length)+'頭分・預託枠の空き '+(ECON.YOTAKU_CAP-yotakuCount())+'頭分。牛代は借金になり、手数料2%='+man(yFee)+'だけ現金で払う'))+'</small></div>'+
+  '<button class="buy orange" '+(canBuy?'':'disabled')+' onclick="buyCowCredit()">預託で購入</button></div>';
   const ship=state.calves.filter(c=>(c.ageWeeks||0)>=ECON.CALF_SHIP_WEEKS&&!c.sick);
   h+='<p><b>売る</b>(ベース: ♀メス'+man(ECON.CALF_PRICE_F)+'/♂オス'+man(ECON.CALF_PRICE_M)+'。肥育・健康・病歴で±)</p>';
   if(ship.length){
@@ -5820,7 +5861,7 @@ function auctionHTML(){
   }else h+='<p style="color:#8a6a45">出荷できる子牛はまだいないよ(月齢8ヶ月から。病気の子は治療してから)。</p>';
   const ret=state.cows.filter(c=>c.retired);
   for(const c of ret)h+='<div class="cowrow"><span style="font-size:18px">🐂</span><span class="st">'+cowStatusText(c)+'<br><small style="color:#8a6a45">'+condReasons(c)+'</small></span><button class="minibtn orange" onclick="sellMother('+c.id+')">'+man(motherSalePrice(c))+'で売却</button></div>';
-  h+='<p class="sub2" style="font-size:11.5px;color:#8a6a45">💡 売却の半分(最大50万)は母牛の借金返済へ(2頭で完済)。増頭したい時は「与信で購入」で母牛を買い足そう。</p>';
+  h+='<p class="sub2" style="font-size:11.5px;color:#8a6a45">💡 売却の半分(最大50万)は母牛の借金返済へ(2頭で完済→預託枠が空く)。増頭したい時は「預託で購入」で母牛を買い足そう(上限'+ECON.YOTAKU_CAP+'頭・初回手数料2%・年利1.8%)。</p>';
   return h;
 }
 // 銀行: 黒字のみ・限度=直近売上高・無利息
@@ -6087,9 +6128,11 @@ function buildTownDecor(){
   addSign(27.8,34.5,'🏠',{t:'🏠 不動産屋',b:'土地(区画)を買うと農場の世界が広がるよ(担当: 登さん)。🌿西の牧草地100万(基本・年2回収穫)・🌿東の牧草地150万・🌾東の棚田250万・🏠北の第二牛舎300万。',btns:[['🏠 土地を買う',()=>{menuTab='land';openMenu();}]]});
   addSign(44.5,34.5,'🚜',{t:'🚜 農協',b:'新品の機械・⛰新築牛舎の資材窓口と、🩺獣医の往診の手配(担当: 米田さん/犬飼先生)。牛が病気になったらここで獣医を呼ぼう(放置は最悪死亡)。',btns:[['🚜 資材・獣医の窓口',()=>{menuTab='ja';openMenu();}]]});
   addSign(13.5,28.6,'🔧',{t:'🔧 修理屋',b:'故障した機械(トラクター/田植え機/コンバイン/精米機/加工機)を修理代で直してくれるよ(担当: 鉄男さん)。故障中はその機械の作業が止まる！',btns:[['🔧 修理を頼む',()=>{menuTab='repair';openMenu();}]]});
-  addSign(47.5,44.3,'🐂',{t:'🐂 セリ市場',b:'メス牛を与信100万(現金は減らない)で購入できるよ(担当: 勝さん)。子牛はベース♀100万/♂120万+状態補正、8産後の親牛は50万+補正で売却。',btns:[['🐂 セリ(牛の売買)',()=>{menuTab='auction';openMenu();}]]});
+  addSign(47.5,44.3,'🐂',{t:'🐂 セリ市場',b:'メス牛を預託制度で導入できるよ(担当: 勝さん)。牛代100万は現金が減らず借金に(初回手数料2%＝2万だけ支払い・預託残高に年利1.8%)。預託の上限は50頭で、借金を完済すると枠が空く。子牛はベース♀100万/♂120万+状態補正、8産後の親牛は50万+補正で売却。',btns:[['🐂 セリ(牛の売買)',()=>{menuTab='auction';openMenu();}]]});
   // v61: 東の大通りの突き当たり=「農場への道」(右の門をくぐると農場の橋のたもとへ)
   addSign(61,27.5,'🌉',{t:'🌉 農場への道(橋)',b:'東(右)の道を進むと🌾農場へ続く川の橋に出るよ。門をくぐると自動で農場へ帰る。',btns:[['🌾 農場へ帰る',()=>switchMap('farm')]]});
+  // v68: 🚄 丹波駅(大通り沿い)=新幹線で東京へ
+  addSign(35,29.4,'🚄',{t:'🚄 丹波駅(新幹線)',b:'新幹線で🗼<b>東京</b>へ行けるよ。東京には⚾野球場・🏢オフィス街・🛍モール・🚉東京駅・🍜高架下の飲食店街・🏨ホテルがあって、🐙たこ焼き/🍤天ぷら/🍣寿司/🥩焼肉の<b>飲食店を出店して経営</b>できる(帰りは東京駅の🚄看板から)。',btns:[['🚄 東京へ行く(新幹線)',()=>switchMap('tokyo')],['🍴 飲食メニュー(保有店の管理)',()=>{menuTab='food';openMenu();}]]},2.0);
   // 街灯(大通り沿い)
   [[9,29.2],[17,29.2],[25,29.2],[38,29.2],[46,29.2],[54,29.2],[30.2,12],[30.2,20],[30.2,40],[30.2,48],[30.2,56],[35.8,50],[45,43.2],[22,34.8]].forEach(p=>townLamp(p[0],p[1]));
   // 広場のベンチ
@@ -6112,6 +6155,361 @@ function areaNameTown(x,z){
   if((z>=30&&z<=33)||(x>=31&&x<=34))return'🛣 大通り';
   return'🏘 丹波の街';
 }
+
+// ========== v68: 東京マップ＋飲食店経営 ==========
+// 🚄 丹波の街の駅の看板⇄東京駅の看板で行き来(mapBtnは丹波へ帰る保険)。
+// 区画: ⚾野球場(x5-31,z5-29)/🏢オフィス街(x48-73,z5-29)/🍜高架下の飲食店街(x34-64,z34-42)/
+//       🛍モール(x8-30,z46-66)/🚉東京駅(x40-60,z54-70)/🏨ホテル(x64-74,z46-58)
+const TOKYO_SPAWN={x:46.5,z:55.5}; // 東京駅の駅前広場に着地
+// 料理データ(月商・原価率・必要社員・出店費用)
+const CUISINE={
+  takoyaki:{name:'たこ焼き屋',em:'🐙',sales: 8000000,cogs:0.25,staff:2,setup:30000000},
+  tempura :{name:'天ぷら屋', em:'🍤',sales:10000000,cogs:0.33,staff:3,setup:30000000},
+  sushi   :{name:'寿司屋',   em:'🍣',sales:10000000,cogs:0.40,staff:3,setup:30000000},
+  yakiniku:{name:'焼肉屋',   em:'🥩',sales:10000000,cogs:0.60,staff:2,setup:60000000},
+};
+// 出店スロット(空きに近づいて出店)。venue='stadium'は球場特例(出店300万・家賃なし・売上40%を球場へ)
+const TOKYO_SLOTS=[
+  {id:'st1',  x:12,  z:22,  venue:'stadium',n:'⚾ 球場・レフト側'},
+  {id:'st2',  x:24,  z:22,  venue:'stadium',n:'⚾ 球場・ライト側'},
+  {id:'st3',  x:18,  z:9,   venue:'stadium',n:'⚾ 球場・バックスクリーン前'},
+  {id:'g1',   x:41.5,z:41.3,venue:'normal', n:'🍜 高架下1号'},
+  {id:'g2',   x:46.5,z:41.3,venue:'normal', n:'🍜 高架下2号'},
+  {id:'g3',   x:51.5,z:41.3,venue:'normal', n:'🍜 高架下3号'},
+  {id:'g4',   x:56.5,z:41.3,venue:'normal', n:'🍜 高架下4号'},
+  {id:'g5',   x:61.5,z:41.3,venue:'normal', n:'🍜 高架下5号'},
+  {id:'mall1',x:19.5,z:58,  venue:'normal', n:'🛍 モール・フードコート'},
+  {id:'hotel1',x:64.5,z:52.5,venue:'normal',n:'🏨 ホテル1階'},
+];
+function slotOf(id){return TOKYO_SLOTS.find(s=>s.id===id);}
+function restAt(slotId){return (state&&state.restaurants||[]).find(r=>r.slot===slotId);}
+function restSetupCost(type,venue){return venue==='stadium'?ECON.REST_STADIUM_SETUP:CUISINE[type].setup;}
+// 月次P&L(仕様の式そのまま): 売上−原価−バイト15%−社員40万×人数−光熱2%−家賃−広告3%−手数料3%−球場40%
+function computeRestaurantPL(shop){
+  const cu=CUISINE[shop.type],S=cu.sales;
+  const cogs=S*cu.cogs,part=S*ECON.REST_PART_RATE,staff=cu.staff*ECON.REST_STAFF_SAL,util=S*ECON.REST_UTIL_RATE;
+  let rent,ad,fee,comm;
+  if(shop.venue==='stadium'){rent=0;ad=0;fee=0;comm=S*ECON.REST_STADIUM_COMM;}
+  else{rent=ECON.REST_RENT;ad=S*ECON.REST_AD_RATE;fee=S*ECON.REST_FEE_RATE;comm=0;}
+  const profit=S-cogs-part-staff-util-rent-ad-fee-comm;
+  return{sales:S,cogs,part,staff,util,rent,ad,fee,comm,profit};
+}
+// 月次実現(4週ごとにweekEndから呼ばれる): 全店の売上と経費を項目別に帳簿へ計上
+function postRestaurants(notes){
+  const list=(state.restaurants||[]);
+  if(!list.length)return;
+  let totalP=0,totalS=0;
+  for(const shop of list){
+    const pl=computeRestaurantPL(shop);
+    addSale(pl.sales,'food');
+    if(pl.cogs>0)addExpense(pl.cogs,'foodcogs','food');
+    if(pl.part+pl.staff>0)addExpense(pl.part+pl.staff,'foodlabor','food');
+    if(pl.rent>0)addExpense(pl.rent,'foodrent','food');
+    if(pl.util>0)addExpense(pl.util,'foodutil','food');
+    if(pl.ad>0)addExpense(pl.ad,'foodad','food');
+    if(pl.fee>0)addExpense(pl.fee,'foodfee','food');
+    if(pl.comm>0)addExpense(pl.comm,'foodcomm','food');
+    totalP+=pl.profit;totalS+=pl.sales;
+  }
+  if(notes)notes.push('🍴 東京の飲食'+list.length+'店の月次計上: 売上+'+man(totalS)+'・純利益'+(totalP>=0?'+':'−')+man(Math.abs(totalP)));
+}
+// 出店(現金で出店費用を支払い)。成功したら店オブジェクトを返す
+function openRestaurant(type,slotId){
+  const cu=CUISINE[type],s=slotOf(slotId);
+  if(!cu||!s){toast('🍴 ここには出店できないよ');return null;}
+  if(restAt(slotId)){toast('🍴 この場所にはもう店があるよ');return null;}
+  const setup=restSetupCost(type,s.venue);
+  if(state.money<setup){toast('💸 出店費用'+man(setup)+'が払えない(現金'+man(state.money)+')');return null;}
+  addExpense(setup,'foodopen','food');
+  const shop={id:state.restSeq++,slot:slotId,type,venue:s.venue};
+  state.restaurants.push(shop);
+  const pl=computeRestaurantPL(shop);
+  fanfare();
+  toast(cu.em+' '+cu.name+'を「'+s.n+'」に出店！(出店費用 −'+man(setup)+'・見込み月次利益 '+(pl.profit>=0?'+':'−')+man(Math.abs(pl.profit))+')');
+  if(s.venue==='stadium')toast('⚾ 球場出店: 家賃・広告・手数料なし。そのかわり売上の40%を球場に払うよ');
+  updateSlotSign(s);
+  updateHUD();saveGame(false);
+  if(document.getElementById('menu').style.display==='flex')renderMenu();
+  return shop;
+}
+function confirmOpenRestaurant(type,slotId){
+  const cu=CUISINE[type],s=slotOf(slotId);if(!cu||!s)return;
+  const setup=restSetupCost(type,s.venue);
+  const pl=computeRestaurantPL({type,venue:s.venue});
+  showConfirm(cu.em+' '+cu.name+'を出店する？',
+    '場所: <b>'+s.n+'</b> '+(s.venue==='stadium'?'(⚾球場出店: 家賃なし・売上の40%を球場へ)':'(通常出店: 家賃 月'+man(ECON.REST_RENT)+'・広告3%・手数料3%)')+
+    '<br>出店費用 <b>'+man(setup)+'</b>(現金払い・閉店しても戻らない)'+
+    '<br>月商'+man(pl.sales)+'・原価率'+Math.round(cu.cogs*100)+'%・社員'+cu.staff+'人 → 見込み月次利益 <b>'+(pl.profit>=0?'+':'−')+man(Math.abs(pl.profit))+'</b>',
+    ()=>openRestaurant(type,slotId),'出店する('+man(setup)+')','やめる');
+}
+function closeRestaurant(id){
+  const i=(state.restaurants||[]).findIndex(r=>r.id===id);
+  if(i<0)return;
+  const shop=state.restaurants[i],cu=CUISINE[shop.type],s=slotOf(shop.slot);
+  state.restaurants.splice(i,1);
+  toast('🚪 '+cu.em+' '+cu.name+'('+(s?s.n:shop.slot)+')を閉店した(出店費用は戻らない)');
+  if(s)updateSlotSign(s);
+  updateHUD();saveGame(false);
+  if(document.getElementById('menu').style.display==='flex')renderMenu();
+}
+function confirmCloseRestaurant(id){
+  const shop=(state.restaurants||[]).find(r=>r.id===id);if(!shop)return;
+  const cu=CUISINE[shop.type];
+  showConfirm('🚪 '+cu.em+' '+cu.name+'を閉店する？','閉店すると毎月の売上・経費の計上が止まるよ。<b>出店費用は戻らない</b>。',()=>closeRestaurant(id),'閉店する','やめる');
+}
+// 🍴 飲食メニュー(タブ)。保有店のP&L一覧+近くの空きスロットへの出店
+function foodHTML(){
+  let h='<p>🍴 <b>飲食店経営</b>(東京)。🚄丹波の街の大通りの駅の看板から東京へ行き、空きスロット(🍴の看板)で出店。<b>4週ごと(月1回)</b>に売上と経費が帳簿(🍴飲食セグメント)へ計上されるよ。</p>';
+  h+='<table class="fs"><tr class="hd"><td>料理</td><td class="amt">月商 / 原価率 / 社員 / 出店費用</td></tr>';
+  for(const k in CUISINE){const c=CUISINE[k];h+='<tr><td>'+c.em+' '+c.name+'</td><td class="amt">'+man(c.sales)+' / '+Math.round(c.cogs*100)+'% / '+c.staff+'人 / '+man(c.setup)+'</td></tr>';}
+  h+='</table>';
+  h+='<p style="font-size:11.5px;color:#8a6a45">共通コスト: バイト人件費=売上15%・社員 月'+man(ECON.REST_STAFF_SAL)+'/人・水道光熱=売上2%。通常出店はさらに家賃 月'+man(ECON.REST_RENT)+'・広告3%・手数料3%。⚾球場出店は出店一律'+man(ECON.REST_STADIUM_SETUP)+'・家賃/広告/手数料なしのかわり<b>売上の40%を球場へ</b>。</p>';
+  if(curMap==='tokyo'){
+    let ns=null,nd=1e9;
+    for(const s of TOKYO_SLOTS){const d=Math.hypot(s.x-player.x,s.z-player.z);if(d<nd){nd=d;ns=s;}}
+    if(ns&&nd<7&&!restAt(ns.id)){
+      h+='<p style="margin-top:8px"><b>📍 いまいる場所「'+ns.n+'」('+(ns.venue==='stadium'?'⚾球場出店':'通常出店')+')に出店できる！</b></p>';
+      for(const k in CUISINE){
+        const c=CUISINE[k],setup=restSetupCost(k,ns.venue),pl=computeRestaurantPL({type:k,venue:ns.venue});
+        h+='<div class="row"><div class="em">'+c.em+'</div><div class="info"><b>'+c.name+'</b><small>出店'+man(setup)+'・月商'+man(c.sales)+' → 見込み月次利益 <span class="'+(pl.profit>=0?'prof':'loss')+'">'+(pl.profit>=0?'+':'−')+man(Math.abs(pl.profit))+'</span></small></div><button class="buy orange" '+(state.money>=setup?'':'disabled')+' onclick="confirmOpenRestaurant(\''+k+'\',\''+ns.id+'\')">出店</button></div>';
+      }
+    }else if(ns&&nd<7)h+='<p style="margin-top:8px">📍 いまの場所「'+ns.n+'」は出店済みだよ(下の一覧から閉店できる)。</p>';
+    else h+='<p style="font-size:12px;color:#8a6a45;margin-top:8px">📍 空きスロット(🍴の看板: ⚾球場の中・🍜高架下・🛍モール・🏨ホテル)に近づくと、ここから出店できるよ。</p>';
+  }else{
+    h+='<p style="font-size:12px;color:#8a6a45;margin-top:8px">🚄 出店するにはまず東京へ(丹波の街の大通り・駅の🚄看板から新幹線)。</p>';
+  }
+  const list=state.restaurants||[];
+  h+='<p style="margin-top:8px"><b>🏪 保有店 '+list.length+'店</b></p>';
+  if(!list.length)h+='<p style="color:#8a6a45;font-size:12px">まだ店はないよ。</p>';
+  let total=0;
+  for(const shop of list){
+    const cu=CUISINE[shop.type],s=slotOf(shop.slot),pl=computeRestaurantPL(shop);total+=pl.profit;
+    const costs=[['原価',pl.cogs],['バイト',pl.part],['社員',pl.staff],['家賃',pl.rent],['光熱',pl.util],['広告',pl.ad],['手数料',pl.fee],['球場40%',pl.comm]].filter(c=>c[1]>0).map(c=>c[0]+man(c[1])).join('・');
+    h+='<div class="row"><div class="em">'+cu.em+'</div><div class="info"><b>'+cu.name+' @'+(s?s.n:shop.slot)+' '+(shop.venue==='stadium'?'(⚾球場)':'(通常)')+'</b><small>月商'+man(pl.sales)+' − '+costs+'<br>月次利益 <b class="'+(pl.profit>=0?'prof':'loss')+'">'+(pl.profit>=0?'+':'−')+man(Math.abs(pl.profit))+'</b></small></div><button class="buy" style="background:#988478;border-color:#6a594d;box-shadow:0 3px 0 #6a594d" onclick="confirmCloseRestaurant('+shop.id+')">閉店</button></div>';
+  }
+  if(list.length)h+='<p style="font-weight:bold;color:#5a3714">合計 月次利益: <span class="'+(total>=0?'prof':'loss')+'">'+(total>=0?'+':'−')+man(Math.abs(total))+'</span>(4週ごとに帳簿へ計上)</p>';
+  return h;
+}
+// スロット看板(空き=🍴/出店済み=料理の絵文字)。出店/閉店で貼り替え
+let tokyoSlotSigns={};
+function updateSlotSign(s){
+  const old=tokyoSlotSigns[s.id];
+  if(old){removeSignInfo(old);decoGroup.remove(old);delete tokyoSlotSigns[s.id];}
+  if(curMap!=='tokyo')return;
+  const r=restAt(s.id);
+  const info=r?{
+    t:CUISINE[r.type].em+' '+CUISINE[r.type].name+'('+s.n+')',
+    b:()=>{const pl=computeRestaurantPL(r);return '営業中！'+(r.venue==='stadium'?'⚾球場出店(家賃なし・売上の40%を球場へ)':'通常出店(家賃 月'+man(ECON.REST_RENT)+')')+'。<br>月商'+man(pl.sales)+' → 月次利益 <b>'+(pl.profit>=0?'+':'−')+man(Math.abs(pl.profit))+'</b>(4週ごとに帳簿へ計上)。';},
+    btns:()=>[['🍴 飲食メニュー(全店の管理)',()=>{menuTab='food';openMenu();}],['🚪 閉店する(出店費用は戻らない)',()=>confirmCloseRestaurant(r.id)]],
+  }:{
+    t:'🍴 出店できる場所('+(s.venue==='stadium'?'⚾球場':'通常')+') — '+s.n,
+    b:()=>(s.venue==='stadium'
+      ?'⚾球場出店の特例: 出店費用は料理によらず一律<b>'+man(ECON.REST_STADIUM_SETUP)+'</b>・家賃/広告/手数料なし。そのかわり<b>売上の40%</b>を球場に払う。'
+      :'通常出店: 出店費用は料理ごと(🐙🍤🍣3000万/🥩6000万)・家賃 月'+man(ECON.REST_RENT)+'・広告3%・手数料3%。')+'<br>料理を選んで出店しよう(月商・原価率・社員数は料理ごと)。',
+    btns:()=>Object.keys(CUISINE).map(k=>{
+      const c=CUISINE[k],setup=restSetupCost(k,s.venue),pl=computeRestaurantPL({type:k,venue:s.venue});
+      return[c.em+' '+c.name+'を出店('+man(setup)+'・月次利益'+(pl.profit>=0?'+':'−')+man(Math.abs(pl.profit))+')',()=>confirmOpenRestaurant(k,s.id)];
+    }),
+  };
+  tokyoSlotSigns[s.id]=addSign(s.x,s.z,r?CUISINE[r.type].em:'🍴',info,1.5);
+}
+function buildTokyoSlotSigns(){tokyoSlotSigns={};for(const s of TOKYO_SLOTS)updateSlotSign(s);}
+// 東京のボクセル生成(genTownを手本にした都会の造成)
+function genTokyo(){
+  chestnutTrees.length=0;
+  for(const k in grid)delete grid[k];
+  // 地面: コンクリートの都会(PAVE)。外周はSTONEの丘で囲う
+  for(let x=0;x<WS;x++)for(let z=0;z<WS;z++){
+    const edge=Math.min(x,z,WS-1-x,WS-1-z);
+    let h=2;
+    if(edge<3)h=4+(2-edge)*2;
+    h=Math.max(2,Math.min(WH-6,h));
+    for(let y=0;y<=h;y++)gset(x,y,z,(y===h&&edge>=3)?B.PAVE:B.STONE);
+  }
+  const road=(x0,x1,z0,z1)=>{for(let x=x0;x<=x1;x++)for(let z=z0;z<=z1;z++)gset(x,2,z,B.PATH);};
+  road(3,74,31,33);   // 大通り(東西・北)
+  road(3,74,43,45);   // 大通り(東西・南)
+  road(35,37,3,74);   // 大通り(南北)
+  road(49,51,46,53);  // 駅への道
+  // ⚾ 野球場(x5-31,z5-29): 楕円の観客席リング+緑のフィールド+ダイヤモンド
+  const scx=18,scz=17;
+  for(let x=5;x<=31;x++)for(let z=5;z<=29;z++){
+    const d=Math.pow((x-scx)/12.5,2)+Math.pow((z-scz)/11.5,2);
+    if(d<=0.62)gset(x,2,z,B.GRASS); // 内野/外野の芝
+    else if(d<=1.0){
+      if(x>=16&&x<=20&&z>=23){gset(x,2,z,B.PAVE);continue;} // 南の入場ゲート(通り抜けできる)
+      const tier=1+Math.min(2,Math.floor((d-0.62)/0.14));
+      for(let y=3;y<=2+tier;y++)gset(x,y,z,y===2+tier?B.WHITE:B.STONE); // 観客席(外へ行くほど高い)
+    }
+  }
+  for(let x=scx-3;x<=scx+3;x++)for(let z=19;z<=25;z++)if(Math.abs(x-scx)+Math.abs(z-22)<=3)gset(x,2,z,B.SOIL); // 内野の土
+  gset(scx,2,25,B.PATH);gset(scx-3,2,22,B.PATH);gset(scx,2,19,B.PATH);gset(scx+3,2,22,B.PATH);gset(scx,2,22,B.PATH); // 本塁・塁・マウンド
+  // 🏢 オフィス街(x48-73,z5-29): 高層ビル(窓=WATERガラス)
+  const tower=(x0,x1,z0,z1,top,wallB)=>{
+    for(let x=x0;x<=x1;x++)for(let z=z0;z<=z1;z++)for(let y=3;y<=top;y++){
+      const face=(x===x0||x===x1||z===z0||z===z1);
+      const corner=(x===x0||x===x1)&&(z===z0||z===z1);
+      gset(x,y,z,(face&&!corner&&y>=4&&y<top&&y%2===0&&(x+z)%2===0)?B.WATER:wallB);
+    }
+  };
+  tower(50,55,7,12,14,B.WHITE);
+  tower(59,65,6,12,16,B.STONE);
+  tower(68,73,8,13,12,B.WHITE);
+  tower(50,55,17,23,11,B.STONE);
+  tower(58,64,16,23,15,B.WHITE);
+  tower(67,73,18,25,12,B.STONE);
+  // 🍜 高架下の飲食店街(x34-64): 柱+高架デッキ(y8)+欄干。その下(南側z41)にブースを並べる
+  for(let x=34;x<=64;x+=5)for(const z of[36,40])for(let y=3;y<=7;y++)gset(x,y,z,B.STONE); // 柱
+  for(let x=34;x<=64;x++)for(let z=36;z<=40;z++)gset(x,8,z,B.STONE); // 高架のデッキ
+  for(let x=34;x<=64;x++){gset(x,9,36,B.BRICK);gset(x,9,40,B.BRICK);} // 欄干
+  // 🛍 ショッピングモール(x8-30,z46-66): 横長の大箱+カラフルなファサード+北の入口
+  for(let x=9;x<=29;x++)for(let z=48;z<=64;z++){
+    gset(x,2,z,B.PAVE);
+    if(x===9||x===29||z===48||z===64){
+      for(let y=3;y<=6;y++)gset(x,y,z,B.WHITE);
+      if(z===48)gset(x,5,z,[B.RROOF,B.GROOF,B.BROOF][x%3]); // カラフルな帯
+      if((z===48||z===64)&&x%2===0&&x>9&&x<29)gset(x,4,z,B.WATER); // ショーウィンドウ
+    }
+  }
+  for(const dx of[18,19,20]){gset(dx,3,48,0);gset(dx,4,48,0);} // 入口(北)
+  // 🚉 東京駅(x40-60,z58-69): 赤レンガの長い駅舎+白い帯+中央ドーム。北は駅前広場
+  for(let x=40;x<=60;x++)for(let z=54;z<=57;z++)gset(x,2,z,B.PAVE); // 駅前広場
+  for(let x=40;x<=60;x++)for(let z=58;z<=69;z++){
+    gset(x,2,z,B.PAVE);
+    if(x===40||x===60||z===58||z===69){
+      for(let y=3;y<=5;y++)gset(x,y,z,B.BRICK);
+      const corner=(x===40||x===60)&&(z===58||z===69);
+      if(!corner&&((z===58||z===69)?x%2===0:z%2===0))gset(x,4,z,B.WATER); // 窓
+      gset(x,6,z,B.WHITE); // 白い帯
+    }
+  }
+  for(let x=47;x<=53;x++)for(let z=61;z<=66;z++)if(x===47||x===53||z===61||z===66)for(let y=3;y<=7;y++)gset(x,y,z,B.BRICK); // 中央タワー
+  for(let x=47;x<=53;x++)for(let z=61;z<=66;z++)gset(x,8,z,B.BROOF); // ドーム(3段)
+  for(let x=48;x<=52;x++)for(let z=62;z<=65;z++)gset(x,9,z,B.BROOF);
+  for(let x=49;x<=51;x++)for(let z=63;z<=64;z++)gset(x,10,z,B.BROOF);
+  for(const dx of[44,45,49,50,51,55,56]){gset(dx,3,58,0);gset(dx,4,58,0);} // 入口(北・広場側)
+  // 🏨 ホテル(x64-74,z46-58): 高層1棟
+  tower(66,73,48,56,16,B.WHITE);
+  for(const dx of[69,70]){gset(dx,3,48,0);gset(dx,4,48,0);} // 玄関
+  // 並木(大通り沿い)
+  [[6,30],[14,30],[26,30],[42,30],[58,30],[66,30],[6,46],[14,46],[26,46],[56,46],[62,46],[33,50],[33,60],[33,70],[39,50],[72,30]].forEach(p=>normalTree(p[0],p[1]));
+}
+// 東京の装飾(区画の看板・スロット看板・街灯・ベンチ・高架下のブース・群衆)
+function buildTokyoDecor(){
+  scene.add(decoGroup);
+  // 区画の看板(アイコン+説明)
+  addSign(18,27.5,'⚾',{t:'⚾ 東京の野球場',b:'満員のお客さんが集まる大球場。中に<b>球場出店スロット</b>が3ヶ所(レフト側/ライト側/バックスクリーン前)。<br>⚾球場出店の特例: 出店費用一律'+man(ECON.REST_STADIUM_SETUP)+'・家賃/広告/手数料なし。そのかわり<b>売上の40%</b>を球場に払う。',btns:[['🍴 飲食メニューを開く',()=>{menuTab='food';openMenu();}]]},1.8);
+  addSign(57,29.5,'🏢',{t:'🏢 オフィス街',b:'高層ビルが立ち並ぶオフィス街。ランチと帰りのサラリーマンが🍜高架下の飲食店街に流れてくるよ。'},1.6);
+  addSign(19,47,'🛍',{t:'🛍 ショッピングモール',b:'カラフルな横長の大型モール。中の<b>フードコート</b>に出店スロットが1ヶ所あるよ(北の入口から入れる)。',btns:[['🍴 飲食メニューを開く',()=>{menuTab='food';openMenu();}]]},1.8);
+  addSign(34,42.5,'🍜',{t:'🍜 高架下の飲食店街',b:'線路の高架下に小さな飲食ブースが並ぶ、東京出店の主戦場(通常出店スロット×5)。<br>通常出店: 出店費用は料理ごと(3000万〜6000万)・家賃 月'+man(ECON.REST_RENT)+'・広告3%・手数料3%。',btns:[['🍴 飲食メニューを開く',()=>{menuTab='food';openMenu();}]]},1.8);
+  addSign(65.5,47,'🏨',{t:'🏨 ホテル',b:'高層ホテル。1階に出店スロットが1ヶ所(宿泊客でにぎわう)。',btns:[['🍴 飲食メニューを開く',()=>{menuTab='food';openMenu();}]]},1.6);
+  addSign(44,57,'🚉',{t:'🚉 東京駅',b:'赤レンガの東京の玄関口。🚄の看板から新幹線で丹波へ帰れるよ。'},1.6);
+  // 🚄 丹波へ帰る(駅前広場)
+  addSign(50.5,55.5,'🚄',{t:'🚄 新幹線のりば(東京駅)',b:'新幹線に乗って🏘丹波の街へ帰るよ(農場へはさらに街の東の門から)。',btns:[['🚄 丹波へ帰る(新幹線)',()=>switchMap('town')]]},2.0);
+  // 高架下のブース(カウンター+赤いひさし+ちょうちん)
+  for(const s of TOKYO_SLOTS){
+    if(!s.id.startsWith('g'))continue;
+    tiBox(s.x,40.9,2.4,1.0,0.8,0x9a6b3a); // カウンター
+    const aw=new THREE.Mesh(new THREE.BoxGeometry(2.8,0.14,1.6),new THREE.MeshLambertMaterial({color:0xc23b22}));aw.position.set(s.x,5.4,40.8);decoGroup.add(aw); // ひさし
+    const lan=new THREE.Mesh(new THREE.BoxGeometry(0.24,0.34,0.24),new THREE.MeshBasicMaterial({color:0xff9a4a}));lan.position.set(s.x-1.1,4.6,41.2);decoGroup.add(lan); // ちょうちん
+  }
+  // モールの中(フードコートのテーブルと店構え)
+  tiBox(13,52,2.5,1.0,0.8,0xd87a8a);tiBox(25,52,2.5,1.0,0.8,0x3a6fd8);tiBox(13,60,2.5,1.0,0.8,0x2f8a4a);tiBox(25,60,2.5,1.0,0.8,0xe8b83f);
+  [[17,55],[22,55],[17,61],[22,61]].forEach(p=>{tiBox(p[0],p[1],1.0,0.75,1.0,0xf2ede2);addDecoCollider(p[0],p[1],0.6,3);});
+  // ホテルのロビーカウンター(玄関前)
+  tiBox(69.5,46.8,2.2,0.95,0.7,0x8a6a3a);
+  // 街灯(大通り・駅前・高架下)
+  [[8,30.2],[16,30.2],[24,30.2],[40,30.2],[48,30.2],[56,30.2],[64,30.2],[72,30.2],
+   [8,46],[20,46],[30,46],[58,46],[72,46],
+   [34.2,8],[34.2,16],[34.2,24],[38.8,52],[34.2,60],[34.2,68],
+   [42,53.6],[58,53.6],[39,42],[59,42]].forEach(p=>townLamp(p[0],p[1]));
+  // ベンチ(駅前広場・球場ゲート・モール前)
+  townBench(44,55,0);townBench(56,55,0);townBench(14,28.4,0);townBench(22,28.4,0);townBench(24,46.8,0);
+  // 出店スロットの看板(空き=🍴/出店済み=料理の絵文字で出し分け)
+  buildTokyoSlotSigns();
+  // 大勢の歩く人(軽量ボックス人間の群衆)
+  buildTokyoCrowd();
+}
+// 東京のエリア名
+function areaNameTokyo(x,z){
+  if(x>=5&&x<=31&&z>=5&&z<=29)return'⚾ 野球場';
+  if(x>=48&&x<=74&&z>=5&&z<=29)return'🏢 オフィス街';
+  if(x>=34&&x<=64&&z>=34&&z<=42)return'🍜 高架下の飲食店街';
+  if(x>=8&&x<=30&&z>=46&&z<=66)return'🛍 ショッピングモール';
+  if(x>=64&&x<=74&&z>=46&&z<=58)return'🏨 ホテル';
+  if(x>=40&&x<=60&&z>=54&&z<=70)return'🚉 東京駅';
+  if((z>=31&&z<=33)||(z>=43&&z<=45)||(x>=35&&x<=37))return'🛣 大通り';
+  return'🗼 東京';
+}
+// ---------- v68: 東京の群衆(軽量な自作ボックス人間。GLBは使わない) ----------
+let tokyoCrowd=[];
+const tokyoCrowdGroup=new THREE.Group();
+const TOKYO_ROUTES=[ // 道(PATH)沿いの巡回ルート(往復 or 周回)
+  [[5,32],[74,32]],           // 北の大通り(東西)
+  [[36,4],[36,73]],           // 南北の大通り(高架下をくぐる)
+  [[4,44],[74,44]],           // 南の大通り(東西)
+  [[36,32],[70,32],[70,44],[36,44]], // オフィス街〜高架下の周回
+  [[41,55.5],[59,55.5]],      // 駅前広場
+  [[50,46.5],[50,55]],        // 駅への道
+  [[18,29.5],[18,21]],        // 球場ゲート〜内野
+  [[10,44],[32,44],[19.5,46.8]], // モール前
+];
+function crowdPerson(){
+  const cols=[0x3a5aa8,0x8a4a4a,0x2f8a4a,0x555a66,0xb5843f,0xd87a8a,0xe8b83f,0x6a4a8a,0x35485e,0xc9a86f];
+  const g=new THREE.Group();
+  const legs=new THREE.Mesh(new THREE.BoxGeometry(0.34,0.55,0.24),new THREE.MeshLambertMaterial({color:cols[Math.floor(Math.random()*cols.length)]}));legs.position.y=0.28;g.add(legs);
+  const body=new THREE.Mesh(new THREE.BoxGeometry(0.46,0.6,0.3),new THREE.MeshLambertMaterial({color:cols[Math.floor(Math.random()*cols.length)]}));body.position.y=0.86;g.add(body);
+  const head=new THREE.Mesh(new THREE.BoxGeometry(0.3,0.3,0.28),new THREE.MeshLambertMaterial({color:0xf0c8a8}));head.position.y=1.33;g.add(head);
+  return g;
+}
+function clearTokyoCrowd(){
+  while(tokyoCrowdGroup.children.length)tokyoCrowdGroup.remove(tokyoCrowdGroup.children[0]);
+  tokyoCrowd.length=0;
+  if(tokyoCrowdGroup.parent)scene.remove(tokyoCrowdGroup);
+}
+function buildTokyoCrowd(){
+  clearTokyoCrowd();
+  scene.add(tokyoCrowdGroup);
+  const N=40; // 30〜50体
+  for(let i=0;i<N;i++){
+    const route=TOKYO_ROUTES[i%TOKYO_ROUTES.length];
+    const ox=(Math.random()-0.5)*1.6,oz=(Math.random()-0.5)*1.4; // 同じ道でも少しずらして群衆らしく
+    const pts=route.map(p=>[p[0]+ox,p[1]+oz]);
+    const m=crowdPerson();
+    const wi=Math.floor(Math.random()*pts.length);
+    m.position.set(pts[wi][0],3,pts[wi][1]);
+    m.rotation.y=Math.random()*Math.PI*2;
+    tokyoCrowdGroup.add(m);
+    tokyoCrowd.push({m,pts,wi:(wi+1)%pts.length,spd:1.0+Math.random()*1.5,ph:Math.random()*6});
+  }
+}
+function updateTokyoCrowd(dt){
+  for(const c of tokyoCrowd){
+    const wp=c.pts[c.wi],dx=wp[0]-c.m.position.x,dz=wp[1]-c.m.position.z,dl=Math.hypot(dx,dz);
+    if(dl<0.5){c.wi=(c.wi+1)%c.pts.length;continue;}
+    c.ph+=dt*7*c.spd;
+    c.m.position.x+=dx/dl*c.spd*dt;
+    c.m.position.z+=dz/dl*c.spd*dt;
+    c.m.position.y=3+Math.abs(Math.sin(c.ph))*0.05; // 歩きの上下動
+    const ty=Math.atan2(dx,dz);
+    let dr=ty-c.m.rotation.y;
+    while(dr>Math.PI)dr-=Math.PI*2;while(dr<-Math.PI)dr+=Math.PI*2;
+    c.m.rotation.y+=dr*Math.min(1,dt*8);
+  }
+}
+// ---------- v68: 検証フック ----------
+window.__v4dbg.gotoTokyo=()=>switchMap('tokyo');
+window.__v4dbg.tokyoSlots=()=>TOKYO_SLOTS.map(s=>({id:s.id,x:s.x,z:s.z,venue:s.venue,n:s.n,occupied:!!restAt(s.id)}));
+window.__v4dbg.openRest=(type,venue,slot)=>{
+  const s=slot?slotOf(slot):TOKYO_SLOTS.find(o=>o.venue===(venue||'normal')&&!restAt(o.id));
+  if(!s)return 'no free slot';
+  const shop=openRestaurant(type,s.id);
+  return shop?{id:shop.id,slot:s.id,venue:s.venue,...computeRestaurantPL(shop)}:'failed(資金不足/出店済みなど)';
+};
+window.__v4dbg.restPL=()=>state.restaurants.map(s=>({type:s.type,venue:s.venue,...computeRestaurantPL(s)}));
+window.__v4dbg.postRest=()=>{const m0=state.money;postRestaurants();return state.money-m0;};
+window.__v4dbg.crowdN=()=>tokyoCrowd.length;
+
 // マップの後片付け(チャンク・装飾・コライダー・牛・NPCをsceneから外す)
 function teardownMap(){
   for(const k in chunks){const r=chunks[k];if(r.solid){worldGroup.remove(r.solid);r.solid.geometry.dispose();}if(r.water){worldGroup.remove(r.water);r.water.geometry.dispose();}delete chunks[k];}
@@ -6125,6 +6523,7 @@ function teardownMap(){
   for(const m of manures)scene.remove(m);manures.length=0;
   chestnutTrees.length=0;
   tractorMesh=null;polisherMesh=null;processorMesh=null;compostShedMesh=null;dungYardMesh=null;planterMesh=null;combineMesh=null;riceSackGroup=null;barnSign=null;machineBadges={};pastureVacantSign=null;barnDungMesh=null; // v20/v22 v35
+  clearTokyoCrowd();tokyoSlotSigns={}; // v68: 東京の群衆とスロット看板の登録をクリア
   for(const n of npcs)scene.remove(n.mesh);
   cancelMoveTarget();pendingAct=null;
   dirtySet.clear();
@@ -6133,6 +6532,8 @@ function teardownMap(){
 function buildMapWorld(){
   if(curMap==='town'){
     genTown();rebuildAll();buildTownDecor();
+  }else if(curMap==='tokyo'){ // v68: 東京
+    genTokyo();rebuildAll();buildTokyoDecor();
   }else{
     genWorld();applyLandParcels();applyEdits();
     if(state.barnRented)ensureBarnBuilt(); // v42: 古いセーブの牛舎を現行レイアウト(牧草の山・餌箱・掃除アイスル等)に作り直す→餌やり等が効くように
@@ -6167,17 +6568,23 @@ function switchMap(target){
   if(mapBusy||isGameOver||!state||target===curMap)return;
   mapBusy=true;
   sfxSeq([[520,.08],[660,.1]]);
-  showTravel(target==='town'?'🌉 橋を渡って街へ…':'🌉 橋を渡って農場へ…',()=>{
+  showTravel((target==='tokyo'||curMap==='tokyo')?'🚄 新幹線で移動中…':(target==='town'?'🌉 橋を渡って街へ…':'🌉 橋を渡って農場へ…'),()=>{ // v68: 東京は新幹線
     teardownMap();
     curMap=target;state.map=target;
     updateMapBtn(); // v33
     buildMapWorld();
-    const sp=target==='town'?TOWN_SPAWN:FARM_SPAWN;
+    const sp=target==='town'?TOWN_SPAWN:(target==='tokyo'?TOKYO_SPAWN:FARM_SPAWN); // v68: 3マップ対応
     player.x=sp.x;player.z=sp.z;
-    if(walkY(Math.floor(player.x),Math.floor(player.z),WH)>WH){player.x=target==='town'?32.5:27.5;player.z=target==='town'?40.5:34.5;} // 保険
+    if(walkY(Math.floor(player.x),Math.floor(player.z),WH)>WH){ // 保険
+      if(target==='town'){player.x=32.5;player.z=40.5;}
+      else if(target==='tokyo'){player.x=50.5;player.z=44.0;}
+      else{player.x=27.5;player.z=34.5;}
+    }
     player.y=topY(Math.floor(player.x),Math.floor(player.z))+1;player.vy=0;player.onGround=true;
     camera.position.set(player.x-Math.sin(camYaw)*8,player.y+6,player.z-Math.cos(camYaw)*8);
-    toast(target==='town'?'🏘 橋を渡って丹波の街に着いた！役場・銀行・農協・修理屋・セリ市場・不動産屋があるよ':'🌾 橋を渡って農場に帰ってきた！');
+    toast(target==='town'?'🏘 丹波の街に着いた！役場・銀行・農協・修理屋・セリ市場・不動産屋があるよ'
+      :(target==='tokyo'?'🗼 東京に着いた！⚾野球場・🍜高架下・🛍モール・🏨ホテルに🍴飲食店を出店できるよ(帰りは東京駅の🚄看板)'
+      :'🌾 橋を渡って農場に帰ってきた！'));
     updateHUD();updateMachineBadges();saveGame(false);
     mapBusy=false;
   });
@@ -6426,7 +6833,7 @@ function bindControls(){
   document.getElementById('menuOpenBtn').addEventListener('click',openMenu);
   document.getElementById('quest').addEventListener('click',()=>{ac();showQuestInfo();});     // v21: クエストの❓タップで詳細
   document.getElementById('weekBtn').addEventListener('click',()=>{ac();nextWeek();});         // v26: 時間送りは「次の週へ」の1本のみ(週単位)
-  document.getElementById('mapBtn').addEventListener('click',()=>{ac();switchMap(curMap==='town'?'farm':'town');}); // v33: ワンタップで農場⇄街
+  document.getElementById('mapBtn').addEventListener('click',()=>{ac();switchMap(curMap==='farm'?'town':(curMap==='tokyo'?'town':'farm'));}); // v33: ワンタップで農場⇄街 v68: 東京からは街へ(保険)
   // v20: カメラズーム。ホイール(PC)+🔍±ボタン(スマホ/PC共通)。ピンチはタッチ側で処理
   el.addEventListener('wheel',e=>{e.preventDefault();setCamDist(camDist+e.deltaY*0.012);},{passive:false});
   const zi=document.getElementById('zoomInBtn'),zo=document.getElementById('zoomOutBtn');
@@ -6466,6 +6873,7 @@ function maybeRescue(){
 // ---------- エリア名 ----------
 function areaName(x,z){
   if(curMap==='town')return areaNameTown(x,z); // v19: 街のエリア名
+  if(curMap==='tokyo')return areaNameTokyo(x,z); // v68: 東京のエリア名
   // v20: 大倉庫(複合施設)と新築牛舎
   if(x>=WHX0-2&&x<=WHX1+1&&z>=WHZ0-1&&z<=WHZ1+1)return'🏭 大倉庫(加工場・事務所)';
   // v58: 「新築牛舎」は第二牛舎の増築に統合済みなので号棟ラベルは廃止(南の棚田拡張のラベルを追加)
@@ -6537,7 +6945,7 @@ function animate(ts){
     const escG=circleBlockedGrid(player.x,player.z,player.y);
     const nx=Math.max(0.5,Math.min(WS-0.5,player.x+Math.sin(ang)*sp));
     if((escG||!circleBlockedGrid(nx,player.z,player.y))&&!circleBlockedDeco(nx,player.z,player.x,player.z,player.y))player.x=nx;
-    const nz=Math.max((curMap==='town'?0.5:ZMIN+0.5),Math.min(WS-0.5,player.z+Math.cos(ang)*sp)); // v57: 農場は北の拡張ゾーンまで歩ける
+    const nz=Math.max((curMap!=='farm'?0.5:ZMIN+0.5),Math.min(WS-0.5,player.z+Math.cos(ang)*sp)); // v57: 農場は北の拡張ゾーンまで歩ける v68: 街/東京はz>=0
     if((escG||!circleBlockedGrid(player.x,nz,player.y))&&!circleBlockedDeco(player.x,nz,player.x,player.z,player.y))player.z=nz;
     player.dir=ang;walk+=dt*curSpd*1.9; // v11: 足の振りも実速度に連動
   }
@@ -6687,6 +7095,8 @@ function animate(ts){
       toast('💬 '+n.cfg.name+'「'+n.cfg.line+'」');
     }
   }
+  // --- v68: 東京の群衆(大勢の歩く人) ---
+  if(curMap==='tokyo')updateTokyoCrowd(dt);
   // --- カメラ（地形にめり込まないよう手前で止める） ---
   const cov=window.__v4dbg.camOver; // v13: 検証用オーバーライド({d,h})
   // v20: ズーム可変(camDist=5.2〜24)。高さも引き量に比例させ、最大で農場を俯瞰できる
@@ -6779,6 +7189,7 @@ function startGame(saveData){
     // v18: 旧セーブ等で水の中・壁の中に居たら開始地点へ復帰(水没・詰み防止の保険)
     if(walkY(Math.floor(player.x),Math.floor(player.z),WH)>WH){
       if(curMap==='town'){player.x=TOWN_SPAWN.x;player.z=TOWN_SPAWN.z;}
+      else if(curMap==='tokyo'){player.x=TOKYO_SPAWN.x;player.z=TOKYO_SPAWN.z;} // v68
       else{player.x=27.5;player.z=34.5;}
     }
     player.y=topY(Math.floor(player.x),Math.floor(player.z))+1;
