@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v74: 決算書の「利益の蓄積」がへんな数字(NaN)になる不具合を修正 — 子牛の資産評価calfValueが未定義のcf.age÷ECON.CALF_SHIP_AGEでNaNになり、子牛が1頭でもいると純資産全体がNaN化していた→週齢ageWeeks÷CALF_SHIP_WEEKSに修正</title>
+<title>丹波農商 牧場物語 v75: 牛舎をどんどん増築できるように — mapを北へ拡張(ZMIN-30→-64)して第二牛舎の増築上限を2→6区画に。🏠不動産屋の第二牛舎の行にも増築ボタンを追加(所有後も繰り返し増築可・農協と同じ補助金/融資フロー)</title>
 <link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -1390,7 +1390,7 @@ function initThree(){
 
 // ---------- ボクセルデータ ----------
 const WS=78,BASE_WS=52,WH=18,CS=8,NC=Math.ceil(WS/CS); // v16: 52→68に拡張 / v20: 68→78(大倉庫と山の開拓地)
-const ZMIN=-30,CZMIN=Math.floor(ZMIN/CS); // v57: 農場マップを北(z<0)へ30マス拡張(北の第二牛舎を正方形で建てる用地)。街マップは従来どおりz>=0
+const ZMIN=-64,CZMIN=Math.floor(ZMIN/CS); // v57: 農場マップを北(z<0)へ拡張(第二牛舎の用地) v75: -30→-64(増築上限2→6=北壁z-62が収まる)。街マップは従来どおりz>=0
 const grid={};
 function key(x,y,z){return x+','+y+','+z;}
 function getB(x,y,z){return grid[key(x,y,z)]||0;}
@@ -1633,15 +1633,16 @@ function genWorld(){
     }
     if(Math.abs(x-rx)===2&&getB(x,1,z))gset(x,1,z,B.PATH); // 川岸
   }
-  // --- v57: 北の拡張ゾーン(z=-30〜-1)。フラットな平原+川の続き。第二牛舎はここに正方形で建つ ---
+  // --- v57: 北の拡張ゾーン(z=ZMIN〜-1、v75で-64まで)。フラットな平原+川の続き。第二牛舎はここに建ち北へ増築で伸びる ---
   for(let x=0;x<WS;x++)for(let z=ZMIN;z<0;z++){
     const rx=riverX(z);
     if(Math.abs(x-rx)<=1){gset(x,0,z,B.STONE);gset(x,1,z,B.WATER);continue;} // 川を北へも続ける
     gset(x,0,z,B.SOIL);gset(x,1,z,B.GRASS);
     if(Math.abs(x-rx)===2)gset(x,1,z,B.PATH); // 川岸の小道
   }
-  // 北の平原の木(第二牛舎の最大用地 x23-40,z-30〜7 は避ける) v58: 牛舎が北の端まで伸びるので東西に逃がす
-  [[2,-8],[1,-18],[4,-27],[46,-6],[54,-16],[63,-9],[70,-20],[45,-24],[58,-27],[14,-28],[18,-14],[12,-6],[68,-28]].forEach(p=>{if(inWorld(p[0],p[1]))normalTree(p[0],p[1]);});
+  // 北の平原の木(第二牛舎の最大用地 x23-40,z-64〜7 は避ける) v58: 牛舎が北の端まで伸びるので東西に逃がす v75: 北の新ゾーン(z-31〜-62)にも追加
+  [[2,-8],[1,-18],[4,-27],[46,-6],[54,-16],[63,-9],[70,-20],[45,-24],[58,-27],[14,-28],[18,-14],[12,-6],[68,-28],
+   [3,-38],[15,-44],[9,-56],[18,-60],[5,-62],[45,-36],[55,-42],[68,-38],[48,-52],[62,-56],[70,-60],[42,-62]].forEach(p=>{if(inWorld(p[0],p[1]))normalTree(p[0],p[1]);});
   // --- v60: 平地の水田(川の東、南側)。段々の棚田をやめて全面同じ高さの1枚田に。
   //     高さは南の拡張(rice3: 耕地y1+水面y2)と同じ=リピート購入で南へそのままつながる ---
   flatten(10,23,35,47,2); // 田んぼ+あぜ道の土台を同じ高さに
@@ -1818,7 +1819,7 @@ const PARCELS={
   pasture1:{n:'西の牧草地(基本)',em:'🌿',price:ECON.LAND_PASTURE_PRICE,desc:'牛舎の東の空き地を柵付きの牧草地に開拓。作付け(10万)すると🌸春(5月)と🍂秋(9月)の年2回、牧草を収穫できる(1回72束〜。牛が多い時は頭数×9ヶ月分まで増える)。牧草を自給できれば牛の餌代がタダに(市販の牧草を買わずに済む)。'},
   grass2:{n:'東の牧草地(拡張)',em:'🌿',price:ECON.LAND_GRASS_PRICE,desc:'牧草の収穫が2倍(72→144束/回)になる拡張区画(約2町)。⚠<b>飛地</b>=西とは細い連絡路しかなく大型機械を運べない→<b>牧草の一式(トラクター+ダンプ+ベーラー)がもう1組と担当がもう1人</b>必要(先に西の牧草地が必要)。'},
   rice2:{n:'東の棚田',em:'🌾',price:ECON.LAND_RICE_PRICE,desc:'米の規模が1.5倍(苗代450万・収穫450袋・年商1,350万円)に。約1.5町。⚠<b>飛地</b>=基本の田と陸続きでないため機械を運べない→<b>米の一式(トラクター+田植え機+コンバイン+乾燥機)がもう1組と担当がもう1人</b>必要。'},
-  barn2:{n:'北の第二牛舎(大牛舎)',em:'🏠',price:ECON.LAND_BARN_PRICE,desc:'北の平原に実在の畜舎型の大牛舎を建てる(重機レンタル・工事費込み)。中央の通路の両側に牛が通路を向いて並び、牛の前に餌箱+銀の繋ぎ柵、後ろに掃除アイスル、奥に仔牛の個室。収容枠が母牛+'+ECON.BARN2_ADD+'頭・子牛+'+ECON.BARN2_ADD+'頭。南の入口から通路で農場とつながり、増築で北(奥)へ長くなる。牛の世話担当は第一・第二を歩いて巡回。'},
+  barn2:{n:'北の第二牛舎(大牛舎)',em:'🏠',price:ECON.LAND_BARN_PRICE,desc:'北の平原に実在の畜舎型の大牛舎を建てる(重機レンタル・工事費込み)。中央の通路の両側に牛が通路を向いて並び、牛の前に餌箱+銀の繋ぎ柵、後ろに掃除アイスル、奥に仔牛の個室。収容枠が母牛+'+ECON.BARN2_ADD+'頭・子牛+'+ECON.BARN2_ADD+'頭。南の入口から通路で農場とつながり、購入後は北(奥)へ<b>最大6区画まで増築</b>できる(🏠不動産屋か🚜農協から)。牛の世話担当は第一・第二を歩いて巡回。'},
   orchard:{n:'栗園(南の丘)',em:'🌰',price:ECON.LAND_ORCHARD_PRICE,desc:'農場の南の丘に栗の木が植わる。秋に🌰栗を一括収穫して瓶詰め加工できる(渋皮煮などの原料)。'}, // v27/v50: 北東→南へ
   field2:{n:'南の畑(拡張)',em:'🥕',price:1000000,desc:'南に野菜畑を拡張。にんじん/ねぎ/黒枝豆などを植える面積が増える(🥕野菜担当がいれば自動で作付け・収穫)。'}, // v50
   rice3:{n:'南の田んぼ(拡張)',em:'🌾',price:2000000,desc:'平地の水田を南へ1区画拡張(段差なし・1枚の田んぼとしてつながる=<b>陸続き</b>で機械一式を共用できる)。繰り返し買うと南へ1区画ずつ伸びる(最大4回)。収量は1回目+50%、以降+25%ずつ(基本の田3町→最大6.75町)。⚠<b>合計が5町を超えると1人+一式では回らない</b>→もう一式+担当が必要。'}, // v58: リピート購入で南へ拡張 / v64: 町数と一式の目安
@@ -1872,9 +1873,9 @@ function terraformRice2(){
 //         中央通路x30-32(人が歩く・コンクリ) / 餌箱x33 / 銀柵x34 / 繋ぎ列x35(牛・西向き) / 掃除アイスルx36 / 壁x37
 // 南(z7)に入口(通路の延長x30-32)、北の奥に仔牛の個室(ペン)。増築で繋ぎ列が北(奥)へ8行ずつ伸びる。
 const BARN2={X0:25,X1:37,W_AISLE:26,W_COW:27,W_FEN:28,W_HAY:29,C0:30,C1:32,E_HAY:33,E_FEN:34,E_COW:35,E_AISLE:36,Z1:7,COWZ1:5};
-function barn2Exp(){return Math.min(2,state.newBarns||0);} // 増築数(0-2)
-function barn2CowZ0(){return BARN2.COWZ1-(14+8*barn2Exp())+1;} // 繋ぎ列の北端: 基本z-8 → 増築1でz-16 → 増築2でz-24
-function barn2Z0(){return barn2CowZ0()-6;} // 北壁: 基本z-14 → 増築1でz-22 → 増築2でz-30(=北の地図の端)
+function barn2Exp(){return Math.min(6,state.newBarns||0);} // 増築数(0-6) v75: 上限2→6(mapを北へZMIN-64まで拡張)
+function barn2CowZ0(){return BARN2.COWZ1-(14+8*barn2Exp())+1;} // 繋ぎ列の北端: 基本z-8 → 増築1ごとに8行北へ(増築6でz-56)
+function barn2Z0(){return barn2CowZ0()-6;} // 北壁: 基本z-14 → 増築1でz-22 → … → 増築6でz-62(=北の地図の端ZMIN-64の手前)
 function terraformBarn2(){
   const B2=BARN2,Z0=barn2Z0(),cz0=barn2CowZ0();
   const laneZ=cz0-1,fenZ=cz0-2; // 繋ぎ列の北: 横断レーン→仔牛ペンの柵→個室3行→北壁
@@ -3907,10 +3908,10 @@ function ensureBarnBuilt(){
 }
 // v20: 新築牛舎(1棟3000万・補助で1500万)。⛰山を切り開いて増築。🟤糞置き場が必須。
 // v57: 「新築牛舎」=北の第二牛舎を北(奥)へ1ユニットぶん増築(正方形を保ったまま奥へ大きくなる)
-function newBarnMaxed(){return (state.newBarns||0)>=2;} // 北の奥(z-23)まで拡張済み
+function newBarnMaxed(){return (state.newBarns||0)>=6;} // v75: 6区画=北の端(北壁z-62)まで拡張済み
 function buyNewBarn(){
   if(!state.land.barn2){toast('🏠 先に🏠不動産屋で「北の第二牛舎」を建ててね。増築はその牛舎を北(奥)へ広げるよ');return;}
-  if(newBarnMaxed()){toast('🐂 牛舎はもう東の端まで拡張済み。これ以上は伸ばせないよ');return;}
+  if(newBarnMaxed()){toast('🐂 牛舎はもう6区画=北の端まで拡張済み。これ以上は伸ばせないよ');return;}
   const pr=priceWithSub(ECON.NEW_BARN,'barn');
   facilityPay(pr.price,'牛舎の増築(北の牛舎を奥へ拡張)',()=>buyNewBarnCore(pr)); // v46: 現金 or 設備資金の融資
 }
@@ -3926,7 +3927,7 @@ function buyNewBarnCore(pr){
   if(pr.sub){consumeSub('barn');toast('🏛 役場の補助金で半額('+man(pr.price)+')で増築できた！');}
   else toast('🛒 定価'+man(pr.price)+'で増築(役場で申請しておけば半額だったよ…)');
   fanfare();
-  toast('🐂 北の牛舎を奥(北)へ拡張！(母牛+'+ECON.NEW_BARN_MO+'頭・子牛+'+ECON.NEW_BARN_CALF+'頭)。正方形のまま奥へ大きくなるよ');
+  toast('🐂 北の牛舎を奥(北)へ拡張！(母牛+'+ECON.NEW_BARN_MO+'頭・子牛+'+ECON.NEW_BARN_CALF+'頭)。増築'+state.newBarns+'/6区画・奥へ長くなるよ');
   toast('🐂 収容枠: 母牛'+state.cows.length+'/'+barnCapNow()+'頭・子牛'+state.calves.length+'/'+calfCapNow()+'頭');
   updateHUD();renderMenu();
 }
@@ -5383,9 +5384,12 @@ function landHTML(){
     const rice3=(k==='rice3'),r3n=state.rice3N||0;
     const owned=rice3?(r3n>=4):state.land[k]; // v58: 南の棚田は最大4回まで繰り返し買える
     const locked=(k==='grass2'&&!state.land.pasture1); // v22: 東の牧草地は西の牧草地が先
-    const ownLabel=rice3?(r3n>0?' ✅×'+r3n+(r3n>=4?'(南の端まで)':''):''):(owned?' ✅所有':'');
+    const b2=(k==='barn2'&&state.land.barn2); // v75: 第二牛舎は所有後もここから繰り返し増築できる
+    const ownLabel=rice3?(r3n>0?' ✅×'+r3n+(r3n>=4?'(南の端まで)':''):''):(owned?(b2?' ✅所有・増築'+(state.newBarns||0)+'/6区画':' ✅所有'):'');
     h+='<div class="row"><div class="em">'+em+'</div><div class="info"><b>'+p.n+ownLabel+'</b><small>'+p.desc+(locked?'<br><span style="color:#c03030">🔒 先に「西の牧草地(基本)」の購入が必要</span>':'')+'</small></div>'+
-      (owned?'<span style="font-size:12px;color:#1f7a1f;font-weight:bold">開拓済み</span>'
+      (owned?(b2?(newBarnMaxed()?'<span style="font-size:12px;color:#1f7a1f;font-weight:bold">✅ 北の端まで拡張済(母'+barnCapNow()+'頭)</span>'
+        :'<button class="buy orange" onclick="buyNewBarn()">🏠 北へ増築(+母'+ECON.NEW_BARN_MO+'/子'+ECON.NEW_BARN_CALF+')</button>')
+        :'<span style="font-size:12px;color:#1f7a1f;font-weight:bold">開拓済み</span>')
       :'<button class="buy orange" '+((state.money>=p.price||state.certFarmer)&&!locked?'':'disabled')+' onclick="buyLand(\''+k+'\')">'+(state.money>=p.price?man(p.price):'🏦融資')+'</button>')+'</div>'; // v47: 認定農業者は設備資金で購入可
   }
   h+='<p class="sub2" style="font-size:11.5px;color:#8a6a45">💡 牧草地=自給で牧草代タダ／東の棚田=米1.5倍／北の第二牛舎=母牛16頭。</p>';
@@ -5461,7 +5465,7 @@ function jaHTML(){
   // v54: 牛舎の増築=北の第二牛舎を東へ1区画ぶん伸ばす(点在させない)
   const bp=priceWithSub(ECON.NEW_BARN,'barn');
   const canExt=state.land.barn2&&!newBarnMaxed();
-  h+='<div class="row"><div class="em">🏠</div><div class="info"><b>牛舎の増築(1区画'+man(ECON.NEW_BARN)+'・重機レンタル/工事費込み)</b><small>'+(state.land.barn2?('北の第二牛舎を<b>北(奥)へ伸ばして</b>大きくするよ。1区画で母牛+'+ECON.NEW_BARN_MO+'頭・子牛+'+ECON.NEW_BARN_CALF+'頭。いま増築'+state.newBarns+'区画'+(newBarnMaxed()?'・北の奥まで拡張済':'')+'。<b>業者まかせでラクだがユンボ代込みで高い</b>(柵や壁を足すだけなら🔨DIYメニュー=材料費のみが安い)<br>'+(bp.sub?'<span class="prof">🏛補助済 半額 '+man(bp.price)+'</span>':'<span style="color:#c03030">未申請 定価 '+man(bp.price)+'(申請で'+man(ECON.NEW_BARN/2)+')</span>')):'先に🏠不動産屋で「北の第二牛舎」を建てると、ここから北(奥)へ増築できるよ')+'</small></div>'+
+  h+='<div class="row"><div class="em">🏠</div><div class="info"><b>牛舎の増築(1区画'+man(ECON.NEW_BARN)+'・重機レンタル/工事費込み)</b><small>'+(state.land.barn2?('北の第二牛舎を<b>北(奥)へ伸ばして</b>大きくするよ。1区画で母牛+'+ECON.NEW_BARN_MO+'頭・子牛+'+ECON.NEW_BARN_CALF+'頭。いま増築'+state.newBarns+'/6区画'+(newBarnMaxed()?'・6区画=北の端まで拡張済':'')+'。<b>業者まかせでラクだがユンボ代込みで高い</b>(柵や壁を足すだけなら🔨DIYメニュー=材料費のみが安い)<br>'+(bp.sub?'<span class="prof">🏛補助済 半額 '+man(bp.price)+'</span>':'<span style="color:#c03030">未申請 定価 '+man(bp.price)+'(申請で'+man(ECON.NEW_BARN/2)+')</span>')):'先に🏠不動産屋で「北の第二牛舎」を建てると、ここから北(奥)へ増築できるよ')+'</small></div>'+
     (canExt?'<button class="buy" '+(state.money>=bp.price||state.certFarmer?'':'disabled')+' onclick="buyNewBarn()">'+(state.money>=bp.price?man(bp.price):'🏦融資して増築')+'</button>':'')+'</div>';
   h+='<p class="sub2" style="font-size:11.5px;color:#8a6a45">💡 🏭本格堆肥舎(補助で半額)は農場の🟫堆肥場で建設。中古の牛舎レンタル(月3万)は補助対象外。</p>';
   return h;
