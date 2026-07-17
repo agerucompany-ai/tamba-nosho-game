@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v73: 決算書の「利益の蓄積」がへんな数字になる不具合を修正 — 東京の飲食店(出店費用3000〜6000万)・南の棚田拡張(rice3)・南の畑(field2)をBSに取得原価で資産計上(機械/牛舎と同じ)。出店/購入で現金減と資産増が相殺され純資産が正しくなる</title>
+<title>丹波農商 牧場物語 v74: 決算書の「利益の蓄積」がへんな数字(NaN)になる不具合を修正 — 子牛の資産評価calfValueが未定義のcf.age÷ECON.CALF_SHIP_AGEでNaNになり、子牛が1頭でもいると純資産全体がNaN化していた→週齢ageWeeks÷CALF_SHIP_WEEKSに修正</title>
 <link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -1154,7 +1154,7 @@ function taxCalc(f){
 // 純資産=資産−負債(開始時1,000万=元手。差額は利益の蓄積等)。
 // この定義により「資産合計 = 負債+純資産」は必ず一致(貸借一致)する。
 function cowValue(c){return c.retired?motherSalePrice(c):ECON.COW_PRICE;} // v20: 引退牛は状態込みの売値
-function calfValue(cf){return Math.round(calfSalePrice(cf)*Math.min(1,cf.age/ECON.CALF_SHIP_AGE));} // v20: 雌雄・状態で変動
+function calfValue(cf){return Math.round(calfSalePrice(cf)*Math.min(1,(cf.ageWeeks||0)/ECON.CALF_SHIP_WEEKS));} // v20: 雌雄・状態で変動 / v74: 旧cf.age(未定義)÷ECON.CALF_SHIP_AGE(未定義)=NaNで子牛がいると純資産・利益の蓄積がNaN(へんな数字)になっていた→週齢ageWeeks÷CALF_SHIP_WEEKSに修正
 function computeBS(){
   let cowsV=0;for(const c of state.cows)cowsV+=cowValue(c);
   let calvesV=0;for(const cf of state.calves)calvesV+=calfValue(cf);
