@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v71: 東京の高架を西端まで延伸して端から端まで貫通(宙で切れない・球場の南を通過)・カメラを修正=高層の東京では頭上の高架/屋根の遮蔽を無視して引き(ズームアウト)と角度変更を効かせ、東京着地は俯瞰寄りの見やすい初期カメラに</title>
+<title>丹波農商 牧場物語 v72: 増築した南の棚田(rice3 x11-22)に栗の木が生えていた不具合を修正 — 栗園を棚田の列の西どなり(x4-9)へ寄せて重複を解消(栗の木は全てx≤7で田んぼに入らない)・栗園の看板も移動</title>
 <link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -1823,10 +1823,10 @@ const PARCELS={
 };
 // v27: 栗園(北東の丘 x33-47,z3-8)。牛舎と離れた場所。購入で植樹。
 function terraformOrchard(){
-  // v50: 栗園を北東→南の丘へ移設。南西(棚田の南)を平地にして栗の木を植える
-  flatten(4,22,50,60,2);
-  for(let x=4;x<=22;x++)for(let z=50;z<=60;z++)if(inWorld(x,z))gset(x,2,z,B.GRASS);
-  [[6,52],[10,51],[14,53],[18,52],[8,57],[12,58],[16,57],[20,58]].forEach(p=>{if(inWorld(p[0],p[1]))chestnutTree(p[0],p[1]);});
+  // v50: 栗園を北東→南の丘へ移設。v72: 南の拡張棚田(rice3=x11-22,z48-75)と重なって栗が田んぼに生えていたので、栗園を棚田の列の西側(x4-9)に寄せて重複を解消(栗の木は全てx≤7=棚田に入らない)
+  flatten(4,9,50,60,2);
+  for(let x=4;x<=9;x++)for(let z=50;z<=60;z++)if(inWorld(x,z))gset(x,2,z,B.GRASS);
+  [[4,51],[7,51],[4,54],[7,54],[4,57],[7,57],[4,60],[7,60]].forEach(p=>{if(inWorld(p[0],p[1]))chestnutTree(p[0],p[1]);});
 }
 // v50: 南の畑(拡張)=既存の野菜畑(z36-42)の南に耕した畑を追加(x26-33,z44-49)
 function terraformField2(){
@@ -2627,7 +2627,7 @@ function buildDecor(){
       if(!state.compostShed)a.push(['🏭 本格堆肥舎を建てる('+man(shedPriceNow())+')',()=>buildShed()]);
       else a.push(['🟫 肥料を出荷する('+state.fertStock+'袋)',()=>sellFert(false)]);
       return a;}});
-  if(state.land.orchard)addSign(13,54,'🌰',{t:'🌰 栗園(南の丘)',b:()=>'南の丘の栗園。木に近づいて「使う」で栗を拾える(少量→倉庫で売却)。<br><b>秋(10〜11月)は一括収穫して瓶詰め加工</b>に出せる: 外注加工'+man(ECON.CHESTNUT_OUTSOURCE)+'(🏭瓶詰め加工機'+man(ECON.CHESTNUT_MACHINE)+'・補助で半額を買えば外注費タダ)→1年かけて出荷して年間'+man(ECON.CHESTNUT_REVENUE)+'の売上。<br>いま: '+(state.chestnutBizYear===state.year?('今年は加工済(出荷残'+man(state.chestnutShip)+')'):(isChestnutSeason()?'✅一括収穫・加工できる':'加工は秋'))+'・瓶詰め機'+(state.chestnutMachine?'あり✅':'なし(外注)'),
+  if(state.land.orchard)addSign(6,55,'🌰',{t:'🌰 栗園(南の丘)',b:()=>'南の丘(棚田の西どなり)の栗園。木に近づいて「使う」で栗を拾える(少量→倉庫で売却)。<br><b>秋(10〜11月)は一括収穫して瓶詰め加工</b>に出せる: 外注加工'+man(ECON.CHESTNUT_OUTSOURCE)+'(🏭瓶詰め加工機'+man(ECON.CHESTNUT_MACHINE)+'・補助で半額を買えば外注費タダ)→1年かけて出荷して年間'+man(ECON.CHESTNUT_REVENUE)+'の売上。<br>いま: '+(state.chestnutBizYear===state.year?('今年は加工済(出荷残'+man(state.chestnutShip)+')'):(isChestnutSeason()?'✅一括収穫・加工できる':'加工は秋'))+'・瓶詰め機'+(state.chestnutMachine?'あり✅':'なし(外注)'),
     btns:()=>{const a=[];
       if(isChestnutSeason()&&state.chestnutBizYear!==state.year)a.push(['🌰 栗を一括収穫して加工に出す',()=>harvestChestnutBiz(null)]);
       if(!state.chestnutMachine)a.push(['🏭 瓶詰め加工機を買う('+man(ECON.CHESTNUT_MACHINE)+'・補助で半額)',()=>buyChestnutMachine()]);
