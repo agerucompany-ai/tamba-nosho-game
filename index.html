@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v70: 駅の配置を明快に — 🚄丹波駅を街の北端へ移設(線路が場外へ抜ける自然な配置)、🚉東京駅を高架下の東端へ移して高架線と一直線に連続(駅を出て西へ歩けばそのまま🍜飲食店街)、到着スポーンや群衆ルートも新駅に合わせて調整</title>
+<title>丹波農商 牧場物語 v71: 東京の高架を西端まで延伸して端から端まで貫通(宙で切れない・球場の南を通過)・カメラを修正=高層の東京では頭上の高架/屋根の遮蔽を無視して引き(ズームアウト)と角度変更を効かせ、東京着地は俯瞰寄りの見やすい初期カメラに</title>
 <link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -6378,15 +6378,17 @@ function genTokyo(){
   tower(58,64,16,23,15,B.WHITE);
   tower(67,73,18,25,12,B.STONE);
   // 🍜 高架下の飲食店街(x34-64): 柱+高架デッキ(y8)+欄干。その下(南側z41)にブースを並べる
-  for(let x=34;x<=64;x+=5)for(const z of[36,40])for(let y=3;y<=7;y++)gset(x,y,z,B.STONE); // 柱
-  for(let x=34;x<=64;x++)for(let z=36;z<=40;z++)gset(x,8,z,B.STONE); // 高架のデッキ
-  for(let x=34;x<=64;x++){gset(x,9,36,B.BRICK);gset(x,9,40,B.BRICK);} // 欄干
+  // v71: 高架を西端(x0=map外)へも延伸=線路が宙で切れず西の場外へ抜ける(東端x77の東京駅と合わせて端から端まで貫く高架線)。z36-40は球場(z5-29)の南で干渉なし
+  for(let x=0;x<=3;x++)for(let z=32;z<=44;z++){for(let y=3;y<=WH;y++)gset(x,y,z,0);gset(x,2,z,B.PAVE);} // 西の丘を平坦化(線路が西端へ抜ける)
+  for(let x=4;x<=64;x+=5)for(const z of[36,40])for(let y=3;y<=7;y++)gset(x,y,z,B.STONE); // 柱
+  for(let x=0;x<=64;x++)for(let z=36;z<=40;z++)gset(x,8,z,B.STONE); // 高架のデッキ(西端x0まで)
+  for(let x=0;x<=64;x++){gset(x,9,36,B.BRICK);gset(x,9,40,B.BRICK);} // 欄干
   // v70: 高架を東端(x77=map外)へ延伸=線路が東の場外へ抜け、その東端に🚉東京駅が乗る(駅を出て西へ歩けばそのまま高架下)
   for(let x=64;x<=77;x++)for(let z=32;z<=44;z++){for(let y=3;y<=WH;y++)gset(x,y,z,0);gset(x,2,z,B.PAVE);} // 東の丘を平坦化
   for(let x=64;x<=77;x++)for(let z=36;z<=40;z++)gset(x,8,z,B.STONE); // デッキ延長(map東端まで)
   for(const cx of[64,69,74])for(const cz of[36,40])for(let y=3;y<=7;y++)gset(cx,y,cz,B.STONE); // 延伸部の柱(x64は平坦化で消えた既存柱の再設置)
   for(let x=64;x<=76;x++){gset(x,9,36,B.BRICK);gset(x,9,40,B.BRICK);} // 延伸部の欄干
-  for(let x=34;x<=76;x++)for(let z=37;z<=39;z++)gset(x,2,z,B.PATH); // 高架の真下の地上通路(東京駅⇄高架下を東西に直行。柱の間を歩ける)
+  for(let x=0;x<=76;x++)for(let z=37;z<=39;z++)gset(x,2,z,B.PATH); // 高架の真下の地上通路(西端x0〜東京駅を東西に直行。柱の間を歩ける)
   // 🛍 ショッピングモール(x8-30,z46-66): 横長の大箱+カラフルなファサード+北の入口
   for(let x=9;x<=29;x++)for(let z=48;z<=64;z++){
     gset(x,2,z,B.PAVE);
@@ -6631,6 +6633,8 @@ function switchMap(target){
       else{player.x=27.5;player.z=34.5;}
     }
     if(yaw!==null)camYaw=yaw; // v69: 着地の向き=マップの内側(進行方向が続く感覚)
+    if(target==='tokyo'){camPitch=0.6;setCamDist(13);} // v71: 高層の東京は俯瞰寄り+少し引きの見やすい初期カメラに(その後は自由に調整可)
+    else camPitch=0.42; // v71: 農場/街へ戻ったら標準の傾きに戻す(引き量camDistはユーザーの設定を尊重)
     const gLand=walkY(Math.floor(player.x),Math.floor(player.z),3.2); // v70: 東京駅ホームは高架デッキ(y8)の真下=topYだとデッキの上に乗ってしまうので、一番下の歩ける床に着地
     player.y=(gLand<=WH)?gLand:topY(Math.floor(player.x),Math.floor(player.z))+1;player.vy=0;player.onGround=true;
     camera.position.set(player.x-Math.sin(camYaw)*8,player.y+6,player.z-Math.cos(camYaw)*8);
@@ -7160,8 +7164,10 @@ function animate(ts){
   const cTo=new THREE.Vector3(camX,camY,camZ);
   const cDir=cTo.clone().sub(cFrom);const cLen=cDir.length();cDir.normalize();
   let cMax=cLen;
+  const cityView=(curMap==='tokyo'); // v71: 高層の東京では高架デッキ(y8)やビル上層にカメラが当たり続けて「引き(ズームアウト)/俯瞰ができない」ので、頭上の遮蔽は無視して地上の壁だけで寄せる
   for(let t=0.6;t<cLen;t+=0.25){
     const p=cFrom.clone().add(cDir.clone().multiplyScalar(t));
+    if(cityView&&p.y>player.y+2.5)continue; // 頭上(高架・屋根・ビル上層)は無視=引きと角度変更を効かせる
     const b=getB(Math.floor(p.x),Math.floor(p.y),Math.floor(p.z));
     if(b&&!BI[b].water){cMax=Math.max(1.2,t-0.4);break;}
   }
