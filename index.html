@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v72: 増築した南の棚田(rice3 x11-22)に栗の木が生えていた不具合を修正 — 栗園を棚田の列の西どなり(x4-9)へ寄せて重複を解消(栗の木は全てx≤7で田んぼに入らない)・栗園の看板も移動</title>
+<title>丹波農商 牧場物語 v73: 決算書の「利益の蓄積」がへんな数字になる不具合を修正 — 東京の飲食店(出店費用3000〜6000万)・南の棚田拡張(rice3)・南の畑(field2)をBSに取得原価で資産計上(機械/牛舎と同じ)。出店/購入で現金減と資産増が相殺され純資産が正しくなる</title>
 <link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -1169,14 +1169,16 @@ function computeBS(){
     bldgBarn:(state.newBarnCosts||[]).reduce((s,c)=>s+c,0),        // v20: 新築牛舎(全棟の取得原価)
     mach:['tractor','polisher','processor','planter','combine','dryer','dumper','baler','mower','cnharv','drone'].reduce((s,k)=>s+((state.machines&&state.machines[k]&&state.machines[k].cost)||0),0), // v19/v20: 新品機械 / v64: 乾燥機・ダンプ・ベーラー追加
     landGrass:(state.land.pasture1?ECON.LAND_PASTURE_PRICE:0)+(state.land.grass2?ECON.LAND_GRASS_PRICE:0)+(state.land.orchard?ECON.LAND_ORCHARD_PRICE:0), // v22: 西の牧草地+東の牧草地 / v28: 栗園
-    landRice:state.land.rice2?ECON.LAND_RICE_PRICE:0,
+    landRice:(state.land.rice2?ECON.LAND_RICE_PRICE:0)+(state.rice3N||0)*2000000, // v73: 東の棚田+南の棚田拡張(rice3・1区画200万)も取得原価で計上
+    landField:state.land.field2?1000000:0, // v73: 南の畑(field2・100万)
+    restV:(state.restaurants||[]).reduce((s,r)=>s+restSetupCost(r.type,r.venue),0), // v73: 東京の飲食店=出店費用を取得原価で資産計上(機械/建物と同じ)。未計上だと出店費用ぶん純資産=「利益の蓄積」が過小(へんな数字)になっていた
     landBarn:state.land.barn2?ECON.LAND_BARN_PRICE:0,
     bank:state.bankLoan,cowDebt:cowDebtTotal(),
     nRice:state.riceBags,nGrass:state.grassStock,nFert:state.fertStock,
     nCows:state.cows.length,nCalves:state.calves.length,
   };
   b.inventory=b.invRice+b.invGrass+b.invFert;
-  b.fixed=b.cowsV+b.calvesV+b.bldgShed+b.bldgDung+b.bldgBarn+b.mach+b.landGrass+b.landRice+b.landBarn; // v19: 牛舎・機械 v20: 糞置き場を追加
+  b.fixed=b.cowsV+b.calvesV+b.bldgShed+b.bldgDung+b.bldgBarn+b.mach+b.landGrass+b.landRice+b.landField+b.landBarn+b.restV; // v19: 牛舎・機械 v20: 糞置き場 v73: 南の畑・飲食店(出店費用)も固定資産に
   b.assets=b.cash+b.inventory+b.fixed;
   b.inst=instLoanTotal(); // v28: 制度融資(新規就農資金+スーパーL)
   b.liab=b.bank+b.cowDebt+b.inst;
@@ -5186,7 +5188,8 @@ function bsHTML(b){
     if(b.bldgDung>0)A+=row('🟤 建物(糞置き場)',b.bldgDung);
     if(b.bldgBarn>0)A+=row('🏠 建物(新築牛舎'+state.newBarns+'棟)',b.bldgBarn);
     if(b.mach>0)A+=row('🚜 機械(新品の取得原価)',b.mach);
-    if(b.landGrass+b.landRice+b.landBarn>0)A+=row('🗺 土地(購入区画)',b.landGrass+b.landRice+b.landBarn);
+    if(b.landGrass+b.landRice+b.landField+b.landBarn>0)A+=row('🗺 土地(購入区画)',b.landGrass+b.landRice+b.landField+b.landBarn);
+    if(b.restV>0)A+=row('🍴 飲食店(出店費用の取得原価)',b.restV);
   }
   A+=row('資産合計',b.assets,true);
   let L='<tr class="hd"><td>負債の部</td><td class="amt"></td></tr>';
@@ -5237,11 +5240,12 @@ function segPLHTML(segKey,g){
 // 事業別BS(その事業にひも付く資産・負債)
 function segBSHTML(segKey,b){
   const rows=[];const liabs=[];
-  if(segKey==='rice'){rows.push(['🍚 米在庫('+b.nRice+'袋×3万)',b.invRice],['🌾 東の棚田(取得原価)',b.landRice],['🚜 機械(トラクター/田植え機/コンバイン/乾燥機/精米機/ドローン)',(state.machines.tractor.cost||0)+(state.machines.polisher.cost||0)+(state.machines.planter.cost||0)+(state.machines.combine.cost||0)+((state.machines.dryer&&state.machines.dryer.cost)||0)+((state.machines.drone&&state.machines.drone.cost)||0)]);} // v64: 乾燥機
+  if(segKey==='rice'){rows.push(['🍚 米在庫('+b.nRice+'袋×3万)',b.invRice],['🌾 棚田(東＋南の拡張・取得原価)',b.landRice],['🚜 機械(トラクター/田植え機/コンバイン/乾燥機/精米機/ドローン)',(state.machines.tractor.cost||0)+(state.machines.polisher.cost||0)+(state.machines.planter.cost||0)+(state.machines.combine.cost||0)+((state.machines.dryer&&state.machines.dryer.cost)||0)+((state.machines.drone&&state.machines.drone.cost)||0)]);} // v64: 乾燥機
   else if(segKey==='grass'){rows.push(['🌿 牧草在庫('+b.nGrass+'束×1万)',b.invGrass],['🗺 牧草地(西/東・取得原価)',b.landGrass],['🛻 牧草機械(ダンプ/ベーラー/旧草刈り機・取得原価)',((state.machines.dumper&&state.machines.dumper.cost)||0)+((state.machines.baler&&state.machines.baler.cost)||0)+((state.machines.mower&&state.machines.mower.cost)||0)]);} // v64
   else if(segKey==='cow'){rows.push(['🐂 母牛'+b.nCows+'頭',b.cowsV],['🐮 子牛'+b.nCalves+'頭',b.calvesV],['🏠 新築牛舎'+state.newBarns+'棟(取得原価)',b.bldgBarn],['🟤 糞置き場(取得原価)',b.bldgDung],['🏠 北の第二牛舎(取得原価)',b.landBarn]);liabs.push(['🐂 牛の与信(繁殖ローン)',b.cowDebt]);}
   else if(segKey==='compost'){rows.push(['🏭 本格堆肥舎(取得原価)',b.bldgShed],['🟫 肥料在庫('+b.nFert+'袋×8千)',b.invFert]);}
-  else if(segKey==='other'){rows.push(['🍱 加工機(取得原価)',state.machines.processor.cost||0],['🌰 栗収穫ネット(取得原価)',(state.machines.cnharv&&state.machines.cnharv.cost)||0]);} // v63
+  else if(segKey==='other'){rows.push(['🍱 加工機(取得原価)',state.machines.processor.cost||0],['🌰 栗収穫ネット(取得原価)',(state.machines.cnharv&&state.machines.cnharv.cost)||0],['🥕 南の畑(取得原価)',b.landField]);} // v63 / v73: 南の畑
+  else if(segKey==='food'){rows.push(['🍴 飲食店(出店費用の取得原価)',b.restV]);} // v73: 東京の飲食店(出店費用=取得原価)
   else if(segKey==='common'){rows.push(['💴 現金(全社の資金は本部で管理)',b.cash]);liabs.push(['🏦 銀行借入金',b.bank]);if(b.inst>0)liabs.push(['🎓 制度融資(新規就農/スーパーL)',b.inst]);}
   else rows.push(['(この事業の在庫は少額のため計上なし)',0]);
   let at=0,lt=0;
