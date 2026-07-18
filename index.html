@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v76: 🍔ハンバーガー屋を追加(⚾球場限定・球場出店で月次+136万) — 高架下(🍜)は同じ料理を1店までに制限(すでに出した料理は他の高架下スロットで選べない)。料理選択UI・スロット看板・出店ガードに反映</title>
+<title>丹波農商 牧場物語 v77: 牛舎を建てても牛を入れられない不具合を修正 — 収容枠の実上限(moCap)を「全牛舎の建物枠×世話係の総労働の少ない方」にプール(旧版は古い牛舎に自分の労働力が固定され第二牛舎が世話係0=使えなかった)。自分1人で最大60頭、従業員1人ごとに+60頭。収容枠表示に「使える枠/建物の枠」と雇用の案内を追加</title>
 <link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -891,20 +891,25 @@ function caretakers2(){return ((!state.barnRented&&state.land.barn2)?1:0)+cowSta
 function cowCaretakers(){return caretakers1()+caretakers2();} // 互換(合計人数)
 function careMoCap(){return caretakers1()*ECON.COW_CARE_MO+(state.land.barn2?caretakers2()*ECON.COW_CARE_MO:0);}
 function careCalfCap(){return caretakers1()*ECON.COW_CARE_CALF+(state.land.barn2?caretakers2()*ECON.COW_CARE_CALF:0);}
-function moCap(){return Math.min(barn1MoPhys(),caretakers1()*ECON.COW_CARE_MO)+Math.min(barn2MoPhys(),caretakers2()*ECON.COW_CARE_MO);}   // 母牛の実上限(牛舎ごとにmin)
-function calfCap(){return Math.min(barn1CalfPhys(),caretakers1()*ECON.COW_CARE_CALF)+Math.min(barn2CalfPhys(),caretakers2()*ECON.COW_CARE_CALF);} // 子牛の実上限
+// v77: 母牛/子牛の実上限=「全牛舎の建物枠」と「世話係(自分+従業員)の総労働」の少ない方。
+//      旧版は牛舎ごとにminを取っていたため、古い牛舎(10頭)を借りていると自分の労働力(60頭ぶん)がそこに固定され、
+//      せっかく建てた大きな第二牛舎の枠が「世話係0=使えない」状態になっていた(牛舎を建てたのに牛を入れられない不具合)。
+//      →総枠 vs 総世話係でプール。自分1人で最大60頭、従業員1人ごとに+60頭ぶん見られる。
+function moCap(){return Math.min(barn1MoPhys()+barn2MoPhys(), cowCaretakers()*ECON.COW_CARE_MO);}   // 母牛の実上限
+function calfCap(){return Math.min(barn1CalfPhys()+barn2CalfPhys(), cowCaretakers()*ECON.COW_CARE_CALF);} // 子牛の実上限
 function pregCount(){return state.cows.filter(c=>c.preg>=0).length;} // 妊娠中(将来生まれる子牛)
 function committedCalves(){return state.calves.length+pregCount();} // 現在+妊娠ぶん
 // 上限に達した時のメッセージ(牛舎の枠か世話の枠か・どの牛舎か)
 function capMsgMo(){
-  if(barn2MoPhys()>caretakers2()*ECON.COW_CARE_MO)return '👤 第二牛舎の世話係が足りない(1人で母牛'+ECON.COW_CARE_MO+'頭まで)。「🐂牛の世話(第二牛舎)」を任せよう';
-  if(barn1MoPhys()>caretakers1()*ECON.COW_CARE_MO)return '👤 第一牛舎の世話係が足りない(1人で母牛'+ECON.COW_CARE_MO+'頭まで)。「🐂牛の世話(第一牛舎)」を任せよう';
-  return '🏚 母牛の牛舎の枠が満員('+barnCapNow()+'頭)。牛舎を増築しよう';
+  // v77: プール式。世話係が足りない(=建物枠より世話の総枠が小さい)か、建物が満員か、を切り分けて案内。
+  if(barn1MoPhys()+barn2MoPhys()>cowCaretakers()*ECON.COW_CARE_MO)
+    return '👤 世話係が足りないよ(いま世話係'+cowCaretakers()+'人＝母牛'+moCap()+'頭まで)。🏢事務所で従業員を雇って「🐂牛の世話」を任せると、もっと多く飼えるよ(1人ごとに+'+ECON.COW_CARE_MO+'頭)';
+  return '🏚 牛舎の枠が満員('+barnCapNow()+'頭)。🏠不動産屋か🚜農協で牛舎を増築しよう';
 }
 function capMsgCalf(){
-  if(barn2CalfPhys()>caretakers2()*ECON.COW_CARE_CALF)return '👤 第二牛舎の世話係が足りない(1人で子牛'+ECON.COW_CARE_CALF+'頭まで)。「🐂牛の世話(第二牛舎)」を任せよう';
-  if(barn1CalfPhys()>caretakers1()*ECON.COW_CARE_CALF)return '👤 第一牛舎の世話係が足りない(1人で子牛'+ECON.COW_CARE_CALF+'頭まで)。「🐂牛の世話(第一牛舎)」を任せよう';
-  return '🐮 子牛の牛舎の枠が満員('+calfCapNow()+'頭)。牛舎を増築しよう';
+  if(barn1CalfPhys()+barn2CalfPhys()>cowCaretakers()*ECON.COW_CARE_CALF)
+    return '👤 世話係が足りないよ(いま世話係'+cowCaretakers()+'人＝子牛'+calfCap()+'頭まで)。🏢事務所で従業員を雇って「🐂牛の世話」を任せよう(1人ごとに+'+ECON.COW_CARE_CALF+'頭)';
+  return '🐮 牛舎の枠が満員('+calfCapNow()+'頭)。🏠不動産屋か🚜農協で牛舎を増築しよう';
 }
 function isWaterSeason(){return state.week>=18&&state.week<=35;}
 // ---------- v19: 牛舎・機械・補助金・病気のヘルパ / v20: 実売価格・糞置き場 ----------
@@ -5807,7 +5812,8 @@ function cowsHTML(){
     '<button class="buy orange" onclick="rentBarn();renderMenu()">借りる</button></div>'+
     '<p class="sub2" style="font-size:11.5px;color:#8a6a45">💡 🚜街の農協で⛰新築牛舎(母15子15)も建てられる。🏛役場で申請すれば半額！</p>';
   }
-  let h='<p>🐂 収容枠: 母牛 <b>'+state.cows.length+'/'+barnCapNow()+'頭</b>・子牛 <b>'+state.calves.length+'/'+calfCapNow()+'頭</b><br><small>'+(state.barnRented?'🏚古い牛舎(家賃月3万・母10子10)':'')+(state.land.barn2?'・🏠第二牛舎(+5+5)':'')+(state.newBarns>0?'・⛰新築牛舎'+state.newBarns+'棟(各+15+15)':'')+'</small></p>';
+  const short=moCap()<barnCapNow();
+  let h='<p>🐂 収容枠: 母牛 <b>'+state.cows.length+'/'+moCap()+'頭</b>・子牛 <b>'+state.calves.length+'/'+calfCap()+'頭</b>'+(short?'<br><span style="color:#c0392b;font-size:11px">⚠ 建物は母牛'+barnCapNow()+'頭ぶんあるけど、いま世話係('+cowCaretakers()+'人)で使えるのは'+moCap()+'頭まで。🏢事務所で従業員を雇って「🐂牛の世話」を任せると、もっと多く飼えるよ(1人＝母牛'+ECON.COW_CARE_MO+'頭)</span>':'')+'<br><small>'+(state.barnRented?'🏚古い牛舎(家賃月3万・母10子10)':'')+(state.land.barn2?'・🏠第二牛舎(+'+ECON.BARN2_ADD+'+'+ECON.BARN2_ADD+')':'')+(state.newBarns>0?'・⛰増築'+state.newBarns+'区画(各+'+ECON.NEW_BARN_MO+'+'+ECON.NEW_BARN_CALF+')':'')+' ／ 👤世話係'+cowCaretakers()+'人</small></p>';
   if(state.cows.length>=barnCapNow()||state.calves.length>=calfCapNow())h+='<p class="loss" style="font-weight:bold">⚠ 枠が満員！増やすなら🚜農協で⛰新築牛舎('+man(ECON.NEW_BARN)+'・補助で半額・🟤糞置き場必須)か、出荷で空けよう</p>';
   const skN=sickAnimals().length; // v19: 病気の警告
   if(skN>0)h+='<p class="loss" style="font-weight:bold">🤒 病気の牛が'+skN+'頭！🚜街の農協で獣医を呼ぼう(放置すると悪化→最悪死亡)</p>';
@@ -5829,7 +5835,7 @@ function cowsHTML(){
 // v41: 牛の一覧(1頭ずつ)。牛が増えても見やすいよう牛舎メニューから分離。
 function cowListHTML(){
   if(!hasBarn())return '<p>まず🏚牛舎が必要だよ(牛舎メニューで借りる/建てる)。</p>';
-  let h='<p>🐂 <b>牛の一覧</b>（母牛 '+state.cows.length+'/'+barnCapNow()+'・仔牛 '+state.calves.length+'/'+calfCapNow()+'頭）</p>';
+  let h='<p>🐂 <b>牛の一覧</b>（母牛 '+state.cows.length+'/'+moCap()+'・仔牛 '+state.calves.length+'/'+calfCap()+'頭 ※使える枠。建物は母'+barnCapNow()+'/子'+calfCapNow()+'）</p>';
   const skN=sickAnimals().length;
   if(skN>0)h+='<p class="loss" style="font-weight:bold">🤒 病気の牛が'+skN+'頭！🚜農協で獣医を</p>';
   if(!state.cows.length&&!state.calves.length)h+='<p style="color:#8a6a45">牛はまだいないよ。🐂セリ市場でメス牛を買おう(与信100万円)。</p>';
