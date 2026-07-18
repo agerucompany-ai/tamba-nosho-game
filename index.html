@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v75: 牛舎をどんどん増築できるように — mapを北へ拡張(ZMIN-30→-64)して第二牛舎の増築上限を2→6区画に。🏠不動産屋の第二牛舎の行にも増築ボタンを追加(所有後も繰り返し増築可・農協と同じ補助金/融資フロー)</title>
+<title>丹波農商 牧場物語 v76: 🍔ハンバーガー屋を追加(⚾球場限定・球場出店で月次+136万) — 高架下(🍜)は同じ料理を1店までに制限(すでに出した料理は他の高架下スロットで選べない)。料理選択UI・スロット看板・出店ガードに反映</title>
 <link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -1950,6 +1950,7 @@ function buyLandCore(k){
   toast('🗺 '+p.n+'を'+man(p.price)+'で購入！世界が広がった！');
   toast('💡 '+p.desc);
   updateHUD();if(document.getElementById('menu').style.display==='flex')renderMenu();
+  saveGame(false); // v76: 区画購入(牛舎/牧草地/棚田等)を即セーブ=買った直後にリロード/離脱しても消えない
 }
 function flatten(x0,x1,z0,z1,h){
   for(let x=x0;x<=x1;x++)for(let z=z0;z<=z1;z++){
@@ -3930,6 +3931,7 @@ function buyNewBarnCore(pr){
   toast('🐂 北の牛舎を奥(北)へ拡張！(母牛+'+ECON.NEW_BARN_MO+'頭・子牛+'+ECON.NEW_BARN_CALF+'頭)。増築'+state.newBarns+'/6区画・奥へ長くなるよ');
   toast('🐂 収容枠: 母牛'+state.cows.length+'/'+barnCapNow()+'頭・子牛'+state.calves.length+'/'+calfCapNow()+'頭');
   updateHUD();renderMenu();
+  saveGame(false); // v76: 牛舎の増築を即セーブ=増築直後にリロード/離脱しても「作ったのにできてない」にならない
 }
 function rentBarn(){
   if(state.barnRented)return;
@@ -6195,7 +6197,17 @@ const CUISINE={
   tempura :{name:'天ぷら屋', em:'🍤',sales:10000000,cogs:0.33,staff:3,setup:30000000},
   sushi   :{name:'寿司屋',   em:'🍣',sales:10000000,cogs:0.40,staff:3,setup:30000000},
   yakiniku:{name:'焼肉屋',   em:'🥩',sales:10000000,cogs:0.60,staff:2,setup:60000000},
+  burger  :{name:'ハンバーガー屋',em:'🍔',sales:12000000,cogs:0.30,staff:2,setup:40000000,stadiumOnly:true}, // v76: 球場限定(球場出店なら月次+136万・通常だと+444万で強すぎるため球場だけ)
 };
+// v76: そのスロットで出せる料理キー。🍔は球場限定 / 🍜高架下(id先頭'g')は同じ料理を1店までに制限
+function cuisineKeysFor(slot){
+  let keys=Object.keys(CUISINE).filter(k=>!(CUISINE[k].stadiumOnly&&slot.venue!=='stadium'));
+  if(String(slot.id).startsWith('g')){
+    const used=new Set((state.restaurants||[]).filter(r=>{const os=slotOf(r.slot);return os&&String(os.id).startsWith('g');}).map(r=>r.type));
+    keys=keys.filter(k=>!used.has(k));
+  }
+  return keys;
+}
 // 出店スロット(空きに近づいて出店)。venue='stadium'は球場特例(出店300万・家賃なし・売上40%を球場へ)
 const TOKYO_SLOTS=[
   {id:'st1',  x:12,  z:22,  venue:'stadium',n:'⚾ 球場・レフト側'},
@@ -6246,6 +6258,9 @@ function openRestaurant(type,slotId){
   const cu=CUISINE[type],s=slotOf(slotId);
   if(!cu||!s){toast('🍴 ここには出店できないよ');return null;}
   if(restAt(slotId)){toast('🍴 この場所にはもう店があるよ');return null;}
+  if(!cuisineKeysFor(s).includes(type)){ // v76: 🍔は球場限定 / 高架下は同じ料理1店まで
+    toast(cu.stadiumOnly?(cu.em+' '+cu.name+'は⚾球場だけの限定メニューだよ'):('🍜 高架下には同じ「'+cu.name+'」はもう出せないよ(同じ料理は1店まで)'));return null;
+  }
   const setup=restSetupCost(type,s.venue);
   if(state.money<setup){toast('💸 出店費用'+man(setup)+'が払えない(現金'+man(state.money)+')');return null;}
   addExpense(setup,'foodopen','food');
@@ -6289,15 +6304,17 @@ function confirmCloseRestaurant(id){
 function foodHTML(){
   let h='<p>🍴 <b>飲食店経営</b>(東京)。🚄丹波の街の大通りの駅の看板から東京へ行き、空きスロット(🍴の看板)で出店。<b>4週ごと(月1回)</b>に売上と経費が帳簿(🍴飲食セグメント)へ計上されるよ。</p>';
   h+='<table class="fs"><tr class="hd"><td>料理</td><td class="amt">月商 / 原価率 / 社員 / 出店費用</td></tr>';
-  for(const k in CUISINE){const c=CUISINE[k];h+='<tr><td>'+c.em+' '+c.name+'</td><td class="amt">'+man(c.sales)+' / '+Math.round(c.cogs*100)+'% / '+c.staff+'人 / '+man(c.setup)+'</td></tr>';}
+  for(const k in CUISINE){const c=CUISINE[k];h+='<tr><td>'+c.em+' '+c.name+(c.stadiumOnly?' <span style="color:#c0392b">⚾球場限定</span>':'')+'</td><td class="amt">'+man(c.sales)+' / '+Math.round(c.cogs*100)+'% / '+c.staff+'人 / '+(c.stadiumOnly?'球場300万':man(c.setup))+'</td></tr>';}
   h+='</table>';
   h+='<p style="font-size:11.5px;color:#8a6a45">共通コスト: バイト人件費=売上10%・社員 月'+man(ECON.REST_STAFF_SAL)+'/人・水道光熱=売上2%。通常出店はさらに家賃 月'+man(ECON.REST_RENT)+'・広告3%・手数料3%。⚾球場出店は出店一律'+man(ECON.REST_STADIUM_SETUP)+'・家賃/広告/手数料なしのかわり<b>売上の40%を球場へ</b>。</p>';
   if(curMap==='tokyo'){
     let ns=null,nd=1e9;
     for(const s of TOKYO_SLOTS){const d=Math.hypot(s.x-player.x,s.z-player.z);if(d<nd){nd=d;ns=s;}}
     if(ns&&nd<7&&!restAt(ns.id)){
-      h+='<p style="margin-top:8px"><b>📍 いまいる場所「'+ns.n+'」('+(ns.venue==='stadium'?'⚾球場出店':'通常出店')+')に出店できる！</b></p>';
-      for(const k in CUISINE){
+      h+='<p style="margin-top:8px"><b>📍 いまいる場所「'+ns.n+'」('+(ns.venue==='stadium'?'⚾球場出店':'通常出店')+')に出店できる！</b>'+(String(ns.id).startsWith('g')?'<br><small style="color:#8a6a45">🍜高架下は同じ料理は1店まで(すでに出した料理は選べません)</small>':'')+'</p>';
+      const keys=cuisineKeysFor(ns);
+      if(!keys.length)h+='<p style="color:#8a6a45;font-size:12px">ここに出せる料理はもうないよ(高架下は同じ料理は1店まで)。</p>';
+      for(const k of keys){
         const c=CUISINE[k],setup=restSetupCost(k,ns.venue),pl=computeRestaurantPL({type:k,venue:ns.venue});
         h+='<div class="row"><div class="em">'+c.em+'</div><div class="info"><b>'+c.name+'</b><small>出店'+man(setup)+'・月商'+man(c.sales)+' → 見込み月次利益 <span class="'+(pl.profit>=0?'prof':'loss')+'">'+(pl.profit>=0?'+':'−')+man(Math.abs(pl.profit))+'</span></small></div><button class="buy orange" '+(state.money>=setup?'':'disabled')+' onclick="confirmOpenRestaurant(\''+k+'\',\''+ns.id+'\')">出店</button></div>';
       }
@@ -6332,9 +6349,9 @@ function updateSlotSign(s){
   }:{
     t:'🍴 出店できる場所('+(s.venue==='stadium'?'⚾球場':'通常')+') — '+s.n,
     b:()=>(s.venue==='stadium'
-      ?'⚾球場出店の特例: 出店費用は料理によらず一律<b>'+man(ECON.REST_STADIUM_SETUP)+'</b>・家賃/広告/手数料なし。そのかわり<b>売上の40%</b>を球場に払う。'
-      :'通常出店: 出店費用は料理ごと(🐙🍤🍣3000万/🥩6000万)・家賃 月'+man(ECON.REST_RENT)+'・広告3%・手数料3%。')+'<br>料理を選んで出店しよう(月商・原価率・社員数は料理ごと)。',
-    btns:()=>Object.keys(CUISINE).map(k=>{
+      ?'⚾球場出店の特例: 出店費用は料理によらず一律<b>'+man(ECON.REST_STADIUM_SETUP)+'</b>・家賃/広告/手数料なし。そのかわり<b>売上の40%</b>を球場に払う。🍔ハンバーガー屋は球場だけの限定メニュー！'
+      :'通常出店: 出店費用は料理ごと(🐙🍤🍣3000万/🥩6000万)・家賃 月'+man(ECON.REST_RENT)+'・広告3%・手数料3%。'+(String(s.id).startsWith('g')?'<br>🍜高架下は<b>同じ料理は1店まで</b>(他の高架下で出した料理は選べません)。':''))+'<br>料理を選んで出店しよう(月商・原価率・社員数は料理ごと)。',
+    btns:()=>cuisineKeysFor(s).map(k=>{
       const c=CUISINE[k],setup=restSetupCost(k,s.venue),pl=computeRestaurantPL({type:k,venue:s.venue});
       return[c.em+' '+c.name+'を出店('+man(setup)+'・月次利益'+(pl.profit>=0?'+':'−')+man(Math.abs(pl.profit))+')',()=>confirmOpenRestaurant(k,s.id)];
     }),
