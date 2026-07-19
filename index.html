@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v78: アルバイト(パート)を無制限に採用できるように=社員が上限でも増員可。採用費 月10万＋時給1300円(稼働で変動・満稼働で月30.8万)、いつでも解雇OK。牛の世話に就ければ世話係が増えて大きい牛舎も使える</title>
+<title>丹波農商 牧場物語 v79: 減価償却(適正会計)を導入 — 設備投資(飲食店の出店費用/機械/牛舎/堆肥舎)を取得時に一括費用にせず資産計上し、耐用年数(飲食・機械5年/牛舎・堆肥舎10年)で毎月 減価償却費として損益計上(非現金)。土地は非償却。BSは取得原価−償却累計の純額で貸借一致。飲食の月次利益に償却を反映。利益水準は変えず会計のみ正確化</title>
 <link rel="icon" href="data:,">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -787,6 +787,7 @@ function freshState(){return{
   shedCost:0,
   dungYard:false,dungCost:0,      // v20: 糞置き場(簡易)=処理のみ・牛舎増築の必須条件
   newBarns:0,newBarnCosts:[],     // v20: 新築牛舎の棟数と取得原価
+  newBarnWeeks:[],shedWeek:-1,barn2Week:-1,chestnutMachineCost:0,chestnutMachineWeek:-1, // v79: 減価償却の起点(取得週)。-1=未取得(旧セーブのundefinedも「今から償却開始」扱い)
   ricePlanterBonus:false,         // v20: 田植え機で植えたか(収量+10%)
   vetVisitDay:-1,ricePlantWeekN:-1,
   restaurants:[],restSeq:1, // v68: 東京の飲食店 {id,slot,type,venue}
@@ -1116,7 +1117,7 @@ const SEG_META={
 const SALE_SEG={rice:'rice',calf:'cow',mother:'cow',grass:'grass',fert:'compost',proc:'other',grant:'common',food:'food'}; // v28: grant=クエスト協力金(共通) v68: food=飲食店の売上
 const EXP_SEG={owner:'common',emp:'common',rent:'cow',feed:'cow',manure:'cow',seed:'rice',grassSow:'grass',shed:'compost',land:'common',other:'common',
   machine:'rice',barn:'cow',repair:'rice',vet:'cow',loss:'cow',dung:'cow',breed:'cow',yotaku:'cow',
-  foodcogs:'food',foodlabor:'food',foodrent:'food',foodutil:'food',foodad:'food',foodfee:'food',foodcomm:'food',foodopen:'food'}; // v19: 機械/牛舎/修理/獣医/死亡損失 v20: 糞置き場 v38: 種付け代 v67: 預託手数料・利息 v68: 飲食8勘定
+  foodcogs:'food',foodlabor:'food',foodrent:'food',foodutil:'food',foodad:'food',foodfee:'food',foodcomm:'food',foodopen:'food',deprec:'common'}; // v19: 機械/牛舎/修理/獣医/死亡損失 v20: 糞置き場 v38: 種付け代 v67: 預託手数料・利息 v68: 飲食8勘定 v79: 減価償却費(実際は資産ごとのセグへ配賦)
 // v60: 従業員の担当ジョブ→事業セグメントの対応表。給与を担当事業へ配賦する時に使う。
 // (旧コードはジョブキーをそのままセグメントに渡していて、veg/proc/pig担当がいると
 //  state.fy.segに無いキーを参照して週送り(weekEnd)が例外で止まる致命バグだった)
@@ -1125,12 +1126,12 @@ function freshSeg(){const o={};for(const k in SEG_META)o[k]={s:0,e:0,sd:{},ed:{}
 function freshFy(){return{sales:0,exp:0,
   sd:{rice:0,calf:0,mother:0,grass:0,proc:0,fert:0,grant:0,food:0},
   ed:{owner:0,emp:0,rent:0,feed:0,seed:0,grassSow:0,shed:0,land:0,other:0,manure:0,machine:0,barn:0,repair:0,vet:0,loss:0,dung:0,yotaku:0,
-    foodcogs:0,foodlabor:0,foodrent:0,foodutil:0,foodad:0,foodfee:0,foodcomm:0,foodopen:0}, // v68: 飲食8勘定
+    foodcogs:0,foodlabor:0,foodrent:0,foodutil:0,foodad:0,foodfee:0,foodcomm:0,foodopen:0,deprec:0}, // v68: 飲食8勘定 v79: 減価償却費
   seg:freshSeg()};}
 // v16セーブ(セグメント帳簿なし)の引き継ぎ: 既存fyの勘定別集計からセグメント帳簿を再構成
 function migrateFy(){
   const f=state.fy;if(!f)return;
-  for(const k of['grassSow','shed','land','machine','barn','repair','vet','loss','dung','yotaku','foodcogs','foodlabor','foodrent','foodutil','foodad','foodfee','foodcomm','foodopen'])if(f.ed[k]===undefined)f.ed[k]=0; // v19/v20: 新勘定も追補 v67: 預託手数料・利息 v68: 飲食8勘定
+  for(const k of['grassSow','shed','land','machine','barn','repair','vet','loss','dung','yotaku','foodcogs','foodlabor','foodrent','foodutil','foodad','foodfee','foodcomm','foodopen','deprec'])if(f.ed[k]===undefined)f.ed[k]=0; // v19/v20: 新勘定も追補 v67: 預託手数料・利息 v68: 飲食8勘定 v79: 減価償却費
   if(f.sd&&f.sd.food===undefined)f.sd.food=0; // v68: 飲食売上の勘定を旧セーブに追補
   if(f.seg)for(const k in SEG_META)if(!f.seg[k])f.seg[k]={s:0,e:0,sd:{},ed:{}}; // v68: 新セグメント(飲食)を旧セーブに追補
   if(!f.seg){
@@ -1148,6 +1149,25 @@ function addExpense(a,cat,seg){
   state.money-=a;state.fy.exp+=a;state.fy.ed[cat]=(state.fy.ed[cat]||0)+a;
   const g=state.fy.seg[seg||EXP_SEG[cat]||'common']||state.fy.seg.common;g.e+=a;g.ed[cat]=(g.ed[cat]||0)+a; // v17: 事業別に記帳 / v60: 未知セグは共通へ(週送りを止めない)
 }
+// ---------- v79: 減価償却(適正会計) ----------
+// depreciate=減価償却費の計上。非現金費用なので state.money は絶対に触らない(現金は取得時にcapexで出ている)。損益(fy.exp)にだけ乗せる。
+function depreciate(a,seg){ if(a<=0)return; state.fy.exp+=a; state.fy.ed.deprec=(state.fy.ed.deprec||0)+a; const g=state.fy.seg[seg||'common']||state.fy.seg.common; g.e+=a; g.ed.deprec=(g.ed.deprec||0)+a; }
+// capex=設備投資の取得。費用ではなく資産の取得なので現金だけ減らし fy.exp には乗せない(費用化は毎月の減価償却で行う)
+function capex(a){ state.money-=a; }
+// 償却対象資産の列挙(取得原価cost・耐用年数life[ヶ月=4週]・取得週week・費用配賦先seg)。
+// 農地(土地)と牛は非償却。旧セーブでweek未記録(undefined/-1)なら「今から償却開始」=ロード時にBSが急落せず現金も動かない安全側。
+function depreciableAssets(){ const L=[]; const wk=a=>((a!=null&&a>=0)?a:state.weekN);
+  for(const r of (state.restaurants||[])) L.push({cost:restSetupCost(r.type,r.venue),life:60,week:wk(r.openWeek),seg:'food'}); // 飲食店の出店費用=5年
+  const MK=['tractor','polisher','processor','planter','combine','dryer','dumper','baler','mower','cnharv','drone'];
+  for(const k of MK){const m=state.machines&&state.machines[k]; if(m&&m.cost>0)L.push({cost:m.cost,life:60,week:wk(m.week),seg:(MACH_META[k]&&MACH_META[k].seg)||'rice'});} // 機械=5年
+  if(state.chestnutMachine&&(state.chestnutMachineCost||0)>0)L.push({cost:state.chestnutMachineCost,life:60,week:wk(state.chestnutMachineWeek),seg:'other'}); // 栗の瓶詰め加工機=5年
+  const nbC=state.newBarnCosts||[],nbW=state.newBarnWeeks||[]; for(let i=0;i<nbC.length;i++)L.push({cost:nbC[i],life:120,week:wk(nbW[i]),seg:'cow'}); // 新築牛舎=10年
+  if(state.compostShed)L.push({cost:state.shedCost||ECON.SHED_COST,life:120,week:wk(state.shedWeek),seg:'compost'}); // 本格堆肥舎=10年
+  if(state.land.barn2)L.push({cost:ECON.LAND_BARN_PRICE,life:120,week:wk(state.barn2Week),seg:'cow'}); // 南の牧場+第二牛舎=10年
+  return L; }
+function assetAgeMo(a){return Math.max(0,(state.weekN-a.week)/4);} // 取得からの月齢(1ヶ月=4週)
+function assetNetValue(a){return a.cost*Math.max(0,1-assetAgeMo(a)/a.life);} // 純額=取得原価−減価償却累計
+function accumDeprecTotal(){let s=0;for(const a of depreciableAssets())s+=a.cost-assetNetValue(a);return s;} // 減価償却累計(BSで固定資産から差引)
 // v17: 税金計算(v15式)。牛の利益は非課税=牛の売上と牛の餌代を除いて30%
 function taxCalc(f){
   const cowSales=(f.sd.calf||0)+(f.sd.mother||0);
@@ -1176,7 +1196,7 @@ function computeBS(){
     bldgShed:state.compostShed?(state.shedCost||ECON.SHED_COST):0, // v19: 補助購入なら支払額=取得原価
     bldgDung:state.dungYard?(state.dungCost||ECON.DUNG_COST):0,    // v20: 糞置き場
     bldgBarn:(state.newBarnCosts||[]).reduce((s,c)=>s+c,0),        // v20: 新築牛舎(全棟の取得原価)
-    mach:['tractor','polisher','processor','planter','combine','dryer','dumper','baler','mower','cnharv','drone'].reduce((s,k)=>s+((state.machines&&state.machines[k]&&state.machines[k].cost)||0),0), // v19/v20: 新品機械 / v64: 乾燥機・ダンプ・ベーラー追加
+    mach:['tractor','polisher','processor','planter','combine','dryer','dumper','baler','mower','cnharv','drone'].reduce((s,k)=>s+((state.machines&&state.machines[k]&&state.machines[k].cost)||0),0)+(state.chestnutMachine?(state.chestnutMachineCost||0):0), // v19/v20: 新品機械 / v64: 乾燥機・ダンプ・ベーラー追加 / v79: 栗の瓶詰め加工機(capex化に伴い資産計上)
     landGrass:(state.land.pasture1?ECON.LAND_PASTURE_PRICE:0)+(state.land.grass2?ECON.LAND_GRASS_PRICE:0)+(state.land.orchard?ECON.LAND_ORCHARD_PRICE:0), // v22: 西の牧草地+東の牧草地 / v28: 栗園
     landRice:(state.land.rice2?ECON.LAND_RICE_PRICE:0)+(state.rice3N||0)*2000000, // v73: 東の棚田+南の棚田拡張(rice3・1区画200万)も取得原価で計上
     landField:state.land.field2?1000000:0, // v73: 南の畑(field2・100万)
@@ -1187,7 +1207,8 @@ function computeBS(){
     nCows:state.cows.length,nCalves:state.calves.length,
   };
   b.inventory=b.invRice+b.invGrass+b.invFert;
-  b.fixed=b.cowsV+b.calvesV+b.bldgShed+b.bldgDung+b.bldgBarn+b.mach+b.landGrass+b.landRice+b.landField+b.landBarn+b.restV; // v19: 牛舎・機械 v20: 糞置き場 v73: 南の畑・飲食店(出店費用)も固定資産に
+  b.accumDep=Math.round(accumDeprecTotal()); // v79: 減価償却累計(償却対象=機械/牛舎/堆肥舎/飲食店/第二牛舎。農地と牛は非償却)
+  b.fixed=b.cowsV+b.calvesV+b.bldgShed+b.bldgDung+b.bldgBarn+b.mach+b.landGrass+b.landRice+b.landField+b.landBarn+b.restV-b.accumDep; // v19: 牛舎・機械 v20: 糞置き場 v73: 南の畑・飲食店(出店費用)も固定資産に v79: 各資産は取得原価(グロス)のまま、累計償却を差し引いて純額に(貸借一致を維持)
   b.assets=b.cash+b.inventory+b.fixed;
   b.inst=instLoanTotal(); // v28: 制度融資(新規就農資金+スーパーL)
   b.liab=b.bank+b.cowDebt+b.inst;
@@ -1943,9 +1964,10 @@ function buyLandCore(k){
   else if(state.land[k])return;
   const p=PARCELS[k];
   if(state.money<p.price){toast('💸 '+p.n+'は'+man(p.price)+'。現金が足りないよ');return;}
-  addExpense(p.price,'land',(k==='grass2'||k==='pasture1'||k==='orchard')?'grass':((k==='rice2'||k==='rice3')?'rice':(k==='field2'?'other':'cow'))); // v17/v50: 土地は用途の事業へ配賦
+  capex(p.price); // v79: 土地は費用でなく資産の取得(現金だけ減・fy.expに乗せない)。農地は非償却、南の牧場+第二牛舎(barn2)のみ10年償却
   if(k==='rice3')state.rice3N=(state.rice3N||0)+1; // v58: 繰り返し購入で南へ伸びる
   state.land[k]=true;
+  if(k==='barn2')state.barn2Week=state.weekN; // v79: 償却の起点(取得週)
   if(curMap==='farm'){ // v19: 街で購入した時は帰農時にapplyLandParcelsで開拓される
     if(k==='pasture1'){terraformPasture1();buildPastureDecor();} // v22
     else if(k==='grass2')terraformGrass2();
@@ -3696,9 +3718,10 @@ function buildShed(){
 function buildShedCore(pr){
   if(state.compostShed)return;
   if(state.money<pr.price){toast('💸 本格堆肥舎の建設に'+man(pr.price)+'必要だよ'+(pr.sub?'(補助済 半額)':'(🏛役場で申請すると半額の'+man(ECON.SHED_COST/2)+')'));return;}
-  addExpense(pr.price,'shed'); // v17: 堆肥事業の経費(BSでは建物=取得原価)
+  capex(pr.price); // v79: 一括費用でなく資産計上(現金だけ減)→毎月 減価償却費で費用配分(10年・堆肥セグ)
   state.compostShed=true;
   state.shedCost=pr.price;
+  state.shedWeek=state.weekN; // v79: 償却の起点(取得週)
   if(pr.sub){consumeSub('shed');toast('🏛 役場の補助金で半額('+man(pr.price)+')で建設できた！');}
   else toast('🛒 定価'+man(pr.price)+'で建設(役場で申請しておけば半額だったよ…)');
   buildCompostShed();
@@ -3933,8 +3956,9 @@ function buyNewBarn(){
 function buyNewBarnCore(pr){
   if(!state.land.barn2||newBarnMaxed())return;
   if(state.money<pr.price){toast('💸 増築は'+man(pr.price)+'。現金が足りないよ'+(pr.sub?'(補助済 半額)':'(🏛役場で申請すると半額の'+man(ECON.NEW_BARN/2)+')'));return;}
-  addExpense(pr.price,'barn','cow');
+  capex(pr.price); // v79: 一括費用でなく資産計上(現金だけ減)→毎月 減価償却費で費用配分(10年・牛セグ)
   state.newBarns++;state.newBarnCosts.push(pr.price);
+  state.newBarnWeeks=state.newBarnWeeks||[];state.newBarnWeeks.push(state.weekN); // v79: 棟ごとの取得週(償却の起点)
   if(curMap==='farm'){
     terraformBarn2();applyDiyEdits();rebuildAll(); // 北の牛舎を奥(北)へ深くして作り直し(DIY編集も上書き再適用)
     refreshCowMeshes();assignCowSlots();
@@ -4292,7 +4316,7 @@ function buyChestnutMachine(){
   const pr=priceWithSub(ECON.CHESTNUT_MACHINE,'machine');
   facilityPay(pr.price,'栗の瓶詰め加工機',()=>{
     if(state.money<pr.price){toast('💸 瓶詰め加工機は'+man(pr.price)+'。現金が足りないよ'+(pr.sub?'':'(🏛役場で申請すると半額)'));return;}
-    addExpense(pr.price,'machine','other');state.chestnutMachine=true;
+    capex(pr.price);state.chestnutMachine=true;state.chestnutMachineCost=pr.price;state.chestnutMachineWeek=state.weekN; // v79: 資産計上→5年償却(加工セグ)
     if(pr.sub)consumeSub('machine');
     fanfare();toast('🏭 栗の瓶詰め加工機を導入('+man(pr.price)+')！これで外注費('+man(ECON.CHESTNUT_OUTSOURCE)+'/年)がタダに。栗事業の利益がぐっと増える');
     updateHUD();renderMenu();
@@ -4485,10 +4509,10 @@ function buyMachine(k,size){
 }
 function buyMachineCore(k,size,m,st,base,label,pr,used){
   if(state.money<pr.price){toast('💸 '+label+'は'+man(pr.price)+'。現金が足りないよ'+(pr.sub?'(補助済 半額)':(pr.nosub?'(補助対象外=定価)':'(役場で申請すると半額の'+man(base/2)+')')));return;}
-  addExpense(pr.price,'machine',m.seg);
+  capex(pr.price); // v79: 一括費用でなく資産計上(現金だけ減)→毎月 減価償却費で費用配分(5年・機械のセグ)
   const replace=(k==='tractor'&&st.lvl==='old'); // v64: 中古トラクターは下取りで買い替え(台数は増えない)
   st.n=(st.n===undefined?(st.lvl?1:0):st.n)+(replace?0:1);
-  st.lvl=used?(st.lvl||'old'):'new';st.broken=false;st.cost=(st.cost||0)+pr.price;
+  st.lvl=used?(st.lvl||'old'):'new';st.broken=false;st.cost=(st.cost||0)+pr.price;st.week=state.weekN; // v79: 償却の起点(取得週)
   if(k==='tractor'){if(size!=='grass')st.size=size;else if(!st.size)st.size='mid';}
   if(pr.sub){consumeSub('machine');toast('🏛 役場の補助金で半額('+man(pr.price)+')で購入できた！(定価'+man(base)+')');}
   else if(pr.nosub)toast('🛒 '+label+'を'+man(pr.price)+'で購入('+(m.sub===false&&m.seg==='rice'||k==='tractor'?'米用の機械は補助対象外':'補助対象外')+')');
@@ -5119,6 +5143,8 @@ function weekEnd(notes){
   progressPigs(notes); // v50: 豚の月次成長(ローテーションできていれば)
   shipChestnutWeekly(notes); // v50: 栗の瓶詰めを1年かけて徐々に出荷
   if(state.weekN>0&&state.weekN%4===0)postRestaurants(notes); // v68: 東京の飲食店の月次計上(4週=1ヶ月ごと)
+  // v79: 月次の減価償却(4週=1ヶ月ごと)。取得原価÷耐用年数を費用計上(非現金=state.moneyは減らさない)
+  if(state.weekN>0&&state.weekN%4===0){ let dep=0; for(const a of depreciableAssets()){ if(assetAgeMo(a)<a.life){ const d=Math.round(a.cost/a.life); depreciate(d,a.seg); dep+=d; } } if(dep>0)notes.push('🏭 減価償却費 −'+man(dep)+'(設備投資を耐用年数で費用配分・現金は減らない)'); }
   // 6) 年度末決算(3月末=4月の田植え直前の週。会計年度は4月〜翌3月) v44
   if(state.week===ECON.RICE_PLANT_WEEK-1){
     doFiscalClose();
@@ -5176,7 +5202,7 @@ function doFiscalClose(){
 const SD_LABEL={rice:'米の出荷',calf:'子牛の売却',mother:'親牛の売却',grass:'牧草の売却',fert:'肥料の売却(堆肥舎)',proc:'加工品・農産物',pig:'🐖 豚の出荷',grant:'協力金・補助',food:'飲食店の売上'}; // v68: 飲食
 const ED_LABEL={owner:'自分の給与(役員報酬)',emp:'従業員の給与',rent:'牛舎の家賃',feed:'牛の餌代',manure:'牛糞の処分費',seed:'苗代(米の作付け)',grassSow:'牧草の作付け',shed:'本格堆肥舎の建設',dung:'糞置き場の建設',land:'土地の購入',other:'その他(種代等)',
   machine:'機械の購入(新品)',barn:'新築牛舎の建設',repair:'機械の修理代',vet:'獣医の往診・治療費',loss:'牛の死亡損失(与信精算)',breed:'種付け代(人工授精)',yotaku:'牛の預託手数料・利息',
-  foodcogs:'飲食の原価',foodlabor:'飲食の人件費(社員+バイト)',foodrent:'飲食店の家賃',foodutil:'水道光熱費',foodad:'広告宣伝費',foodfee:'支払手数料',foodcomm:'球場の売上手数料',foodopen:'飲食店の出店費用'}; // v19/v20 v38 v67 v68: 飲食8勘定
+  foodcogs:'飲食の原価',foodlabor:'飲食の人件費(社員+バイト)',foodrent:'飲食店の家賃',foodutil:'水道光熱費',foodad:'広告宣伝費',foodfee:'支払手数料',foodcomm:'球場の売上手数料',foodopen:'飲食店の出店費用',deprec:'減価償却費'}; // v19/v20 v38 v67 v68: 飲食8勘定 v79: 減価償却費(新規取得はcapex=資産計上なのでfoodopen/land/machine/barn/shedは旧セーブの過去帳簿表示互換用)
 function plRows(obj,labels){
   let h='';
   for(const k in labels){
@@ -5224,6 +5250,7 @@ function bsHTML(b){
     if(b.mach>0)A+=row('🚜 機械(新品の取得原価)',b.mach);
     if(b.landGrass+b.landRice+b.landField+b.landBarn>0)A+=row('🗺 土地(購入区画)',b.landGrass+b.landRice+b.landField+b.landBarn);
     if(b.restV>0)A+=row('🍴 飲食店(出店費用の取得原価)',b.restV);
+    if(b.accumDep>0)A+='<tr><td style="padding-left:14px">➖ 減価償却累計</td><td class="amt loss">−'+fmt(b.accumDep)+'</td></tr>'; // v79: 償却対象資産は取得原価−累計償却の純額
   }
   A+=row('資産合計',b.assets,true);
   let L='<tr class="hd"><td>負債の部</td><td class="amt"></td></tr>';
@@ -5243,7 +5270,7 @@ function bsHTML(b){
     '<table class="fs bs-col" style="flex:1 1 0;min-width:0">'+L+'</table></div>'+
     '<p style="font-size:11.5px;font-weight:bold" class="'+(ok?'prof':'loss')+'">'+(ok?'✅':'⚠')+' 貸借一致: 資産'+fmt(b.assets)+' ＝ 負債'+fmt(b.liab)+'＋純資産'+fmt(b.equity)+'</p>';
 }
-const BS_NOTE='<p style="font-size:11.5px;color:#8a6a45">📐 評価ルール: 米=3万/袋・牧草=1万/束・肥料=8千/袋。母牛=取得原価100万(8産終了後は状態込みの売値)・子牛=いまの売値(♀100万/♂120万×状態補正)×月齢/8ヶ月。建物(糞置き場/本格堆肥舎/新築牛舎)・土地・機械=取得原価(補助金で半額購入した物は支払額)。純資産=資産−負債(元手1,000万+利益の蓄積)。</p>';
+const BS_NOTE='<p style="font-size:11.5px;color:#8a6a45">📐 評価ルール: 米=3万/袋・牧草=1万/束・肥料=8千/袋。母牛=取得原価100万(8産終了後は状態込みの売値)・子牛=いまの売値(♀100万/♂120万×状態補正)×月齢/8ヶ月。建物(糞置き場/本格堆肥舎/新築牛舎)・土地・機械=取得原価(補助金で半額購入した物は支払額)。償却対象(機械・飲食店=5年/牛舎・堆肥舎・第二牛舎=10年)は取得原価−減価償却累計の純額。農地と牛は非償却。純資産=資産−負債(元手1,000万+利益の蓄積)。</p>';
 // 事業別の利益一覧(Σ事業利益+共通=全社 の整合が見える表)
 function segSummaryHTML(seg,total){
   let h='<table class="fs"><tr class="hd"><td>事業別の利益(売上−経費)</td><td class="amt"></td></tr>';
@@ -6282,7 +6309,8 @@ function computeRestaurantPL(shop){
   if(shop.venue==='stadium'){rent=0;ad=0;fee=0;comm=S*ECON.REST_STADIUM_COMM;}
   else{rent=ECON.REST_RENT;ad=S*ECON.REST_AD_RATE;fee=S*ECON.REST_FEE_RATE;comm=0;}
   const profit=S-cogs-part-staff-util-rent-ad-fee-comm;
-  return{sales:S,cogs,part,staff,util,rent,ad,fee,comm,profit};
+  const deprec=Math.round(restSetupCost(shop.type,shop.venue)/60); // v79: 出店費用の減価償却(5年=60ヶ月)。実計上は月次償却ループ(非現金)
+  return{sales:S,cogs,part,staff,util,rent,ad,fee,comm,profit,deprec,net:profit-deprec}; // profit=営業利益 / net=営業利益−減価償却=純利益
 }
 // 月次実現(4週ごとにweekEndから呼ばれる): 全店の売上と経費を項目別に帳簿へ計上
 function postRestaurants(notes){
@@ -6301,7 +6329,7 @@ function postRestaurants(notes){
     if(pl.comm>0)addExpense(pl.comm,'foodcomm','food');
     totalP+=pl.profit;totalS+=pl.sales;
   }
-  if(notes)notes.push('🍴 東京の飲食'+list.length+'店の月次計上: 売上+'+man(totalS)+'・純利益'+(totalP>=0?'+':'−')+man(Math.abs(totalP)));
+  if(notes)notes.push('🍴 東京の飲食'+list.length+'店の月次計上: 売上+'+man(totalS)+'・営業利益'+(totalP>=0?'+':'−')+man(Math.abs(totalP))+'(減価償却は別途計上)'); // v79: ここは営業のみ。出店費用の償却は月次償却ループがfoodセグへ計上(二重計上しない)
 }
 // 出店(現金で出店費用を支払い)。成功したら店オブジェクトを返す
 function openRestaurant(type,slotId){
@@ -6313,12 +6341,12 @@ function openRestaurant(type,slotId){
   }
   const setup=restSetupCost(type,s.venue);
   if(state.money<setup){toast('💸 出店費用'+man(setup)+'が払えない(現金'+man(state.money)+')');return null;}
-  addExpense(setup,'foodopen','food');
-  const shop={id:state.restSeq++,slot:slotId,type,venue:s.venue};
+  capex(setup); // v79: 出店費用は一括費用でなく資産計上(現金だけ減)→毎月 減価償却費で費用配分(5年・飲食セグ)
+  const shop={id:state.restSeq++,slot:slotId,type,venue:s.venue,openWeek:state.weekN};
   state.restaurants.push(shop);
   const pl=computeRestaurantPL(shop);
   fanfare();
-  toast(cu.em+' '+cu.name+'を「'+s.n+'」に出店！(出店費用 −'+man(setup)+'・見込み月次利益 '+(pl.profit>=0?'+':'−')+man(Math.abs(pl.profit))+')');
+  toast(cu.em+' '+cu.name+'を「'+s.n+'」に出店！(出店費用 −'+man(setup)+'は資産計上・見込み月次純利益 '+(pl.net>=0?'+':'−')+man(Math.abs(pl.net))+'=営業'+(pl.profit>=0?'+':'−')+man(Math.abs(pl.profit))+'−償却'+man(pl.deprec)+')');
   if(s.venue==='stadium')toast('⚾ 球場出店: 家賃・広告・手数料なし。そのかわり売上の40%を球場に払うよ');
   updateSlotSign(s);
   updateHUD();saveGame(false);
@@ -6331,8 +6359,8 @@ function confirmOpenRestaurant(type,slotId){
   const pl=computeRestaurantPL({type,venue:s.venue});
   showConfirm(cu.em+' '+cu.name+'を出店する？',
     '場所: <b>'+s.n+'</b> '+(s.venue==='stadium'?'(⚾球場出店: 家賃なし・売上の40%を球場へ)':'(通常出店: 家賃 月'+man(ECON.REST_RENT)+'・広告3%・手数料3%)')+
-    '<br>出店費用 <b>'+man(setup)+'</b>(現金払い・閉店しても戻らない)'+
-    '<br>月商'+man(pl.sales)+'・原価率'+Math.round(cu.cogs*100)+'%・社員'+cu.staff+'人 → 見込み月次利益 <b>'+(pl.profit>=0?'+':'−')+man(Math.abs(pl.profit))+'</b>',
+    '<br>出店費用 <b>'+man(setup)+'</b>(現金払い・資産計上→5年で毎月償却・閉店しても戻らない)'+
+    '<br>月商'+man(pl.sales)+'・原価率'+Math.round(cu.cogs*100)+'%・社員'+cu.staff+'人 → 営業利益 '+(pl.profit>=0?'+':'−')+man(Math.abs(pl.profit))+' − 減価償却(設備5年)'+man(pl.deprec)+' = 見込み月次純利益 <b>'+(pl.net>=0?'+':'−')+man(Math.abs(pl.net))+'</b>',
     ()=>openRestaurant(type,slotId),'出店する('+man(setup)+')','やめる');
 }
 function closeRestaurant(id){
@@ -6366,7 +6394,7 @@ function foodHTML(){
       if(!keys.length)h+='<p style="color:#8a6a45;font-size:12px">ここに出せる料理はもうないよ(高架下は同じ料理は1店まで)。</p>';
       for(const k of keys){
         const c=CUISINE[k],setup=restSetupCost(k,ns.venue),pl=computeRestaurantPL({type:k,venue:ns.venue});
-        h+='<div class="row"><div class="em">'+c.em+'</div><div class="info"><b>'+c.name+'</b><small>出店'+man(setup)+'・月商'+man(c.sales)+' → 見込み月次利益 <span class="'+(pl.profit>=0?'prof':'loss')+'">'+(pl.profit>=0?'+':'−')+man(Math.abs(pl.profit))+'</span></small></div><button class="buy orange" '+(state.money>=setup?'':'disabled')+' onclick="confirmOpenRestaurant(\''+k+'\',\''+ns.id+'\')">出店</button></div>';
+        h+='<div class="row"><div class="em">'+c.em+'</div><div class="info"><b>'+c.name+'</b><small>出店'+man(setup)+'・月商'+man(c.sales)+' → 営業'+(pl.profit>=0?'+':'−')+man(Math.abs(pl.profit))+'−償却'+man(pl.deprec)+' = 見込み月次純利益 <span class="'+(pl.net>=0?'prof':'loss')+'">'+(pl.net>=0?'+':'−')+man(Math.abs(pl.net))+'</span></small></div><button class="buy orange" '+(state.money>=setup?'':'disabled')+' onclick="confirmOpenRestaurant(\''+k+'\',\''+ns.id+'\')">出店</button></div>';
       }
     }else if(ns&&nd<7)h+='<p style="margin-top:8px">📍 いまの場所「'+ns.n+'」は出店済みだよ(下の一覧から閉店できる)。</p>';
     else h+='<p style="font-size:12px;color:#8a6a45;margin-top:8px">📍 空きスロット(🍴の看板: ⚾球場の中・🍜高架下・🛍モール・🛎ホテル)に近づくと、ここから出店できるよ。</p>';
@@ -6378,11 +6406,11 @@ function foodHTML(){
   if(!list.length)h+='<p style="color:#8a6a45;font-size:12px">まだ店はないよ。</p>';
   let total=0;
   for(const shop of list){
-    const cu=CUISINE[shop.type],s=slotOf(shop.slot),pl=computeRestaurantPL(shop);total+=pl.profit;
+    const cu=CUISINE[shop.type],s=slotOf(shop.slot),pl=computeRestaurantPL(shop);total+=pl.net; // v79: 合計は償却後の純利益
     const costs=[['原価',pl.cogs],['バイト',pl.part],['社員',pl.staff],['家賃',pl.rent],['光熱',pl.util],['広告',pl.ad],['手数料',pl.fee],['球場40%',pl.comm]].filter(c=>c[1]>0).map(c=>c[0]+man(c[1])).join('・');
-    h+='<div class="row"><div class="em">'+cu.em+'</div><div class="info"><b>'+cu.name+' @'+(s?s.n:shop.slot)+' '+(shop.venue==='stadium'?'(⚾球場)':'(通常)')+'</b><small>月商'+man(pl.sales)+' − '+costs+'<br>月次利益 <b class="'+(pl.profit>=0?'prof':'loss')+'">'+(pl.profit>=0?'+':'−')+man(Math.abs(pl.profit))+'</b></small></div><button class="buy" style="background:#988478;border-color:#6a594d;box-shadow:0 3px 0 #6a594d" onclick="confirmCloseRestaurant('+shop.id+')">閉店</button></div>';
+    h+='<div class="row"><div class="em">'+cu.em+'</div><div class="info"><b>'+cu.name+' @'+(s?s.n:shop.slot)+' '+(shop.venue==='stadium'?'(⚾球場)':'(通常)')+'</b><small>月商'+man(pl.sales)+' − '+costs+'<br>営業利益 '+(pl.profit>=0?'+':'−')+man(Math.abs(pl.profit))+' − 減価償却(設備5年)'+man(pl.deprec)+' = 月次純利益 <b class="'+(pl.net>=0?'prof':'loss')+'">'+(pl.net>=0?'+':'−')+man(Math.abs(pl.net))+'</b></small></div><button class="buy" style="background:#988478;border-color:#6a594d;box-shadow:0 3px 0 #6a594d" onclick="confirmCloseRestaurant('+shop.id+')">閉店</button></div>';
   }
-  if(list.length)h+='<p style="font-weight:bold;color:#5a3714">合計 月次利益: <span class="'+(total>=0?'prof':'loss')+'">'+(total>=0?'+':'−')+man(Math.abs(total))+'</span>(4週ごとに帳簿へ計上)</p>';
+  if(list.length)h+='<p style="font-weight:bold;color:#5a3714">合計 月次純利益(償却後): <span class="'+(total>=0?'prof':'loss')+'">'+(total>=0?'+':'−')+man(Math.abs(total))+'</span>(4週ごとに帳簿へ計上・減価償却は非現金)</p>';
   return h;
 }
 // スロット看板(空き=🍴/出店済み=料理の絵文字)。出店/閉店で貼り替え
@@ -6394,7 +6422,7 @@ function updateSlotSign(s){
   const r=restAt(s.id);
   const info=r?{
     t:CUISINE[r.type].em+' '+CUISINE[r.type].name+'('+s.n+')',
-    b:()=>{const pl=computeRestaurantPL(r);return '営業中！'+(r.venue==='stadium'?'⚾球場出店(家賃なし・売上の40%を球場へ)':'通常出店(家賃 月'+man(ECON.REST_RENT)+')')+'。<br>月商'+man(pl.sales)+' → 月次利益 <b>'+(pl.profit>=0?'+':'−')+man(Math.abs(pl.profit))+'</b>(4週ごとに帳簿へ計上)。';},
+    b:()=>{const pl=computeRestaurantPL(r);return '営業中！'+(r.venue==='stadium'?'⚾球場出店(家賃なし・売上の40%を球場へ)':'通常出店(家賃 月'+man(ECON.REST_RENT)+')')+'。<br>月商'+man(pl.sales)+' → 営業'+(pl.profit>=0?'+':'−')+man(Math.abs(pl.profit))+'−償却'+man(pl.deprec)+' = 月次純利益 <b>'+(pl.net>=0?'+':'−')+man(Math.abs(pl.net))+'</b>(4週ごとに帳簿へ計上)。';},
     btns:()=>[['🍴 飲食メニュー(全店の管理)',()=>{menuTab='food';openMenu();}],['🚪 閉店する(出店費用は戻らない)',()=>confirmCloseRestaurant(r.id)]],
   }:{
     t:'🍴 出店できる場所('+(s.venue==='stadium'?'⚾球場':'通常')+') — '+s.n,
@@ -6403,7 +6431,7 @@ function updateSlotSign(s){
       :'通常出店: 出店費用は料理ごと(🐙🍤🍣3000万/🥩6000万)・家賃 月'+man(ECON.REST_RENT)+'・広告3%・手数料3%。'+(String(s.id).startsWith('g')?'<br>🍜高架下は<b>同じ料理は1店まで</b>(他の高架下で出した料理は選べません)。':''))+'<br>料理を選んで出店しよう(月商・原価率・社員数は料理ごと)。',
     btns:()=>cuisineKeysFor(s).map(k=>{
       const c=CUISINE[k],setup=restSetupCost(k,s.venue),pl=computeRestaurantPL({type:k,venue:s.venue});
-      return[c.em+' '+c.name+'を出店('+man(setup)+'・月次利益'+(pl.profit>=0?'+':'−')+man(Math.abs(pl.profit))+')',()=>confirmOpenRestaurant(k,s.id)];
+      return[c.em+' '+c.name+'を出店('+man(setup)+'・月次純利益'+(pl.net>=0?'+':'−')+man(Math.abs(pl.net))+'=営業'+(pl.profit>=0?'+':'−')+man(Math.abs(pl.profit))+'−償却'+man(pl.deprec)+')',()=>confirmOpenRestaurant(k,s.id)];
     }),
   };
   tokyoSlotSigns[s.id]=addSign(s.x,s.z,r?CUISINE[r.type].em:'🍴',info,1.5);
