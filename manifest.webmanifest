@@ -1,0 +1,19 @@
+{
+  "name": "丹波農商 牧場物語",
+  "short_name": "牧場物語",
+  "description": "丹波農商のリアルな農業経営を体験できる牧場ゲーム",
+  "lang": "ja",
+  "start_url": "./?src=app",
+  "scope": "./",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "any",
+  "background_color": "#bfe3f2",
+  "theme_color": "#3f8a3a",
+  "categories": ["games", "education"],
+  "icons": [
+    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}
