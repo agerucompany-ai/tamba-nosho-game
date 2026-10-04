@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v82</title>
-<meta name="tamba-build" content="v82">
+<title>丹波農商 牧場物語 v81</title>
+<meta name="tamba-build" content="v81">
 <meta name="description" content="丹波農商(兵庫県丹波市)のリアルな農業経営を、スマホで遊べる牧場ゲームで体験。米・黒毛和牛・牧草・栗・野菜を育てて会社を大きくしよう。">
 <meta name="theme-color" content="#3f8a3a">
 <meta name="mobile-web-app-capable" content="yes">
@@ -194,14 +194,6 @@
   #loading>*{position:relative;}
   #updBanner{position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top));transform:translateX(-50%);z-index:90;display:none;align-items:center;gap:8px;background:#fff;border-radius:999px;padding:7px 8px 7px 14px;font-weight:800;font-size:13px;color:var(--ink);box-shadow:0 6px 20px rgba(0,0,0,.25);border:2px solid #ffc23e;}
   #updBanner button{font-weight:800;color:#fff;background:linear-gradient(#66a0f6,#3570d8);border:2px solid #fff;border-radius:999px;padding:5px 12px;font-size:13px;}
-
-  /* v82: タイトルの全身立ち絵 */
-  .tl-chars{max-height:46vh;align-items:flex-end;}
-  .tl-chars img{-webkit-mask-image:linear-gradient(#000 82%,transparent);mask-image:linear-gradient(#000 82%,transparent);height:min(29vh,290px);margin:0 -26px;animation:none;}
-  .tl-chars img.c{height:min(37vh,360px);margin:0 -10px;animation:tlb 3s ease-in-out infinite;}
-  .tl-chars img:nth-child(1),.tl-chars img:nth-child(2){filter:drop-shadow(0 6px 8px rgba(0,0,0,.25)) brightness(.96);}
-  #title::before{background:linear-gradient(rgba(255,255,255,.05),rgba(255,255,255,0) 30%,rgba(255,247,226,0) 58%,rgba(255,246,224,.80) 82%,rgba(255,244,218,.95));}
-  #loading{background-image:url(art/key.webp);}
 </style>
 </head>
 <body>
@@ -241,7 +233,7 @@
 <div id="seedPick"><div class="panel" id="seedPickBox"></div></div>
 <div id="title">
   <div class="tl-top"><div class="tl-sub1">丹波農商</div><h1>牧場物語</h1><div class="tl-badge">放置経営編</div></div>
-  <div class="tl-chars"><img src="art/f_naoto.webp" alt="なおと"><img src="art/f_atsushi.webp" alt="あつし"><img class="c" src="art/f_hero.webp" alt="主人公"><img src="art/f_yusuke.webp" alt="ゆうすけ"></div>
+  <div class="tl-chars"><img src="art/p_naoto.webp" alt="なおと"><img src="art/p_atsushi.webp" alt="あつし"><img class="c" src="art/p_hero.webp" alt="主人公"><img src="art/p_yusuke.webp" alt="ゆうすけ"></div>
   <div class="tl-bottom">
   <div class="sub">現金1,000万円と田んぼから始める農業経営シム。<br>🌾米・🐂黒毛和牛・🌿牧草・🌰栗を育てて、丹波農商を大きくしよう！</div>
   <button class="bigbtn" id="newBtn">▶ はじめる</button>
@@ -261,7 +253,7 @@
 (function(){const C=THREE.Color.prototype,oHex=C.setHex,oStyle=C.setStyle;let inStyle=false;
   C.setHex=function(h){oHex.call(this,h);if(!inStyle)this.convertSRGBToLinear();return this;};
   C.setStyle=function(st){inStyle=true;try{oStyle.call(this,st);}finally{inStyle=false;}return this.convertSRGBToLinear();};})();
-const GAME_BUILD='v82';
+const GAME_BUILD='v81';
 /* =====================================================================
    丹波農商 牧場物語 v24 — 牛まわりの大改修(屋根バグ修正・牛舎拡大・繋留と散歩・糞は足元)
    v24: v23の全機能を維持したまま牛まわりを4点改修。セーブはv20キー(tamba_v20_save)を共用。
@@ -1960,7 +1952,6 @@ function v81Frame(dt,sky,dayness,eve){
   scene.fog.color.copy(_fogc);
   V81U.uSkyH.value.copy(_fogc);
   sun.intensity*=1.5;hemi.intensity*=1.15;
-  v82Light=0.36+0.64*dayness+0.05*eve; // v82: スプライトの明るさ(夜は暗く)
   if(v81Sky){
     v81Sky.position.copy(camera.position);
     const u=v81Sky.material.uniforms;
@@ -2071,13 +2062,13 @@ function v81PigGeo(){
   return V81_PIG_GEO;
 }
 // ---- 会話ウィンドウ(立ち絵つき) ----
-const V81_PORTRAITS={hero:1,atsushi:1,yusuke:1,naoto:1,ryunosuke:1,ami:1,yakuba:1,ginko:1,juui:1,nokyo:1,seriman:1,shuriya:1,fudosan:1,obaachan:1,ojiichan:1,shufu:1,kodomo:1};
+const V81_PORTRAITS={hero:1,atsushi:1,yusuke:1,naoto:1,ryunosuke:1,ami:1,yakuba:1,ginko:1,juui:1,nokyo:1,seriman:1,shuriya:1,fudosan:1};
 function portraitKeyOf(n){if(!n)return null;if(n.cfg&&n.cfg.menu==='land')return 'fudosan';return V81_PORTRAITS[n.key]?n.key:null;}
 let v81TalkTimer=null;
 function showTalk(n,line){
   const el=document.getElementById('talk');if(!el){toast('💬 '+n.cfg.name+'「'+line+'」');return;}
   const pk=portraitKeyOf(n),img=document.getElementById('talkImg');
-  if(pk){img.src='art/p_'+pk+v82Expr(pk,line)+'.webp';el.classList.remove('noimg');}else{img.removeAttribute('src');el.classList.add('noimg');}
+  if(pk){img.src='art/p_'+pk+'.webp';el.classList.remove('noimg');}else{img.removeAttribute('src');el.classList.add('noimg');}
   document.getElementById('talkName').textContent=n.cfg.name+(n.cfg.role?'  ·  '+n.cfg.role:'');
   document.getElementById('talkText').textContent=line;
   el.classList.remove('on');void el.offsetWidth;el.classList.add('on');
@@ -3609,7 +3600,6 @@ function makeAnimRig(model,walkClip,runClip,idleClip){
 }
 // idle⇔walk⇔runをcrossFade(0.2)で切替。spd=実移動速度(units/s)→timeScaleで足滑り低減
 function rigPlay(rig,name,spd){
-  if(rig&&rig.sprite){rig.cur=name;rig.spd=spd;return;} // v82: スプライトキャラ
   const to=name==='walk'?rig.actWalk:(name==='run'?rig.actRun:rig.actIdle);
   if(!to)return;
   if(name==='walk')to.timeScale=Math.max(0.9,Math.min(0.42*(spd||0),3.2));
@@ -3627,89 +3617,6 @@ function rigPlay(rig,name,spd){
   }
   if(from&&from!==to)from.crossFadeTo(to,0.2,false);
   rig.cur=name;
-}
-
-// =====================================================================
-// v82: キャラを「HD-2D」方式に。3D世界にアニメ塗りのSDちびスプライトを看板表示。
-//  スプライト=sprites/s_<key>.webp(3列×2行: 上段=待機 正面/横(右向き)/背面, 下段=歩き 同順)
-//  カメラから見た向きで 正面/背面/横(左右は反転) を切り替え、歩きは2コマ+反転+上下バウンド。
-// =====================================================================
-const V82_SPRITES={hero:1,atsushi:1,yusuke:1,naoto:1,ryunosuke:1,ami:1,yakuba:1,ginko:1,fudosan:1,shuriya:1,juui:1,nokyo:1,seriman:1,obaachan:1,ojiichan:1,shufu:1,kodomo:1};
-const V82_MAIN={hero:1,atsushi:1,yusuke:1,naoto:1}; // 表情差分あり
-function v82KeyOf(n){
-  if(!n)return null;
-  if(n.cfg&&n.cfg.menu==='land')return 'fudosan';
-  return V82_SPRITES[n.key]?n.key:null;
-}
-const v82Tex={},v82Mats=[];
-let v82Light=1;
-const v82Loader=new THREE.TextureLoader();
-function v82LoadTex(key){
-  if(v82Tex[key])return v82Tex[key];
-  v82Tex[key]=new Promise((res,rej)=>{
-    v82Loader.load('sprites/s_'+key+'.webp',t=>{
-      t.encoding=THREE.sRGBEncoding;t.anisotropy=4;t.generateMipmaps=true;t.minFilter=THREE.LinearMipmapLinearFilter;t.magFilter=THREE.LinearFilter;
-      res(t);},undefined,e=>rej(e));
-  });
-  return v82Tex[key];
-}
-const V82_BLOB_GEO=new THREE.CircleGeometry(0.5,20),V82_BLOB_MAT=new THREE.MeshBasicMaterial({color:0x1a1408,transparent:true,opacity:0.32,depthWrite:false,toneMapped:false});
-const _v82w=new THREE.Vector3();
-function v82MakeSprite(key,height){
-  const H=height*1.28,W=H*0.8; // SDは頭が大きいので少し大きめに見せる
-  const grp=new THREE.Group();
-  const blob=new THREE.Mesh(V82_BLOB_GEO,V82_BLOB_MAT);blob.rotation.x=-Math.PI/2;blob.position.y=0.03;blob.scale.set(W*0.62,W*0.36,1);grp.add(blob);
-  const geo=new THREE.PlaneGeometry(W,H);geo.translate(0,H/2-H*0.012,0);
-  const mat=new THREE.MeshBasicMaterial({transparent:true,alphaTest:0.35,side:THREE.DoubleSide,toneMapped:false,depthWrite:true});
-  const plane=new THREE.Mesh(geo,mat);plane.visible=false;plane.renderOrder=2;
-  const pivot=new THREE.Group();pivot.add(plane);grp.add(pivot);
-  v82Mats.push(mat);
-  const rig={sprite:true,cur:'idle',spd:0,t:Math.random()*10,actRun:true,actWalk:true,actIdle:true,key,
-    mixer:{update:dt=>v82Update(rig,dt)},grp,plane,pivot,mat,H,W,tex:null,frame:-1,flip:false};
-  const ready=v82LoadTex(key).then(base=>{
-    const t=base.clone();t.needsUpdate=true;t.repeat.set(1/3,1/2);rig.tex=t;mat.map=t;mat.needsUpdate=true;plane.visible=true;v82SetFrame(rig,0,false);return rig;
-  });
-  return {group:grp,rig,ready};
-}
-function v82SetFrame(rig,f,flip){
-  if(!rig.tex)return;
-  if(rig.frame!==f){rig.frame=f;rig.tex.offset.set((f%3)/3,f<3?0.5:0);}
-  if(rig.flip!==flip){rig.flip=flip;rig.plane.scale.x=flip?-1:1;}
-}
-function v82Update(rig,dt){
-  if(!rig.tex||!camera)return;
-  const g=rig.grp;
-  g.getWorldPosition(_v82w);
-  // ホルダー(向き=rotation.y)のワールド回転
-  let host=g.parent,ry=0;while(host){ry+=host.rotation.y;host=host.parent;}
-  const cy=Math.atan2(camera.position.x-_v82w.x,camera.position.z-_v82w.z);
-  rig.pivot.rotation.y=cy-ry; // 板は常にカメラを向く(Y軸のみ)
-  let d=ry-cy;while(d>Math.PI)d-=Math.PI*2;while(d<-Math.PI)d+=Math.PI*2;
-  const ad=Math.abs(d);
-  const view=ad<Math.PI*0.27?0:(ad>Math.PI*0.73?2:1); // 0正面 1横 2背面
-  const moving=rig.cur==='walk'||rig.cur==='run';
-  const rate=rig.cur==='run'?9.5:Math.max(5.5,Math.min(9,(rig.spd||2)*1.6));
-  rig.t+=dt*(moving?rate:1);
-  let f=view,flip=(view===1&&d<0);
-  let bob=0,sq=1;
-  if(moving){
-    const step=Math.floor(rig.t/Math.PI)%4; // 0:歩A 1:待機 2:歩A反転(正面/背面)or歩A 3:待機
-    if(step===0||step===2){f=3+view;if(view!==1&&step===2)flip=!flip;}
-    bob=Math.abs(Math.sin(rig.t))*0.045*rig.H;
-  }else{
-    sq=1+0.014*Math.sin(rig.t*2.2);
-  }
-  v82SetFrame(rig,f,flip);
-  rig.plane.position.y=bob;
-  rig.plane.scale.y=sq;
-  rig.mat.color.setScalar(v82Light);
-}
-// 会話の表情(本編の4人は表情差分つき)
-function v82Expr(key,line){
-  if(!V82_MAIN[key])return '';
-  if(/⚠|倒産|赤字|足りない|ダメ/.test(line))return '_4';
-  if(/！|♪|🎉|すごい|ありがとう/.test(line))return '_2';
-  return '';
 }
 
 // ---------- プレイヤー（麦わら帽子の農家キッズ） ----------
@@ -3757,31 +3664,44 @@ function finishLoading(ok){
   }
 }
 // 主人公：mhero_walk.glb＋mhero_run.glbを読み、完了したらボクセルと差し替え
-function loadPlayerGLB(){ // v82: 主人公=アニメ塗りSDスプライト(HD-2D)
-  setLoadMsg('キャラクターを準備中…');
-  const r=v82MakeSprite('hero',HERO_H);
-  playerRig=r.rig;window.__v4dbg.playerRig=playerRig;
-  avatarGlb=r.group;
-  if(avatarVox){avatar.remove(avatarVox);avatarVox=null;}
-  avatar.add(avatarGlb);
-  r.ready.then(()=>{window.__v4dbg.playerGlb=true;finishLoading(true);loadNPCGLBs();})
-   .catch(e=>{window.__v4dbg.errors.push('player:'+(e&&e.message||e));finishLoading(false);loadNPCGLBs();});
+function loadPlayerGLB(){
+  const note=document.getElementById('glbNote');
+  if(!getLoader()){finishLoading(false);loadNPCGLBs();return;}
+  note.style.display='block';
+  (async()=>{
+    try{
+      const wg=await loadGLB(HERO.walk,x=>{
+        if(x.total){const p=Math.round(x.loaded/x.total*50);note.textContent='3Dキャラ読み込み中… '+p+'%';setLoadMsg('3Dキャラを読み込み中… '+p+'%');}});
+      const rg=await loadGLB(HERO.run,x=>{
+        if(x.total){const p=50+Math.round(x.loaded/x.total*50);note.textContent='3Dキャラ読み込み中… '+p+'%';setLoadMsg('3Dキャラを読み込み中… '+p+'%');}});
+      const model=wg.scene;
+      // walkモデルにrun.glbのクリップを載せ替え（同一Mixamoスケルトン）
+      playerRig=makeAnimRig(model,wg.animations&&wg.animations[0],rg.animations&&rg.animations[0]);
+      const wrap=meshyWrap(model,playerRig.mixer,HERO_H,'hero');
+      window.__v4dbg.playerRig=playerRig; // 検証用
+      avatarGlb=wrap;
+      if(avatarVox){avatar.remove(avatarVox);avatarVox=null;}
+      avatar.add(avatarGlb);
+      note.style.display='none';
+      window.__v4dbg.playerGlb=true;
+      finishLoading(true); // v15: ここで初めて画面を見せる(最初からMeshyキャラ)
+    }catch(e){
+      note.style.display='none';
+      window.__v4dbg.errors.push('player:'+(e&&e.message||e));
+      finishLoading(false);
+    }
+    loadNPCGLBs(); // プレイヤーの後に順次（同時ロードを絞る）
+  })();
 }
 // NPC：m*_walk.glbを1体ずつ順番に読み込み（同時ロード1本）。
 // 立ち姿はwalkの1フレーム目で静止（idleクリップは無い）。
 // v15: NPCのボクセル代替も開始時は非表示。GLB成功でそのままMeshyに、
 //      失敗した個体だけボクセルを表示（フォールバック）。
 function loadNPCGLBs(){
+  if(!getLoader()){for(const n of npcs)if(n.vox)n.vox.visible=true;return;}
   window.__v4dbg.npcModels={}; // v20: 検証用(どのGLBで表示されているか)
   (async()=>{
     for(const n of npcs){
-      const sk=v82KeyOf(n); // v82: SDスプライト(HD-2D)
-      if(sk){
-        const r=v82MakeSprite(sk,n.cfg.h||CHAR_H);n.rig=r.rig;
-        if(n.vox){n.mesh.remove(n.vox);n.vox=null;}
-        n.mesh.add(r.group);window.__v4dbg.npcGlb++;window.__v4dbg.npcModels[n.key]='sprite:'+sk;
-        continue;
-      }
       let loaded=false;
       for(let ui=0;ui<n.urls.length&&!loaded;ui++){
         try{

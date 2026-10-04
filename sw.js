@@ -2,11 +2,11 @@
 // - ゲーム本体(index.html)と version.json は「ネット優先」= 更新は次に開いた時に必ず反映(古い版が残らない)
 // - 3Dモデル・画像・ライブラリは「キャッシュ優先」= 2回目以降は一瞬で起動・オフラインでも遊べる
 // - 素材を差し替えた時は ASSET_VER を上げる(古いキャッシュは自動で消える)
-const ASSET_VER = 'tamba-assets-v82';
+const ASSET_VER = 'tamba-assets-v81';
 const PAGE_CACHE = 'tamba-page';
 const CORE = ['./', 'lib/three.min.js', 'lib/GLTFLoader.js', 'lib/DRACOLoader.js',
   'lib/draco/draco_wasm_wrapper.js', 'lib/draco/draco_decoder.wasm',
-  'sprites/s_hero.webp', 'art/keyart.webp', 'icons/icon-192.png'];
+  'char_min/mhero_walk.glb', 'char_min/mhero_run.glb', 'art/keyart.webp', 'icons/icon-192.png'];
 self.addEventListener('install', e => {
   self.skipWaiting();
   e.waitUntil(caches.open(ASSET_VER).then(c => c.addAll(CORE.filter(u => u !== './'))).catch(() => {}));
