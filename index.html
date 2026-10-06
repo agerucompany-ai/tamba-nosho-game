@@ -182,6 +182,9 @@
   .tl-chars img.c{height:min(25vh,195px);z-index:2;animation-delay:-.7s;}
   .tl-chars img:nth-child(2){animation-delay:-1.4s;} .tl-chars img:nth-child(4){animation-delay:-2.1s;}
   @keyframes tlb{50%{transform:translateY(-6px);}}
+  .tl-chars img.grp{height:auto;width:min(96vw,520px);max-height:40vh;object-fit:contain;margin:0;-webkit-mask-image:none;mask-image:none;animation:tlb2 3.2s ease-in-out infinite;filter:drop-shadow(0 8px 10px rgba(0,0,0,.25));}
+  @keyframes tlb2{50%{transform:translateY(-3px);}}
+  .tl-chars{max-height:42vh;}
   .tl-bottom{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;}
   #title .sub{color:#4a2e12;font-size:13px;max-width:400px;line-height:1.6;font-weight:700;background:rgba(255,251,240,.86);border-radius:14px;padding:8px 12px;box-shadow:0 4px 12px rgba(0,0,0,.1);}
   .bigbtn{border-radius:999px;border:3px solid #fff;font-weight:800;background:linear-gradient(#62c552,#36913a);box-shadow:0 5px 0 #1f6a22,0 10px 20px rgba(0,0,0,.22);}
@@ -194,6 +197,40 @@
   #loading>*{position:relative;}
   #updBanner{position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top));transform:translateX(-50%);z-index:90;display:none;align-items:center;gap:8px;background:#fff;border-radius:999px;padding:7px 8px 7px 14px;font-weight:800;font-size:13px;color:var(--ink);box-shadow:0 6px 20px rgba(0,0,0,.25);border:2px solid #ffc23e;}
   #updBanner button{font-weight:800;color:#fff;background:linear-gradient(#66a0f6,#3570d8);border:2px solid #fff;border-radius:999px;padding:5px 12px;font-size:13px;}
+.v83q{}
+  /* v83c: 画面の上と左を小さく・半透明に(キャラと被らない) */
+  #quest{-webkit-line-clamp:1!important;display:block!important;max-width:min(74vw,460px)!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:3px 10px!important;font-size:12px!important;background:rgba(255,254,246,.78)!important;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);border-width:1.5px!important;border-left-width:5px!important;}
+  #quest .qch{display:inline;font-size:10px;color:#7a5a2a;font-weight:800;margin-right:4px;background:#f4e6c6;border-radius:6px;padding:0 5px;}
+  #quest .qrow{display:inline;}
+  #quest .qrow b{font-weight:800;}
+  #quest .qup{display:none;}
+  #top .chip,#money,#day,#place{background:rgba(255,253,245,.82)!important;}
+  #zoomBtns{gap:6px!important;bottom:calc(84px + env(safe-area-inset-bottom))!important;}
+  .zbtn{width:36px!important;height:36px!important;font-size:15px!important;opacity:.72;border-width:2px!important;}
+  #zoomBtns:not(.open) #rotLBtn,#zoomBtns:not(.open) #rotRBtn,#zoomBtns:not(.open) #zoomOutBtn,#zoomBtns:not(.open) #zoomInBtn{display:none!important;}
+  #zoomBtns.open .zbtn{opacity:.92;}
+  #talkImg{width:84px!important;height:84px!important;margin-right:-16px!important;}
+  #talkBody{min-height:0!important;padding:8px 12px 8px 22px!important;}
+  #talkText{font-size:13px!important;line-height:1.5!important;}
+  #talk{max-width:500px!important;}
+  #pcGuide{left:auto!important;right:10px!important;transform:none!important;width:min(330px,40vw)!important;padding:8px 10px!important;top:calc(52px + env(safe-area-inset-top))!important;}
+  #pcGuide h3{font-size:13px!important;margin-bottom:4px!important;} #pcGuide .gl{font-size:11.5px!important;padding:1px!important;} #pcGuide .gk{min-width:92px!important;font-size:11px!important;} #pcGuideClose{margin-top:6px!important;padding:5px!important;font-size:12px!important;}
+  #qArrow{display:inline-block;color:#e8901a;font-size:15px;line-height:1;transition:transform .15s;flex:0 0 auto;}
+  #qDist{font-size:11px;color:#c06a10;font-weight:800;white-space:nowrap;}
+  .v83pulse{animation:v83p 1.1s ease-in-out infinite;}
+  button.v83hl{animation:v83h 1s ease-in-out infinite;position:relative;outline:3px solid #ffb000;outline-offset:2px;}
+  button.v83hl::after{content:'👈';position:absolute;right:-30px;top:50%;transform:translateY(-50%);font-size:20px;animation:v83pt .8s ease-in-out infinite;}
+  @keyframes v83h{50%{box-shadow:0 0 0 6px rgba(255,190,0,.55);}}
+  @keyframes v83pt{50%{right:-36px;}}
+  @keyframes v83p{0%,100%{filter:none;transform:scale(1);}50%{filter:drop-shadow(0 0 10px #ffe04a) brightness(1.15);transform:scale(1.08);}}
+  #v83Clear{position:fixed;left:50%;top:34%;transform:translate(-50%,-50%) scale(.6);z-index:80;pointer-events:none;opacity:0;text-align:center;background:linear-gradient(#fffef4,#fff1c8);border:4px solid #fff;border-radius:22px;padding:14px 26px;box-shadow:0 0 0 3px #f0b030,0 14px 34px rgba(0,0,0,.3);color:#5a3510;max-width:92vw;}
+  #v83Clear .t{font-size:22px;font-weight:900;}
+  #v83Clear .s{font-size:14px;font-weight:700;margin-top:4px;white-space:nowrap;}
+  #v83Clear.big .t{font-size:16px;color:#2e7a28;letter-spacing:.2em;} #v83Clear.big .s{font-size:clamp(18px,5.6vw,26px);font-weight:900;}
+  #v83Clear.on{animation:v83c 2.6s ease forwards;}
+  @keyframes v83c{0%{opacity:0;transform:translate(-50%,-50%) scale(.6);}12%{opacity:1;transform:translate(-50%,-50%) scale(1.06);}20%{transform:translate(-50%,-50%) scale(1);}82%{opacity:1;}100%{opacity:0;transform:translate(-50%,-60%) scale(1);}}
+  .v83cf{position:fixed;top:30%;width:9px;height:14px;z-index:79;pointer-events:none;border-radius:2px;animation:v83f 1.9s ease-out forwards;}
+  @keyframes v83f{0%{transform:translate(0,0) rotate(0);opacity:1;}100%{transform:translate(var(--dx),60vh) rotate(720deg);opacity:0;}}
 </style>
 </head>
 <body>
@@ -213,7 +250,7 @@
 <div id="joy"><div id="joyKnob"></div></div>
 <div id="actHint">🌱 種をまく</div>
 <button class="abtn" id="useBtn">使う<br>取る</button>
-<div id="zoomBtns"><div class="zbtn" id="gfxBtn" title="画質">⚙</div><div class="zbtn" id="rotLBtn" title="カメラを回す">⟲</div><div class="zbtn" id="rotRBtn" title="カメラを回す">⟳</div><div class="zbtn" id="zoomOutBtn">🔍−</div><div class="zbtn" id="zoomInBtn">🔍＋</div></div>
+<div id="zoomBtns"><div class="zbtn" id="gfxBtn" title="画質">⚙</div><div class="zbtn" id="camTgl" title="カメラ操作" onclick="this.parentNode.classList.toggle('open')">🎥</div><div class="zbtn" id="rotLBtn" title="カメラを回す">⟲</div><div class="zbtn" id="rotRBtn" title="カメラを回す">⟳</div><div class="zbtn" id="zoomOutBtn">🔍−</div><div class="zbtn" id="zoomInBtn">🔍＋</div></div>
 <div id="talk"><img id="talkImg" alt=""><div id="talkBody"><div id="talkName"></div><div id="talkText"></div></div></div>
 <div id="updBanner">🆕 新しいバージョンがあります<button id="updBtn">更新する</button></div>
 <div id="glbNote">3Dキャラ読み込み中…</div>
@@ -233,7 +270,7 @@
 <div id="seedPick"><div class="panel" id="seedPickBox"></div></div>
 <div id="title">
   <div class="tl-top"><div class="tl-sub1">丹波農商</div><h1>牧場物語</h1><div class="tl-badge">放置経営編</div></div>
-  <div class="tl-chars"><img src="art/p_naoto.webp" alt="なおと"><img src="art/p_atsushi.webp" alt="あつし"><img class="c" src="art/p_hero.webp" alt="主人公"><img src="art/p_yusuke.webp" alt="ゆうすけ"></div>
+  <div class="tl-chars"><img class="grp" src="art/title_chars.webp" alt="なおと・あつし・主人公・ゆうすけ"></div>
   <div class="tl-bottom">
   <div class="sub">現金1,000万円と田んぼから始める農業経営シム。<br>🌾米・🐂黒毛和牛・🌿牧草・🌰栗を育てて、丹波農商を大きくしよう！</div>
   <button class="bigbtn" id="newBtn">▶ はじめる</button>
@@ -248,12 +285,15 @@
 <script src="lib/three.min.js"></script>
 <script src="lib/GLTFLoader.js"></script>
 <script src="lib/DRACOLoader.js"></script>
+<script src="v83char.js"></script>
+<script src="v83_game.js"></script>
+<script src="v83_quest.js"></script>
 <script>
 // v81: 色はsRGBで書かれているので、リニアに変換してから使う(トーンマッピング前提の正しい発色)。
 (function(){const C=THREE.Color.prototype,oHex=C.setHex,oStyle=C.setStyle;let inStyle=false;
   C.setHex=function(h){oHex.call(this,h);if(!inStyle)this.convertSRGBToLinear();return this;};
   C.setStyle=function(st){inStyle=true;try{oStyle.call(this,st);}finally{inStyle=false;}return this.convertSRGBToLinear();};})();
-const GAME_BUILD='v81';
+const GAME_BUILD='v83';
 /* =====================================================================
    丹波農商 牧場物語 v24 — 牛まわりの大改修(屋根バグ修正・牛舎拡大・繋留と散歩・糞は足元)
    v24: v23の全機能を維持したまま牛まわりを4点改修。セーブはv20キー(tamba_v20_save)を共用。
@@ -599,7 +639,7 @@ const TOWN_CHARS={
     skin:'#eec096',cheek:'#e8907a',hair:'#1a1512',shirt:'#2a3a5a',pants:'#22262e',shoe:'#222',
     line:'丹波銀行です。直近の決算が黒字なら、売上高と同じ額まで無利息で融資しますよ🏦',
     line2:'赤字だと貸せません…毎年の決算を黒字にするのが信用の第一歩です'},
-  fudosan:{model:'ojiichan',urls:['char_min/ojiichan_walk.glb'],name:'不動産屋の登さん',role:'不動産屋',menu:'land',pos:[26.5,38.8], // v30: なおとと同じ見た目だったので専用モデル(ojiichan)に変更
+  fudosan:{model:'ojiichan',c3:'fudosan',urls:['char_min/ojiichan_walk.glb'],name:'不動産屋の登さん',role:'不動産屋',menu:'land',pos:[26.5,38.8], // v30: なおとと同じ見た目だったので専用モデル(ojiichan)に変更
     skin:'#e8c9a8',cheek:'#e0907a',hair:'#8a8a8a',shirt:'#6a5a3a',pants:'#3a352a',shoe:'#333',
     line:'土地をお探しですか？西の牧草地・東の棚田・北の第二牛舎、いい区画が揃ってますよ🏠',
     line2:'土地を買えば農場の世界が広がる。生産規模の拡大は経営の王道です'},
@@ -1359,7 +1399,7 @@ const WORK_SPOTS={
   proc:[[44,31],[46,29]],                       // 倉庫手前のポテサラ加工場
   pig:[[45,53],[53,53],[45,61],[53,61]],        // 南の豚の放牧地(耕作放棄地)
   chestnut:[[6,55],[9,58],[5,52]],              // v80: 南の丘の栗園(x4-9,z50-60)
-  compost:[[33,28],[30,26],[35,29]],            // 堆肥場まわり
+  compost:[[20,29.2],[22.6,28.4],[17.6,34.4]], // v83: 牛舎の南の堆肥場            // 堆肥場まわり
 };
 // v44: 1人が複数の仕事を持てる。staffJobs[k]は配列(旧セーブのnull/文字列も吸収)
 function jobsOf(k){const j=state.staffJobs&&state.staffJobs[k];return Array.isArray(j)?j:(j?[j]:[]);}
@@ -2062,11 +2102,12 @@ function v81PigGeo(){
   return V81_PIG_GEO;
 }
 // ---- 会話ウィンドウ(立ち絵つき) ----
-const V81_PORTRAITS={hero:1,atsushi:1,yusuke:1,naoto:1,ryunosuke:1,ami:1,yakuba:1,ginko:1,juui:1,nokyo:1,seriman:1,shuriya:1,fudosan:1};
+const V81_PORTRAITS={hero:1,atsushi:1,yusuke:1,naoto:1,ryunosuke:1,ami:1,yakuba:1,ginko:1,juui:1,nokyo:1,seriman:1,shuriya:1,fudosan:1,obaachan:1,ojiichan:1,shufu:1,kodomo:1};
 function portraitKeyOf(n){if(!n)return null;if(n.cfg&&n.cfg.menu==='land')return 'fudosan';return V81_PORTRAITS[n.key]?n.key:null;}
 let v81TalkTimer=null;
 function showTalk(n,line){
   const el=document.getElementById('talk');if(!el){toast('💬 '+n.cfg.name+'「'+line+'」');return;}
+  try{if(n&&n.rig&&n.rig.v83)v83Nod(n.rig);}catch(e){}
   const pk=portraitKeyOf(n),img=document.getElementById('talkImg');
   if(pk){img.src='art/p_'+pk+'.webp';el.classList.remove('noimg');}else{img.removeAttribute('src');el.classList.add('noimg');}
   document.getElementById('talkName').textContent=n.cfg.name+(n.cfg.role?'  ·  '+n.cfg.role:'');
@@ -2390,10 +2431,12 @@ function genWorld(){
   flatten(14,30,8,26,2);
   for(let x=14;x<=30;x++)for(let z=8;z<=26;z++)gset(x,2,z,B.GRASS);
   // --- 堆肥場（南東） v22: 大倉庫の拡大(西壁x41)と干渉しないよう西へ移設(x34-40) ---
-  flatten(34,40,30,37,2);
-  for(let x=34;x<=40;x++)for(let z=30;z<=37;z++)gset(x,2,z,B.SOIL);
-  for(let x=35;x<=38;x++)for(let z=32;z<=34;z++)gset(x,3,z,B.COMPOST);
-  gset(36,4,33,B.COMPOST);
+  flatten(34,40,30,37,2); // v83: 旧堆肥場の跡は草地に戻す
+  for(let x=34;x<=40;x++)for(let z=30;z<=37;z++)gset(x,2,z,B.GRASS);
+  // v83: 堆肥場を牛舎の南入口のすぐ南へ(フンを運ぶ導線が短い・大倉庫/出荷箱/畑と干渉しない) x17-26,z29-34
+  flatten(17,26,27,34,2); // v83: z27-28(牛舎の南入口前)も同じ高さに=くぼみを作らない
+  for(let x=17;x<=26;x++)for(let z=27;z<=34;z++)gset(x,2,z,(x>=18&&x<=21&&z>=30&&z<=33)?B.SOIL:B.GRASS);
+  for(let x=19;x<=21;x++)for(let z=31;z<=32;z++)gset(x,3,z,B.COMPOST);
   // --- 野菜畑（南） ---
   flatten(26,33,36,42,2);
   for(let x=26;x<=33;x++)for(let z=36;z<=42;z++)gset(x,2,z,(x%2===0)?B.TILLED:B.SOIL);
@@ -3219,10 +3262,10 @@ function buildCompostShed(){
   const pm=new THREE.MeshLambertMaterial({color:0x8a6a3a});
   [[0,0],[3,0],[0,3],[3,3]].forEach(p=>{const post=new THREE.Mesh(new THREE.BoxGeometry(0.25,2.4,0.25),pm);post.position.set(p[0],1.2,p[1]);post.castShadow=true;g.add(post);});
   const roof=new THREE.Mesh(new THREE.BoxGeometry(4,0.2,4),new THREE.MeshLambertMaterial({color:0x9a5f2f}));roof.position.set(1.5,2.5,1.5);roof.castShadow=true;g.add(roof);
-  const y=topY(36,31)+1; // v22: 大倉庫の拡大に伴い堆肥場ごと西へ移設(x35-38)
-  g.position.set(35,y-1+0.02,30.5);decoGroup.add(g);compostShedMesh=g;
-  [[35,30.5],[38,30.5],[35,33.5],[38,33.5]].forEach(p=>addDecoCollider(p[0],p[1],0.3,y)); // v9: 柱の衝突
-  const ic=iconSprite('🏭',1.5);ic.position.set(36.5,y+2.9,32);decoGroup.add(ic);
+  const y=topY(19,30)+1; // v83: 牛舎の南へ移設(x18.5-21.5,z30-33)
+  g.position.set(18.5,y-1+0.02,30);decoGroup.add(g);compostShedMesh=g;
+  [[18.5,30],[21.5,30],[18.5,33],[21.5,33]].forEach(p=>addDecoCollider(p[0],p[1],0.3,y)); // v9: 柱の衝突
+  const ic=iconSprite('🏭',1.5);ic.position.set(20,y+2.9,31.5);decoGroup.add(ic);
   addInfoIcon(ic,{t:'🏭 本格堆肥舎',b:()=>'牛糞→肥料の製造販売(頭数×'+ECON.FERT_PER_COW+'袋/月・1袋'+fmt(ECON.FERT_PRICE)+')。苗代−50万/牧草−5万の肥料割引も付くよ。<br>肥料在庫: '+state.fertStock+'袋',btns:()=>[['🟫 肥料を出荷する('+state.fertStock+'袋)',()=>sellFert(false)]]});
 }
 // ---------- v20: 糞置き場(簡易)。コの字のコンクリ壁+糞の山。処理のみで肥料は作れない ----------
@@ -3234,10 +3277,10 @@ function buildDungYard(){
   wall(3.2,0.3,0,-1.45);wall(0.3,3.2,-1.45,0);wall(0.3,3.2,1.45,0); // コの字(南が開口)
   const pile=new THREE.Mesh(new THREE.SphereGeometry(1.0,8,6),new THREE.MeshLambertMaterial({color:0x5a4028}));
   pile.scale.y=0.5;pile.position.set(0,0.3,0);g.add(pile);
-  const y=topY(36,35)+1; // v22: 大倉庫の拡大に伴い西へ移設
-  g.position.set(36.5,y-1+0.02,35.5);decoGroup.add(g);dungYardMesh=g;
-  addDecoCollider(36.5,34.1,0.3,y);addDecoCollider(35.1,35.5,0.3,y);addDecoCollider(37.9,35.5,0.3,y);
-  const ic=iconSprite('🟤',1.4);ic.position.set(36.5,y+2.4,35.5);decoGroup.add(ic);
+  const y=topY(24,32)+1; // v83: 堆肥舎のとなり(牛舎の南東)へ
+  g.position.set(24.4,y-1+0.02,31.8);decoGroup.add(g);dungYardMesh=g;
+  addDecoCollider(24.4,30.4,0.3,y);addDecoCollider(23.0,31.8,0.3,y);addDecoCollider(25.8,31.8,0.3,y);
+  const ic=iconSprite('🟤',1.4);ic.position.set(24.4,y+2.4,31.8);decoGroup.add(ic);
   addInfoIcon(ic,{t:'🟤 糞置き場(簡易)',b:'牛糞をここで処理して外部処分費(月1万円/頭)がゼロに。⛰新築牛舎の増築条件もクリア済み✅<br>肥料にして売るには🏭本格堆肥舎('+man(ECON.SHED_COST)+'・🏛補助で半額)が必要だよ。'});
 }
 // ---------- v22: 超巨大倉庫の内装(農機庫/米の貯蔵棚/加工場/事務所/吊り照明)とアイコン ----------
@@ -3370,7 +3413,7 @@ function buildDecor(){
       if(state.riceField==='none'&&[11,12,1,2].includes(mo)&&(state.riceJiryoku||0)<3)a.push(['🌱 土づくり(堆肥)で地力+1',()=>doRiceDozukuri()]);
       if(state.riceField==='planted'&&!state.riceTsuihi&&!state.riceLodged&&mo>=7)a.push(['🌿 追肥する'+(mo===7?'(7月=適期)':'(⚠8月以降は倒伏)'),()=>doRiceTsuihi()]);
       return a;}});
-  addSign(36.5,29.4,'🟫',{t:'🟫 堆肥場',
+  addSign(17.2,33.6,'🟫',{t:'🟫 堆肥場(牛舎の南)',
     b:()=>'🏭本格堆肥舎('+man(ECON.SHED_COST)+'・🏛補助で半額)を建てると、牛糞→肥料(頭数×'+ECON.FERT_PER_COW+'袋/月・1袋'+fmt(ECON.FERT_PRICE)+')を製造販売できるよ。<br>牛糞は🧹掃除して牛舎に溜め、月1回「🟤溜まった糞を処理する」(1頭'+ECON.DUNG_PROC_FEE+'円)で片付く。<br>いま: '+(state.compostShed?'🏭本格堆肥舎が稼働中(肥料在庫'+state.fertStock+'袋)':'未整備(牛糞は処理で1頭'+ECON.DUNG_PROC_FEE+'円)'), // v36
     btns:()=>{const a=[];
       if(!state.compostShed)a.push(['🏭 本格堆肥舎を建てる('+man(shedPriceNow())+')',()=>buildShed()]);
@@ -3600,6 +3643,7 @@ function makeAnimRig(model,walkClip,runClip,idleClip){
 }
 // idle⇔walk⇔runをcrossFade(0.2)で切替。spd=実移動速度(units/s)→timeScaleで足滑り低減
 function rigPlay(rig,name,spd){
+  if(rig&&rig.v83)return v83Play(rig,name,spd);
   const to=name==='walk'?rig.actWalk:(name==='run'?rig.actRun:rig.actIdle);
   if(!to)return;
   if(name==='walk')to.timeScale=Math.max(0.9,Math.min(0.42*(spd||0),3.2));
@@ -3620,7 +3664,7 @@ function rigPlay(rig,name,spd){
 }
 
 // ---------- プレイヤー（麦わら帽子の農家キッズ） ----------
-const HERO_H=1.3; // 子どもの身長（ブロック1〜2個分・牛/柵と釣り合う大きさ）
+const HERO_H=1.55; // v83: 3.5頭身の設計図どおりの体型に合わせて少し大きく(顔が読める大きさ) // 子どもの身長（ブロック1〜2個分・牛/柵と釣り合う大きさ）
 const player={x:27.5,y:4,z:32.5,vy:0,dir:0,onGround:true};
 window.__v4dbg.player=player; // 検証用参照
 let avatar=null;// 全体グループ
@@ -3670,14 +3714,11 @@ function loadPlayerGLB(){
   note.style.display='block';
   (async()=>{
     try{
-      const wg=await loadGLB(HERO.walk,x=>{
-        if(x.total){const p=Math.round(x.loaded/x.total*50);note.textContent='3Dキャラ読み込み中… '+p+'%';setLoadMsg('3Dキャラを読み込み中… '+p+'%');}});
-      const rg=await loadGLB(HERO.run,x=>{
-        if(x.total){const p=50+Math.round(x.loaded/x.total*50);note.textContent='3Dキャラ読み込み中… '+p+'%';setLoadMsg('3Dキャラを読み込み中… '+p+'%');}});
-      const model=wg.scene;
-      // walkモデルにrun.glbのクリップを載せ替え（同一Mixamoスケルトン）
-      playerRig=makeAnimRig(model,wg.animations&&wg.animations[0],rg.animations&&rg.animations[0]);
-      const wrap=meshyWrap(model,playerRig.mixer,HERO_H,'hero');
+      // v83: 設計図から作った3Dトゥーンモデル+Mixamoモーション
+      const R=await v83LoadChar('hero',HERO_H,x=>{
+        if(x.total){const p=Math.round(x.loaded/x.total*100);note.textContent='3Dキャラ読み込み中… '+p+'%';setLoadMsg('3Dキャラを読み込み中… '+p+'%');}});
+      playerRig=R.rig;const wrap=R.wrap;
+      window.__v4dbg.scales.hero={target:HERO_H,scale:+R.rig.scale.toFixed(4),walkSpd:+R.rig.speed.walk.toFixed(3),runSpd:+R.rig.speed.run.toFixed(3)};
       window.__v4dbg.playerRig=playerRig; // 検証用
       avatarGlb=wrap;
       if(avatarVox){avatar.remove(avatarVox);avatarVox=null;}
@@ -3705,29 +3746,16 @@ function loadNPCGLBs(){
       let loaded=false;
       for(let ui=0;ui<n.urls.length&&!loaded;ui++){
         try{
-          const g=await loadGLB(n.urls[ui]);
-          const model=g.scene;
-          // v20: 代替モデル(既存NPC)を使う住民は色替えで別人化(専用GLBなら色そのまま)
-          if(ui>0&&n.cfg.tint){
-            const tc=new THREE.Color(n.cfg.tint);
-            model.traverse(o=>{
-              if(o.isMesh&&o.material){
-                const ms=Array.isArray(o.material)?o.material.map(m=>m.clone()):o.material.clone();
-                o.material=ms;
-                (Array.isArray(ms)?ms:[ms]).forEach(m=>{if(m&&m.color)m.color.multiply(tc);});
-              }
-            });
-          }
-          let an=g.animations||[],rotY=V81_ROT[n.urls[ui]]||0;
-          if(!an.length){const pa=v81ProcAnim(model);if(pa){an=[pa.walk,pa.idle];rotY=pa.rotY;}} // v81: Tripo新キャラ=手続きアニメ
-          const pick=re=>an.find(a=>re.test(a.name||''));
-          const wcl=pick(/walk/i)||an[0],icl=pick(/idle/i);
-          n.rig=makeAnimRig(model,wcl,null,(icl&&icl!==wcl)?icl:null);
-          const wrap=meshyWrap(model,n.rig.mixer,n.cfg.h||CHAR_H,'npc_'+n.key,rotY);
+          // v83: 全員を設計図→3Dトゥーンに統一(同じ骨格・同じモーション)
+          const ck=n.cfg.c3||n.key;
+          if(!V83_KEYS[ck])throw new Error('no v83 model '+ck);
+          const R=await v83LoadChar(ck,n.cfg.h||CHAR_H);
+          n.rig=R.rig;const wrap=R.wrap;
+          ui=n.urls.length; // 代替URLは使わない
           if(n.vox){n.mesh.remove(n.vox);n.vox=null;}
           n.mesh.add(wrap);
           window.__v4dbg.npcGlb++;
-          window.__v4dbg.npcModels[n.key]=n.urls[ui];
+          window.__v4dbg.npcModels[n.key]='c3/'+(n.cfg.c3||n.key)+'.glb';
           loaded=true;
         }catch(e){
           window.__v4dbg.errors.push('npc-'+n.key+'['+n.urls[ui]+']:'+(e&&e.message||e));
@@ -3743,7 +3771,7 @@ function loadNPCGLBs(){
 //      GLBはマップをまたいで保持(切替のたびに読み直さない)。
 const npcs=[];
 function initNPCs(){
-  const spots={barn:[22.5,28.5],pasture:[39.5,13.5],compost:[35,36.8],barn2:[32.5,10.5],proc:[45,32]}; // v27/56: barn2=北の牛舎の入口前の通路・proc=加工場前
+  const spots={barn:[22.5,28.5],pasture:[39.5,13.5],compost:[23,35.2],barn2:[32.5,10.5],proc:[47.6,33.6]}; // v27/56: barn2=北の牛舎の入口前の通路・proc=加工場前
   const mk=(modelKey,cfg,map,pos,wander)=>{
     const g=new THREE.Group();               // ホルダー（ラベル＋キャラ）
     const vox=buildVoxAvatar(cfg); vox.visible=false; g.add(vox); // v15: ボクセルは非表示で待機(GLB失敗時のみ表示)
@@ -4027,7 +4055,8 @@ const QUESTS=[
  {s:'🐂 母牛を10頭に増やす',t:'🐂セリで母牛を買い足して10頭体制へ。従業員に世話を任せれば大規模でも回るよ(1人で母牛60頭まで)。スーパーL資金も活用！',c:()=>state.cows.length>=10,r:500000},
  {s:'🌟 利益を最大化しよう！',t:'牛・米・栗・加工・肥料の5本柱と設備投資で利益を最大化！📊事務所の経営分析で資金繰りもチェックしながら、丹波いちばんの農場を目指そう！',c:()=>false,r:0},
 ];
-function updateQuest(){
+function updateQuest(){return v83UpdateQuest();}
+function updateQuest_v81(){
   while(state.questDone<QUESTS.length-1&&QUESTS[state.questDone].c()){
     const q=QUESTS[state.questDone];
     state.questDone++;fanfare();
@@ -4038,7 +4067,8 @@ function updateQuest(){
   if(el)el.innerHTML='🎯 <b>'+(state.questDone+1)+'. '+QUESTS[state.questDone].s+'</b> <span style="opacity:.65;font-weight:normal">▶くわしく</span>';
 }
 // v21: クエストの❓タップで詳細説明
-function showQuestInfo(){
+function showQuestInfo(){return v83ShowQuestInfo();}
+function showQuestInfo_v81(){
   if(!state)return;
   const i=state.questDone,q=QUESTS[i];
   const body='<b>▶ やること</b><br>'+q.t+(q.r?('<br><br>🎁 達成すると <b>協力金 '+man(q.r)+'</b> がもらえる！'):'')+'<br><br><small style="color:#8a6a45">目標 '+(i+1)+'／'+QUESTS.length+'。1つ達成すると自動で次の目標が出るよ。</small>';
@@ -4477,7 +4507,7 @@ function nearestAction(wx,wz){
       const r=restAt(s.id);
       cand(s.x,s.z,2.4,r?(CUISINE[r.type].em+' '+CUISINE[r.type].name+'(店舗の管理)'):'🍴 ここに出店する('+(s.venue==='stadium'?'⚾球場':'通常')+')',()=>{menuTab='food';openMenu();});
     }
-    cand(70,38.5,3.0,'🚄 丹波へ帰る(新幹線)',()=>switchMap('town')); // v70: 東京駅は高架線の東端へ移設
+    cand(70,38.5,3.0,'🚄 丹波へ帰る(新幹線)',()=>switchMap('town'));cand(64.5,38,2.6,'🚄 丹波へ帰る(新幹線)',()=>switchMap('town')); // v70: 東京駅は高架線の東端へ移設
     return best;
   }
   // ---- v19: 街マップの対象(施設・NPC) / v22: 農場への道 ----
@@ -4493,7 +4523,7 @@ function nearestAction(wx,wz){
     cand(13.5,28.6,2.4,'🔧 修理屋(機械の修理)',()=>{menuTab='repair';openMenu();});
     cand(47.5,44.3,2.6,'🐂 セリ市場',()=>{menuTab='auction';openMenu();});
     cand(64.5,31.5,3.2,'🌉 農場へ帰る(橋への道)',()=>switchMap('farm')); // v61: 街の右(東)の門から農場へ
-    cand(33,10.5,2.6,'🚄 東京へ行く(新幹線)',()=>switchMap('tokyo')); // v70: 北端の丹波駅の駅前広場の看板
+    cand(33,10.5,2.6,'🚄 東京へ行く(新幹線)',()=>switchMap('tokyo'));cand(28.6,11.2,2.6,'🚄 東京へ行く(新幹線)',()=>switchMap('tokyo')); // v70: 北端の丹波駅の駅前広場の看板
     return best;
   }
   // ---- 農場マップの対象 ----
@@ -4547,7 +4577,7 @@ function nearestAction(wx,wz){
     toast('🌿 牧草: 収穫は🌸5月1週目と🍂9月3週目(1回'+grassCutYield()+'束)・在庫'+state.grassStock+'束・牛の消費 週'+herdCount()+'束・次の収穫は'+nextGrassHarvestLabel());
   });
   // v30: 糞置き場(200万)を廃止。堆肥場は🏭本格堆肥舎の一本のみ(処分費ゼロ＋肥料事業)
-  cand(36.5,32.3,2.6,state.compostShed?('🟫 肥料を出荷する('+state.fertStock+'袋)'):'🏭 本格堆肥舎を建てる('+man(shedPriceNow())+(subApproved('shed')?'・補助済半額':'・補助で半額')+')',()=>{
+  cand(20,31.5,2.8,state.compostShed?('🟫 肥料を出荷する('+state.fertStock+'袋)'):'🏭 本格堆肥舎を建てる('+man(shedPriceNow())+(subApproved('shed')?'・補助済半額':'・補助で半額')+')',()=>{
     if(state.compostShed)sellFert(false);else buildShed();
   });
   // 栗の木
@@ -4570,17 +4600,18 @@ function nearestAction(wx,wz){
       continue;
     }
     const pl=plotAt(bx,bz);
-    if(pl)cand(bx+0.5,bz+0.5,1.1,pl.kind==='paddy'?riceFieldLabel():'🌱 種をまく',()=>actPlot(pl));
+    if(pl)cand(bx+0.5,bz+0.5,pl.kind==='paddy'?1.7:1.1,pl.kind==='paddy'?riceFieldLabel():'🌱 種をまく',()=>actPlot(pl));
   }
   return best;
 }
 const REACH=2.5; // この距離なら その場で実行
 let pendingAct=null; // 遠い対象をタップ→歩いて着いたら実行
 // 大きな「つかう/とる」ボタン：自分の近くの対象に文脈行動
+function v83Face(a){try{if(a&&a.tx!=null&&Math.hypot(a.tx-player.x,a.tz-player.z)>0.3)player.dir=Math.atan2(a.tx-player.x,a.tz-player.z);v83Work(playerRig);}catch(e){}}
 function doAction(){
   ac(); // iOSサウンド解禁
   const a=nearestAction(player.x,player.z);
-  if(a&&a.d<REACH+0.6){a.fn();return;}
+  if(a&&a.d<REACH+0.6){v83Face(a);a.fn();return;}
   toast('近くに触れるものがないよ（畑や牛に近づいてね）');
 }
 // タップ位置のワールド座標で対象を探す。近ければ即実行/遠ければ歩いて実行
@@ -4594,7 +4625,7 @@ function tapAt(wx,wz){
   }
   const a=nearestAction(wx,wz);
   if(!a)return false;
-  if(distP(a.tx,a.tz)<REACH){cancelMoveTarget();pendingAct=null;a.fn();return true;}
+  if(distP(a.tx,a.tz)<REACH){cancelMoveTarget();pendingAct=null;v83Face(a);a.fn();return true;}
   // 歩いてから実行
   pendingAct=a;
   pw.target={x:a.tx,z:a.tz};pw.stuck=0;pw.px=player.x;pw.pz=player.z;
@@ -6974,7 +7005,7 @@ function buildTownDecor(){
   // v61: 東の大通りの突き当たり=「農場への道」(右の門をくぐると農場の橋のたもとへ)
   addSign(61,27.5,'🌉',{t:'🌉 農場への道(橋)',b:'東(右)の道を進むと🌾農場へ続く川の橋に出るよ。門をくぐると自動で農場へ帰る。',btns:[['🌾 農場へ帰る',()=>switchMap('farm')]]});
   // v68: 🚄 丹波駅=新幹線で東京へ v70: 駅は街の北端へ移設。看板は駅舎の前(駅前広場)。駅舎・ホーム・線路はgenTown、車両とレールはこの下で装飾
-  addSign(33,10.5,'🚄',{t:'🚄 丹波駅(新幹線)',b:'赤レンガの駅舎の奥がホーム。新幹線で🗼<b>東京駅</b>へ行けるよ(駅→駅で発着)。東京には⚾野球場・🏢オフィス街・🛍モール・🚉東京駅・🍜高架下の飲食店街・🛎ホテルがあって、🐙たこ焼き/🍤天ぷら/🍣寿司/🥩焼肉の<b>飲食店を出店して経営</b>できる(帰りは東京駅の🚄看板から丹波駅へ)。',btns:[['🚄 東京へ行く(新幹線)',()=>switchMap('tokyo')],['🍴 飲食メニュー(保有店の管理)',()=>{menuTab='food';openMenu();}]]},2.0);
+  addSign(28.6,11.2,'🚄',{t:'🚄 丹波駅(新幹線)',b:'赤レンガの駅舎の奥がホーム。新幹線で🗼<b>東京駅</b>へ行けるよ(駅→駅で発着)。東京には⚾野球場・🏢オフィス街・🛍モール・🚉東京駅・🍜高架下の飲食店街・🛎ホテルがあって、🐙たこ焼き/🍤天ぷら/🍣寿司/🥩焼肉の<b>飲食店を出店して経営</b>できる(帰りは東京駅の🚄看板から丹波駅へ)。',btns:[['🚄 東京へ行く(新幹線)',()=>switchMap('tokyo')],['🍴 飲食メニュー(保有店の管理)',()=>{menuTab='food';openMenu();}]]},2.0);
   // v70: 丹波駅の停車中の新幹線ふうの車両(白い車体+青帯+先頭ノーズ)とレール2本(北端の線路砂利 z0-1 の上・両端は丘の中へ=場外へ抜ける見た目)
   (function(){
     const railM=new THREE.MeshLambertMaterial({color:0x777d86});
@@ -7281,7 +7312,7 @@ function buildTokyoDecor(){
   addSign(65.5,47,'🛎',{t:'🛎 ホテル',b:'高層ホテル。1階に出店スロットが1ヶ所(宿泊客でにぎわう)。',btns:[['🍴 飲食メニューを開く',()=>{menuTab='food';openMenu();}]]},1.6);
   addSign(67,34.5,'🚉',{t:'🚉 東京駅',b:'東京の玄関口。高架下(飲食店街)の東の端にあるよ。改札を出て西へ歩けば、そのまま🍜高架下の飲食店街に直行できる。🚄の看板から新幹線で丹波駅へ帰れる。'},1.6);
   // 🚄 丹波へ帰る(東京駅のホーム) v70: 駅は高架線の東端へ移設
-  addSign(70,38.5,'🚄',{t:'🚄 新幹線のりば(東京駅)',b:'新幹線で🏘丹波駅へ帰るよ(農場へはさらに丹波の街の東の門から)。',btns:[['🚄 丹波へ帰る(新幹線)',()=>switchMap('town')]]},2.0);
+  addSign(61.8,36.3,'🚄',{t:'🚄 新幹線のりば(東京駅)',b:'新幹線で🏘丹波駅へ帰るよ(農場へはさらに丹波の街の東の門から)。',btns:[['🚄 丹波へ帰る(新幹線)',()=>switchMap('town')]]},2.0);
   // 高架下のブース(カウンター+赤いひさし+ちょうちん)
   for(const s of TOKYO_SLOTS){
     if(!s.id.startsWith('g'))continue;
@@ -7465,6 +7496,7 @@ function switchMap(target){
   mapBusy=true;
   const from=curMap; // v69: 出発マップ(端で繋がる着地の分岐に使う)
   sfxSeq([[520,.08],[660,.1]]);
+  setTimeout(()=>{mapBusy=false;},4000); // v83: 保険(例外で詰まっても4秒で解除)
   showTravel((target==='tokyo'||curMap==='tokyo')?'🚄 新幹線で移動中…':(target==='town'?'🌉 橋を渡って街へ…':'🌉 橋を渡って農場へ…'),()=>{ // v68: 東京は新幹線
     teardownMap();
     curMap=target;state.map=target;
@@ -7474,8 +7506,8 @@ function switchMap(target){
     let sp,yaw=null;
     if(from==='farm'&&target==='town'){sp={x:61.0,z:31.5};yaw=-Math.PI/2;}      // 農場の西端→街の東端(門のすぐ内側)・西向き
     else if(from==='town'&&target==='farm'){sp={x:4.5,z:22.0};yaw=Math.PI/2;}   // 街の東の門→農場の西端(中央橋の上)・東向き
-    else if(from==='tokyo'&&target==='town'){sp={x:33,z:4};yaw=0;}              // v70: 東京駅→🚄丹波駅(北端)のホーム・南向き(駅舎を抜けて街の中心へ)
-    else if(target==='tokyo'){sp=TOKYO_SPAWN;yaw=-Math.PI/2;}                   // v70: 丹波駅→🚉東京駅(東端)のホーム・西向き(改札を出て高架下方面へ)
+    else if(from==='tokyo'&&target==='town'){sp={x:37.5,z:11.8};yaw=0;} // v83: 駅前広場の東=役場の東の通路をまっすぐ南へ歩けば大通り              // v70: 東京駅→🚄丹波駅(北端)のホーム・南向き(駅舎を抜けて街の中心へ)
+    else if(target==='tokyo'){sp={x:63.5,z:38};yaw=-Math.PI/2;}                   // v70: 丹波駅→🚉東京駅(東端)のホーム・西向き(改札を出て高架下方面へ)
     else sp=target==='town'?TOWN_SPAWN:FARM_SPAWN;                              // その他(保険)は従来の着地
     player.x=sp.x;player.z=sp.z;
     if(walkY(Math.floor(player.x),Math.floor(player.z),WH)>WH){ // 保険
@@ -7833,9 +7865,9 @@ function animate(ts){
       const tdx=pw.target.x-player.x,tdz=pw.target.z-player.z,tdl=Math.hypot(tdx,tdz);
       // v10: 目的の「さわれるもの」に近づいたら自動で実行（タップ1回で歩く→やる）
       if(pendingAct&&tdl<REACH-0.4){
-        const f=pendingAct.fn;pendingAct=null;cancelMoveTarget();f();
+        const f=pendingAct.fn;v83Face(pendingAct);pendingAct=null;cancelMoveTarget();f();
       }
-      else if(tdl<0.6){cancelMoveTarget();if(pendingAct){const f=pendingAct.fn;pendingAct=null;f();}} // 到着
+      else if(tdl<0.6){cancelMoveTarget();if(pendingAct){const f=pendingAct.fn;v83Face(pendingAct);pendingAct=null;f();}} // 到着
       else{
         const a=Math.atan2(tdx,tdz)-camYaw;
         ix=Math.sin(a);iz=Math.cos(a);
@@ -7896,7 +7928,7 @@ function animate(ts){
         const running=(sprint||Math.hypot(joyVec.x,joyVec.y)>0.92)&&playerRig.actRun;
         rigPlay(playerRig,running?'run':'walk',curSpd);
       }else rigPlay(playerRig,'idle',0);
-      playerRig.mixer.update(Math.min(0.1,dt));
+      if(playerRig.v83)v83Tick(playerRig,Math.min(0.1,dt));else playerRig.mixer.update(Math.min(0.1,dt));
     }else if(avatarVox){
       const sw=Math.sin(walk)*(moving?0.6:0);
       const u=avatarVox.userData;
@@ -7988,11 +8020,11 @@ function animate(ts){
         while(dw>Math.PI)dw-=Math.PI*2;while(dw<-Math.PI)dw+=Math.PI*2;
         n.mesh.rotation.y+=dw*Math.min(1,dt*8);
       }
-      if(n.rig){rigPlay(n.rig,'walk',n.wspd*2.3);n.rig.mixer.update(Math.min(0.1,dt));}
+      if(n.rig){rigPlay(n.rig,'walk',n.rig.v83?n.wspd:n.wspd*2.3);if(n.rig.v83)v83Tick(n.rig,Math.min(0.1,dt));else n.rig.mixer.update(Math.min(0.1,dt));}
       continue;
     }
     const ngy=standY(n.mesh.position.x,n.mesh.position.z); // v40: 屋根でなく床に立つ(建物の中でもOK)
-    if(n.rig){n.mesh.position.y=ngy;if(n.rig.cur!=='idle')rigPlay(n.rig,'idle',0);n.rig.mixer.update(Math.min(0.1,dt));}
+    if(n.rig){n.mesh.position.y=ngy;if(n.rig.cur!=='idle')rigPlay(n.rig,'idle',0);if(n.rig.v83)v83Tick(n.rig,Math.min(0.1,dt));else n.rig.mixer.update(Math.min(0.1,dt));}
     else n.mesh.position.y=ngy+Math.sin(n.t*2)*0.02;
     const d=Math.hypot(n.mesh.position.x-player.x,n.mesh.position.z-player.z);
     // v13: 近く(8ブロック)にいる間は常にプレイヤーの方へなめらかに向き直る。
@@ -8012,6 +8044,7 @@ function animate(ts){
   }
   // --- v68: 東京の群衆(大勢の歩く人) ---
   if(curMap==='tokyo')updateTokyoCrowd(dt);
+  try{v83NavTick(dt);}catch(e){}
   // --- カメラ（地形にめり込まないよう手前で止める） ---
   const cov=window.__v4dbg.camOver; // v13: 検証用オーバーライド({d,h})
   // v20: ズーム可変(camDist=5.2〜24)。高さも引き量に比例させ、最大で農場を俯瞰できる
@@ -8110,7 +8143,8 @@ function startGame(saveData){
       else if(curMap==='tokyo'){player.x=TOKYO_SPAWN.x;player.z=TOKYO_SPAWN.z;} // v68
       else{player.x=27.5;player.z=34.5;}
     }
-    player.y=topY(Math.floor(player.x),Math.floor(player.z))+1;
+    {const gl=walkY(Math.floor(player.x),Math.floor(player.z),Math.min(player.y||3.2,3.2));player.y=(gl<=WH)?gl:topY(Math.floor(player.x),Math.floor(player.z))+1;} // v83: 東京の高架下で再開してもデッキの上に乗らない
+    if(curMap==='tokyo'&&player.y>5){player.x=63.5;player.z=38;player.y=walkY(63,38,3.2);}
     initAvatar();
     bindControls();
     updateHUD();
