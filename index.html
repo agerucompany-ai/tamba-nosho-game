@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v84</title>
-<meta name="tamba-build" content="v84">
+<title>丹波農商 牧場物語 v85</title>
+<meta name="tamba-build" content="v85">
 <meta name="description" content="丹波農商(兵庫県丹波市)のリアルな農業経営を、スマホで遊べる牧場ゲームで体験。米・黒毛和牛・牧草・栗・野菜を育てて会社を大きくしよう。">
 <meta name="theme-color" content="#3f8a3a">
 <meta name="mobile-web-app-capable" content="yes">
@@ -213,6 +213,9 @@
   #talkBody{min-height:0!important;padding:8px 12px 8px 22px!important;}
   #talkText{font-size:13px!important;line-height:1.5!important;}
   #talk{max-width:500px!important;}
+  /* v85: 会話窓が「タップ:〜」の案内と左の⚙🎥ボタンに重なっていた→案内は会話窓の上へ、スマホは会話窓を左ボタンの右から */
+  body:has(#talk.on) #actHint{bottom:calc(240px + env(safe-area-inset-bottom))!important;}
+  @media (max-width:700px){#talk{left:54px!important;right:8px!important;bottom:calc(126px + env(safe-area-inset-bottom))!important;}}
   #pcGuide{left:auto!important;right:10px!important;transform:none!important;width:min(330px,40vw)!important;padding:8px 10px!important;top:calc(52px + env(safe-area-inset-top))!important;}
   #pcGuide h3{font-size:13px!important;margin-bottom:4px!important;} #pcGuide .gl{font-size:11.5px!important;padding:1px!important;} #pcGuide .gk{min-width:92px!important;font-size:11px!important;} #pcGuideClose{margin-top:6px!important;padding:5px!important;font-size:12px!important;}
   #qArrow{display:inline-block;color:#e8901a;font-size:15px;line-height:1;transition:transform .15s;flex:0 0 auto;}
@@ -287,14 +290,14 @@
 <script src="lib/DRACOLoader.js"></script>
 <script src="v83char.js"></script>
 <script src="v83_game.js"></script>
-<script src="v83_quest.js"></script>
+<script src="v83_quest.js?b=v85"></script>
 <script src="v84_opening.js?b=v84"></script>
 <script>
 // v81: 色はsRGBで書かれているので、リニアに変換してから使う(トーンマッピング前提の正しい発色)。
 (function(){const C=THREE.Color.prototype,oHex=C.setHex,oStyle=C.setStyle;let inStyle=false;
   C.setHex=function(h){oHex.call(this,h);if(!inStyle)this.convertSRGBToLinear();return this;};
   C.setStyle=function(st){inStyle=true;try{oStyle.call(this,st);}finally{inStyle=false;}return this.convertSRGBToLinear();};})();
-const GAME_BUILD='v84';
+const GAME_BUILD='v85';
 /* =====================================================================
    丹波農商 牧場物語 v24 — 牛まわりの大改修(屋根バグ修正・牛舎拡大・繋留と散歩・糞は足元)
    v24: v23の全機能を維持したまま牛まわりを4点改修。セーブはv20キー(tamba_v20_save)を共用。
@@ -2879,7 +2882,7 @@ function doRicePlant(){
   if(!isRicePlantWeek()){toast('🌾 田植えは'+wkLabel(ECON.RICE_PLANT_WEEK)+'(春)だけだよ(今は'+wkLabel(state.week)+')');return;}
   // v64: 米の作業には機械一式(🚜+🌱+🌾+♨)が必須。トラクター+田植え機が無いと手植え(極小規模)のみ
   const machOK=effN('tractor')>=1&&effN('planter')>=1;
-  if(!machOK&&machineBroken('tractor')){toast('🚜 トラクターが故障中で田植えできない！🔧街の修理屋で直そう('+man(machRepairCost('tractor'))+')');return;} // v19
+  if(!machOK&&machineBroken('tractor')&&effN('planter')>=1){toast('🚜 トラクターが故障中で田植えできない！🔧街の修理屋で直そう('+man(machRepairCost('tractor'))+')');return;} // v19
   // v20: 小型トラクター(新品)は東の棚田(規模1.5倍)に非対応(2台以上あれば中型も持っている扱い)
   if(machOK&&riceScale()>1&&effN('tractor')===1&&state.machines.tractor.lvl==='new'&&state.machines.tractor.size==='small'){
     toast('🚜 小型トラクターでは東の棚田(規模1.5倍)まで田植えできない！🚜農協で中型(500万)を買おう');return;
@@ -2972,7 +2975,8 @@ function riceFieldLabel(){
     if(waterDue())return'🚿 水の管理をする(そろそろ必要)';
     return'🌾 生育中('+wkLabel(ECON.RICE_HARVEST_WEEK)+'に収穫)';
   }
-  return isRicePlantWeek()?'🌾 田植えする(苗代'+man(riceSeedCost())+')':'🌾 田んぼ(田植えは'+wkLabel(ECON.RICE_PLANT_WEEK)+')'; // v25: 週単位
+  if(isRicePlantWeek()){const hand=!(effN('tractor')>=1&&effN('planter')>=1);return '🌾 田植えする('+(hand?'手植え・':'')+'苗代'+man(hand?Math.round(riceSeedCost()*0.15):riceSeedCost())+')';} // v85: 手植えの実際の苗代を表示(300万と出て実際は45万だった)
+  return '🌾 田んぼ(田植えは'+wkLabel(ECON.RICE_PLANT_WEEK)+')'; // v25: 週単位
 }
 function riceFieldAction(){
   if(state.riceField==='ready'){doRiceHarvest();return;}
@@ -3775,7 +3779,7 @@ function loadNPCGLBs(){
 //      GLBはマップをまたいで保持(切替のたびに読み直さない)。
 const npcs=[];
 function initNPCs(){
-  const spots={barn:[22.5,28.5],pasture:[39.5,13.5],compost:[23,35.2],barn2:[32.5,10.5],proc:[47.6,33.6]}; // v27/56: barn2=北の牛舎の入口前の通路・proc=加工場前
+  const spots={barn:[25.2,28.6],pasture:[39.5,13.5],compost:[23,35.2],barn2:[32.5,10.5],proc:[47.6,33.6]}; // v27/56: barn2=北の牛舎の入口前の通路・proc=加工場前
   const mk=(modelKey,cfg,map,pos,wander)=>{
     const g=new THREE.Group();               // ホルダー（ラベル＋キャラ）
     const vox=buildVoxAvatar(cfg); vox.visible=false; g.add(vox); // v15: ボクセルは非表示で待機(GLB失敗時のみ表示)
@@ -4551,7 +4555,7 @@ function nearestAction(wx,wz){
   cand(72.5,25.6,2.6,'🏢 事務所(雇用・帳簿・指示)',()=>{menuTab='staff';openMenu();});
   cand(74.4,28.5,2.2,'📊 経営分析(過去決算・推移グラフ・資金繰り表)',()=>{menuTab='biz';openMenu();}); // v65: 事務所の書棚
 
-  cand(44,31,2.6,(state.procWeek===state.weekN)?'🥔 ポテサラ加工場(今週は加工済)':'🥔 ポテサラを作って売る(週1・利益'+man(ECON.FOOD_PROC_SALE-ECON.FOOD_PROC_COST)+')',()=>doProcess(null)); // v30: 倉庫の一番手前(西の入口すぐ)へ移設
+  cand(44,31,3.0,(state.procWeek===state.weekN)?'🥔 ポテサラ加工場(今週は加工済)':'🥔 ポテサラを作って売る(週1・利益'+man(ECON.FOOD_PROC_SALE-ECON.FOOD_PROC_COST)+')',()=>doProcess(null)); // v30: 倉庫の一番手前(西の入口すぐ)へ移設
   cand(46.5,28.2,2.4,'🚜 農機庫(機械の格納)',()=>{
     const t=state.machines.tractor,names=[]; // v64: 台数表示
     names.push('🚜トラクター×'+effN('tractor')+(t.broken?'(⚠1台故障)':''));
@@ -4573,6 +4577,11 @@ function nearestAction(wx,wz){
       else cand(18,15,7.5,'🌾 餌箱に入れる(全'+herdCount()+'頭に餌やり)',()=>{doFeed(null);state.carryHay=false;});
     }
     if(state.care.cleanWeek!==state.weekN)cand(16,15,8,'🧹 フンを撤去する(掃除)',()=>doClean(null)); // v43: 半径を大きく=牛舎内どこでも掃除OK
+    // v85: 「牛舎内どこでもOK」のはずが「使う」は2.5m以内しか届かず、牛の状態にも負けていた→古い牛舎の中なら、その場で餌箱/掃除を最優先にする
+    if(state.barnRented&&wx>14.6&&wx<29.6&&wz>8.6&&wz<25.8){
+      if(state.care.fedWeek!==state.weekN&&state.carryHay)cand(wx,wz,1,'🌾 餌箱に入れる(全'+herdCount()+'頭に餌やり)',()=>{doFeed(null);state.carryHay=false;});
+      else if(state.care.cleanWeek!==state.weekN&&state.barnDung<ECON.BARN_DUNG_CAP&&!(state.care.fedWeek!==state.weekN&&Math.hypot(wx-23,wz-10.5)<3)&&!((state.barnDung||0)>0&&Math.hypot(wx-28,wz-9)<2.5))cand(wx+0.01,wz,1,'🧹 フンを撤去する(掃除)',()=>doClean(null));
+    }
     if((state.barnDung||0)>0)cand(28,9,6,'🟤 溜まった糞を処理する('+state.barnDung+'/'+ECON.BARN_DUNG_CAP+')',()=>processBarnDung()); // v41: 牛舎の右上(北東)の糞の山で処理
   }
   if(state.land.pasture1)cand(37,14.5,2.3,state.grassSown?(isGrassHarvestWeek()&&state.grassCutWeek!==state.weekN?'✂ 牧草を収穫する(春秋の年2回)':'🌿 牧草の状況'):'🌿 牧草を育てる('+man(grassSowCost())+')',()=>{ // v25: 週ベース
@@ -7771,7 +7780,10 @@ function bindControls(){
     const ck=CODEKEY[e.code];if(ck)keys[ck]=false;
   });
   const ub=document.getElementById('useBtn');
-  const ubDown=e=>{if(e.cancelable)e.preventDefault();ac();doAction();};
+  let ubT=-1e9;
+  const ubDown=e=>{if(e.cancelable)e.preventDefault();ac();ubT=performance.now();doAction();};
+  // v85: 「使う」で開いたメニューの「閉じる」が同じ場所にあると、指/マウスを離した時のクリックがそこに落ちて即閉じる(セリ市場など)→直後のクリックは捨てる
+  addEventListener('click',e=>{if(performance.now()-ubT<650&&e.target!==ub&&!ub.contains(e.target)&&e.target.closest&&e.target.closest('#menu,#fiscal,#seedPick')){e.stopPropagation();e.preventDefault();}},true);
   ub.addEventListener('touchstart',ubDown,{passive:false});
   ub.addEventListener('mousedown',ubDown);
   document.getElementById('menuOpenBtn').addEventListener('click',openMenu);
@@ -7839,12 +7851,10 @@ function areaName(x,z){
   if(x<=3&&z>=18&&z<=25)return'🏘 街の入口(橋の西)'; // v22
   if(x<=4&&z>=13&&z<=16)return'🏘 街の入口(北橋の西)'; // v23
   if(x<=2&&z>=28&&z<=31)return'🏘 街の入口(南橋の西)'; // v23
-  if(x>=22&&x<=31&&z>=10&&z<=18)return state.barnRented?'🏚 古い牛舎(賃借中)':'🏚 古い牛舎';
-  if(x>=24&&x<=31&&z>=23&&z<=29)return'🌱 空き地(旧事務所の跡地)'; // v21: 更地化
-  if(x>=15&&x<=21&&z>=23&&z<=28)return'🌱 空き地(旧銀行の跡地)';   // v21: 更地化
+  if(x>=14&&x<=30&&z>=8&&z<=26)return state.barnRented?'🏚 古い牛舎(賃借中)':'🏚 古い牛舎'; // v85: 牛舎の実際の範囲(旧ラベルは入口前を「旧銀行の跡地」と表示していた)
+  if(x>=17&&x<=23&&z>=29&&z<=34)return state.compostShed?'🏭 堆肥舎':'🟫 堆肥場'; // v85: 牛舎の南へ移設済み(v83)
   if(x>=29&&x<=36&&z>=44&&z<=49)return'🌱 空き地(旧セリ市場の跡地)'; // v21: 更地化
   if(x>=10&&x<=23&&z>=36)return'🌾 田んぼ';
-  if(x>=33&&x<=41&&z>=30&&z<=37)return'🟫 堆肥場'; // v22: 西へ移設
   if(x>=26&&x<=33&&z>=36&&z<=42)return'🥬 野菜畑';
   if(z<0)return Math.abs(x-riverX(z))<=2?'🏞 川':'🌿 北の平原'; // v57: 北の拡張ゾーン
   if(Math.abs(x-riverX(z))<=2)return'🏞 川';
@@ -7852,7 +7862,7 @@ function areaName(x,z){
 }
 
 // ---------- メインループ ----------
-let lastT=0,walk=0,tickAcc=0,prodAcc=0,saveAcc=0,manureAcc=0;
+let lastT=0,walk=0,tickAcc=0,prodAcc=0,saveAcc=0,manureAcc=0,v85CamLim=99;
 function animate(ts){
   requestAnimationFrame(animate);
   const dt=Math.min((ts-lastT)/1000||0.016,0.1);lastT=ts;
@@ -8062,12 +8072,29 @@ function animate(ts){
   const cDir=cTo.clone().sub(cFrom);const cLen=cDir.length();cDir.normalize();
   let cMax=cLen;
   const cityView=(curMap==='tokyo'); // v71: 高層の東京では高架デッキ(y8)やビル上層にカメラが当たり続けて「引き(ズームアウト)/俯瞰ができない」ので、頭上の遮蔽は無視して地上の壁だけで寄せる
+  // v85: 東京で高架デッキの下を歩くと、カメラがデッキの上に出て主人公が見えなくなっていた→頭上に床がある時は頭上も当たり判定に入れて寄せる
+  let underDeck=false;
+  if(cityView){const px=Math.floor(player.x),pz=Math.floor(player.z);for(let yy=Math.floor(player.y)+2;yy<Math.floor(player.y)+10&&!underDeck;yy++){const b=getB(px,yy,pz);if(b&&!BI[b].water)underDeck=true;}}
   for(let t=0.6;t<cLen;t+=0.25){
     const p=cFrom.clone().add(cDir.clone().multiplyScalar(t));
-    if(cityView&&p.y>player.y+2.5)continue; // 頭上(高架・屋根・ビル上層)は無視=引きと角度変更を効かせる
+    if(cityView&&!underDeck&&p.y>player.y+2.5)continue; // 頭上(高架・屋根・ビル上層)は無視=引きと角度変更を効かせる
     const b=getB(Math.floor(p.x),Math.floor(p.y),Math.floor(p.z));
     if(b&&!BI[b].water){cMax=Math.max(1.2,t-0.4);break;}
   }
+  // v85: 頭の上は見えていても、体(腰の高さ)が手前の壁に隠れる時はカメラを寄せる(大倉庫の加工場・牛舎で主人公が壁の向こうに隠れていた)
+  //       寄せるのは即座・戻すのはゆっくり(壁ぞいを歩いてもズームが行ったり来たりしない)
+  {let lim=cMax;
+    const bFrom=new THREE.Vector3(player.x,player.y+0.7,player.z);
+    const camP=cFrom.clone().add(cDir.clone().multiplyScalar(cMax));
+    const bd=camP.sub(bFrom);const bl=bd.length();bd.normalize();
+    for(let t=0.8;t<bl-0.2;t+=0.25){
+      const q=bFrom.clone().add(bd.clone().multiplyScalar(t));
+      if(cityView&&!underDeck&&q.y>player.y+2.5)continue;
+      const b=getB(Math.floor(q.x),Math.floor(q.y),Math.floor(q.z));
+      if(b&&!BI[b].water){lim=Math.max(2.4,cMax*(t/bl)-0.5);break;}
+    }
+    if(lim<v85CamLim)v85CamLim=lim;else v85CamLim=Math.min(lim,v85CamLim+dt*4);
+    cMax=Math.min(cMax,v85CamLim);}
   camera.position.lerp(cFrom.clone().add(cDir.multiplyScalar(cMax)),Math.min(1,dt*8));
   camera.lookAt(player.x,player.y+1.4,player.z);
   // --- 昼夜（夜は3倍速で朝が来る） ---
