@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v83</title>
-<meta name="tamba-build" content="v83">
+<title>丹波農商 牧場物語 v84</title>
+<meta name="tamba-build" content="v84">
 <meta name="description" content="丹波農商(兵庫県丹波市)のリアルな農業経営を、スマホで遊べる牧場ゲームで体験。米・黒毛和牛・牧草・栗・野菜を育てて会社を大きくしよう。">
 <meta name="theme-color" content="#3f8a3a">
 <meta name="mobile-web-app-capable" content="yes">
@@ -270,7 +270,7 @@
 <div id="seedPick"><div class="panel" id="seedPickBox"></div></div>
 <div id="title">
   <div class="tl-top"><div class="tl-sub1">丹波農商</div><h1>牧場物語</h1><div class="tl-badge">放置経営編</div></div>
-  <div class="tl-chars"><img class="grp" src="art/title_chars.webp" alt="なおと・あつし・主人公・ゆうすけ"></div>
+  <div class="tl-chars"><img class="grp" src="art/title_chars_nh.webp" alt="なおと・あつし・主人公・ゆうすけ"></div>
   <div class="tl-bottom">
   <div class="sub">現金1,000万円と田んぼから始める農業経営シム。<br>🌾米・🐂黒毛和牛・🌿牧草・🌰栗を育てて、丹波農商を大きくしよう！</div>
   <button class="bigbtn" id="newBtn">▶ はじめる</button>
@@ -288,12 +288,13 @@
 <script src="v83char.js"></script>
 <script src="v83_game.js"></script>
 <script src="v83_quest.js"></script>
+<script src="v84_opening.js?b=v84"></script>
 <script>
 // v81: 色はsRGBで書かれているので、リニアに変換してから使う(トーンマッピング前提の正しい発色)。
 (function(){const C=THREE.Color.prototype,oHex=C.setHex,oStyle=C.setStyle;let inStyle=false;
   C.setHex=function(h){oHex.call(this,h);if(!inStyle)this.convertSRGBToLinear();return this;};
   C.setStyle=function(st){inStyle=true;try{oStyle.call(this,st);}finally{inStyle=false;}return this.convertSRGBToLinear();};})();
-const GAME_BUILD='v83';
+const GAME_BUILD='v84';
 /* =====================================================================
    丹波農商 牧場物語 v24 — 牛まわりの大改修(屋根バグ修正・牛舎拡大・繋留と散歩・糞は足元)
    v24: v23の全機能を維持したまま牛まわりを4点改修。セーブはv20キー(tamba_v20_save)を共用。
@@ -2106,10 +2107,11 @@ const V81_PORTRAITS={hero:1,atsushi:1,yusuke:1,naoto:1,ryunosuke:1,ami:1,yakuba:
 function portraitKeyOf(n){if(!n)return null;if(n.cfg&&n.cfg.menu==='land')return 'fudosan';return V81_PORTRAITS[n.key]?n.key:null;}
 let v81TalkTimer=null;
 function showTalk(n,line){
+  if(window.v84Active)return;
   const el=document.getElementById('talk');if(!el){toast('💬 '+n.cfg.name+'「'+line+'」');return;}
   try{if(n&&n.rig&&n.rig.v83)v83Nod(n.rig);}catch(e){}
   const pk=portraitKeyOf(n),img=document.getElementById('talkImg');
-  if(pk){img.src='art/p_'+pk+'.webp';el.classList.remove('noimg');}else{img.removeAttribute('src');el.classList.add('noimg');}
+  if(pk){img.src='art/p_'+(pk==='hero'?'hero_nh':pk)+'.webp';el.classList.remove('noimg');}else{img.removeAttribute('src');el.classList.add('noimg');}
   document.getElementById('talkName').textContent=n.cfg.name+(n.cfg.role?'  ·  '+n.cfg.role:'');
   document.getElementById('talkText').textContent=line;
   el.classList.remove('on');void el.offsetWidth;el.classList.add('on');
@@ -3699,6 +3701,8 @@ function finishLoading(ok){
     if(avatarVox)avatarVox.visible=true; // フォールバック：ここで初めてボクセルを表示
     toast('3Dモデルが読めないので代わりのキャラで遊ぶよ');
   }
+  let v84op=false;try{v84op=window.v84AfterLoad&&window.v84AfterLoad(!!window.v84New);}catch(e){window.v84Hold=false;}
+  if(v84op)return;
   toast('🌾 丹波の里へようこそ！');
   if(IS_DESKTOP){
     setTimeout(()=>toast('🖱 クリックした場所へ歩くよ / 畑や牛もクリックしてみてね'),2200);
@@ -3715,7 +3719,7 @@ function loadPlayerGLB(){
   (async()=>{
     try{
       // v83: 設計図から作った3Dトゥーンモデル+Mixamoモーション
-      const R=await v83LoadChar('hero',HERO_H,x=>{
+      const R=await v83LoadChar('hero_nh',HERO_H,x=>{
         if(x.total){const p=Math.round(x.loaded/x.total*100);note.textContent='3Dキャラ読み込み中… '+p+'%';setLoadMsg('3Dキャラを読み込み中… '+p+'%');}});
       playerRig=R.rig;const wrap=R.wrap;
       window.__v4dbg.scales.hero={target:HERO_H,scale:+R.rig.scale.toFixed(4),walkSpd:+R.rig.speed.walk.toFixed(3),runSpd:+R.rig.speed.run.toFixed(3)};
@@ -6165,6 +6169,7 @@ function renderMenu(){
   else if(menuTab==='repair')html+=repairHTML();   // v19
   else html+=setHTML();
   html+='<button class="close" style="background:#3a6fd8;border-color:#1f3f8a;box-shadow:0 3px 0 #1f3f8a" onclick="nextWeek()">⏭ 次の週へ(1週間進む)</button>';
+  html+='<button class="close" style="background:linear-gradient(#ffd25e,#f0a020);border-color:#b07010;box-shadow:0 3px 0 #b07010;color:#5a3510" onclick="v84Opening(true)">📖 ゲームの説明をもう一度見る</button>';
   html+='<button class="close" onclick="closeMenu()">閉じる</button>';
   html+='<button class="close" style="background:#8a7a5a;border-color:#5a4a2a;box-shadow:0 3px 0 #5a4a2a;font-size:13px" onclick="backToTitle()">🏠 タイトルに戻る</button>'; // v39
   box.innerHTML=html;
@@ -6822,7 +6827,7 @@ function setHTML(){
   '<div class="row"><div class="em">💾</div><div class="info"><b>セーブ</b><small>自動でも30秒ごとに保存されるよ</small></div><button class="buy" onclick="saveGame(true)">保存</button></div>'+
   '<div class="row"><div class="em">🔊</div><div class="info"><b>効果音</b><small>音のオン/オフ</small></div><button class="buy" onclick="toggleSound()">'+(state.sound?'ON':'OFF')+'</button></div>'+
   '<div class="row"><div class="em">🗑</div><div class="info"><b>最初から</b><small>データを消してやり直す（2回押してね）</small></div><button class="buy orange" onclick="resetGame()">リセット</button></div>'+
-  '<p style="font-size:11.5px">📖 遊び方：画面の好きな所に指を置くとジョイスティックが出て動けるよ（大きく倒すと走る！）。ちょんとタップするとそこへ歩く。カメラは2本目の指でドラッグ。PCはクリック移動・WASD（Shiftで走る）・E/スペース=使う・M=メニュー。<br>⏱ 時間は「⏭ 次の日へ」で1日、「⏭⏭ 次の月へ」で30日進むよ。牛は毎日世話！月末に経費差引、3月末に決算＋税金。従業員に仕事を指示すれば自動でやってくれる（放置経営）。</p>';
+  '<p style="font-size:11.5px">📖 遊び方：画面の好きな所に指を置くとジョイスティックが出て動けるよ（大きく倒すと走る！）。ちょんとタップするとそこへ歩く。カメラは2本目の指でドラッグ。PCはクリック移動・WASD（Shiftで走る）・E/スペース=使う・M=メニュー。<br>⏱ 時間は「⏭ 次の週へ」で1週間進むよ。餌やり・掃除は週1回。3月末に決算＋税金。従業員に仕事を指示すれば自動でやってくれる（放置経営）。</p>';
 }
 let resetConfirm=0;
 function resetGame(){
@@ -8157,7 +8162,7 @@ function startGame(saveData){
   },50);
 }
 function initTitle(){
-  document.getElementById('newBtn').addEventListener('click',()=>{ac();startGame(null);});
+  document.getElementById('newBtn').addEventListener('click',()=>{ac();window.v84Hold=true;window.v84New=true;startGame(null);});
   const sv=loadSaveData();
   if(sv){
     const b=document.getElementById('contBtn');
