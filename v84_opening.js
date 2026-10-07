@@ -50,22 +50,18 @@ const CSS=`
 `;
 const NAME={atsushi:'あつし  ·  牧場',yusuke:'ゆうすけ  ·  牧草・栗・米',naoto:'なおと  ·  加工・堆肥'};
 function steps(replay){
+  // v88: 案内はあつし1人。「目標1つ＋最初の操作1つ」だけ。あとは遊びながら1つずつ教える(1吹き出し30字以内)
   const d=DESK();
   const S=[
-   {g:'atsushi',card:'welcome',t:'ようこそ丹波へ！丹波農商で牧場をやってる<b>あつし</b>だ。都会から農業をしに来てくれたんだってな。'},
-   {g:'atsushi',card:'welcome',t:'この田んぼと元手の<b>1,000万円</b>。今日から君に、丹波農商の新しい農場をまかせるぞ！'},
-   {g:'yusuke',card:'cycle',t:'ゆうすけです。丹波は<b>牛・米・牧草・堆肥・栗</b>がぐるっとつながる農業ができる土地なんだ。'},
-   {g:'atsushi',card:'goal',t:'目指すは<b>丹波いちばんの農場</b>！この4つがそろえばゴールだ。8つの章で順番に案内するぜ。'},
-   {g:'naoto',hl:'player',t:d?'加工と堆肥のなおと。遊び方を説明するね。<b>クリックした場所へ歩く</b>よ。WASDでも動ける。':'加工と堆肥のなおと。遊び方を説明するね。<b>画面を指でなぞると歩く</b>。ちょんとタップした場所へも歩くよ。'},
-   {g:'naoto',hl:'#useBtn',t:d?'物や人に近づいて<b>「使う」</b>(Eキー)で作業。餌やりも田植えも加工も、ぜんぶこれ！':'物や人に近づいて<b>「使う」</b>を押すと作業する。餌やりも田植えも加工も、ぜんぶこのボタン！'},
-   {g:'naoto',hl:'#weekBtn',t:'時間は自分で進めるよ。<b>「次の週へ」</b>で1週間たつ。その週の作業が済んでから押せばOK。'},
-   {g:'yusuke',hl:'#day',t:'いまは<b>1年目の4月1週</b>。季節で作業が変わるよ。田植えは春、牧草刈りは5月と9月、稲刈りは10月。'},
-   {g:'naoto',hl:'#money',t:'最初の稼ぎは<b>🥔ポテサラ加工</b>。大倉庫で週1回作って売れる。これが元手を増やす第一歩！'},
-   {g:'naoto',hl:'#quest',t:'迷ったら<b>画面の上</b>を見て。いまの目標が出る。<b>光る矢印と足元の道しるべ</b>の先で「使う」だよ。'},
-   {g:'naoto',hl:'#menuOpenBtn',t:'<b>メニュー</b>ではお金・牛・機械を見られる。押すボタンは光って教えるよ。この説明もここから見直せる。'},
-   replay?{g:'naoto',t:'説明はここまで！いまの目標は<b>画面の上</b>に出ているよ。がんばってね！'}
-         :{g:'naoto',t:'じゃあ最初の仕事！東の<b>大倉庫で🥔ポテサラ</b>を作って売ろう。光る矢印について行ってね！'},
+   {g:'atsushi',t:'ようこそ丹波へ！牧場の<b>あつし</b>だ。'},
+   {g:'atsushi',card:'goal',t:'目標は<b>丹波いちばんの農場</b>だ！'},
+   {g:'atsushi',hl:'player',t:d?'<b>クリック</b>した所へ歩けるぞ。':'画面を<b>なぞる</b>と歩けるぞ。'},
   ];
+  if(replay){ // メニューから見直す時だけ、ボタンの説明も(知りたい人が開いた時)
+    S.push({g:'atsushi',hl:'#useBtn',t:'近くで<b>「使う」</b>を押すと作業だ。'});
+    S.push({g:'atsushi',hl:'#weekBtn',t:'<b>「次の週へ」</b>で1週間進むぞ。'});
+    S.push({g:'atsushi',hl:'#quest',t:'<b>上</b>に今の目標が出るぞ。'});
+  }else S.push({g:'atsushi',t:'まずは<b>光る矢印</b>の所へ行こう！'});
   return S;
 }
 let E=null,cur=null;
@@ -90,13 +86,7 @@ function cardHTML(k){
   if(k==='welcome')return '<h3>🌾 丹波農商 牧場物語</h3><img class="grp" src="art/title_chars_nh.webp" alt=""><div class="lead">兵庫県丹波市の「リアル牧場物語」。<br>あなたは新しく農業をはじめに来た新人です。</div>';
   if(k==='cycle')return '<h3>♻ 丹波の循環型農業</h3><div class="cyc"><span class="n">🐂 牛</span><span class="a">→フン→</span><span class="n">🏭 堆肥</span><span class="a">→</span><span class="n">🌾 米・🌿 牧草</span><span class="a">→エサ→</span><span class="n">🐂 牛</span></div>'+
     '<div class="cyc"><span class="n">🌰 栗</span><span class="n">🥔 加工</span><span class="n">🍚 精米</span><span class="a">で売って稼ぐ</span></div><div class="lead">ひとつの事業のあまりが、次の事業の元になる。<br>これを全部まわせる農場が目標です。</div>';
-  if(k==='goal'){
-    // 最終章(第8章)の目標と同じ物(V83_Qから取る)
-    const pick=id=>{try{return V83_Q.find(q=>q.id===id).s;}catch(e){return '';}};
-    const row=(id,sub)=>{const s=pick(id);const m=s.match(/^(\S+)\s(.*)$/)||[0,'',s];return '<div class="gl"><span class="ic">'+m[1]+'</span><div>'+m[2]+'<small>'+sub+'</small></div></div>';};
-    return '<h3>🏆 ゴール(第8章 丹波いちばんの農場へ)</h3>'+row('land','🌰栗園・棚田などを不動産屋で')+row('newBarn','北の第二牛舎か新築牛舎')+row('cows10','セリで買い足して10頭体制')+row('cert','加工以外の売上 累計2,000万円〜')+
-      '<div class="note">第1章「ポテサラと田植え」から1つずつ案内します</div>';
-  }
+  if(k==='goal')return '<h3>🏆 目標</h3><div class="lead" style="font-size:16px">丹波いちばんの農場</div>';
   return '';
 }
 function rectOf(sel){
@@ -153,8 +143,6 @@ function finish(skipped){
     // 最初の目標(第1章)を手渡す: 章カード→ナビ開始
     try{const qv=v83QState();qv.ch[1]=1;const q=v83Current();if(q)qv.said[q.id]=1;}catch(e){}
     try{v83Banner('第1章',V83_CHAPTERS[0].t,true);}catch(e){}
-    setTimeout(()=>{try{toast(skipped?'📖 ゲームの説明はメニューからいつでも見られるよ':'🎯 画面上の目標と光る矢印について行こう！');}catch(e){}},1800);
-    if(DESK())setTimeout(()=>{try{showPCGuide();}catch(e){}},2600);
   }
   try{updateQuest();}catch(e){}
 }
@@ -172,7 +160,7 @@ window.v84AfterLoad=function(isNew){
   if(isNew){setTimeout(()=>window.v84Opening(false),500);return true;}
   let seen=null;try{seen=localStorage.getItem('tamba_v84_tip');}catch(e){}
   if(!seen){try{localStorage.setItem('tamba_v84_tip','1');}catch(e){}
-    setTimeout(()=>{try{toast('📖 ゲームの説明は「メニュー」→「ゲームの説明をもう一度見る」で見られるよ');}catch(e){}},4200);}
+    setTimeout(()=>{try{toast('📖 説明はメニューから見られるよ');}catch(e){}},4200);}
   return false;
 };
 // 説明中は章の導入会話・NPCの話しかけを出さない(説明が終わってから第1章を渡す)

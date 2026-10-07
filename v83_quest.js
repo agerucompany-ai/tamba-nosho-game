@@ -13,72 +13,72 @@ function v83HasCalfReady(){return (state.calves||[]).some(c=>(c.ageWeeks||0)>=EC
 function v83Afford(n){return state.money>=n+3000000;}
 function v83RiceSet(){try{return RICE_SET.every(k=>effN(k)>=1);}catch(e){return false;}}
 // old: 旧QUESTSの番号(この番号未満が報酬済みなら二重払いしない)
-const V83_CHAPTERS=[
- {n:1,t:'丹波の暮らしをはじめよう',g:'naoto',intro:['ようこそ丹波へ！ぼくは加工担当のなおと。','まずは手元の野菜で🥔ポテサラを作って売ろう。光る矢印の先、東の大倉庫の加工場だよ。','春の今週だけは🌾田植えもできる。手植えなら小さくても始められるよ！']},
- {n:2,t:'街で就農の手続き',g:'naoto',intro:['次は🏘丹波の街へ。農協で「新規就農者」の認定を受けよう。','認定されたら🏦銀行で新規就農資金(3,000万円・無利息)が借りられる。牛を飼う元手になるよ。']},
- {n:3,t:'牛飼いデビュー',g:'atsushi',intro:['牧場担当のあつしだ！いよいよ黒毛和牛を飼おう🐂','①古い牛舎を借りる → ②街のセリでメス牛を買う → ③餌やりと掃除 → ④種付け。順番に案内するよ。']},
- {n:4,t:'牧草を自給する',g:'yusuke',intro:['牧草担当のゆうすけです。牛の餌の牧草を自分で作れば餌代がほぼタダ！','まず街の🏠不動産屋で「西の牧草地」を買って、タネをまこう。刈り取りは🌸5月と🍂9月だよ。']},
- {n:5,t:'季節を回して稼ぐ',g:'yusuke',intro:['あとは季節の作業。夏は🚿田んぼの水管理、秋は🌾稲刈り→🍚精米出荷、子牛は8ヶ月で🐮出荷。','⏭「次の週へ」で時間を進めよう。やる週になったら、ここに出して知らせるね。']},
- {n:6,t:'チームで回す',g:'naoto',intro:['仕事が増えてきたね。🏢事務所で人を雇って任せれば、放っておいても回るよ。','米の機械一式(トラクター・田植え機・コンバイン・乾燥機)をそろえれば広い田んぼも任せられる。最初からあるトラクターに足りない3台を🚜農協で買おう。']},
- {n:7,t:'循環型農業',g:'naoto',intro:['牛のフンは🏭堆肥舎で肥料になる。肥料は売れるし、田んぼと牧草の肥料代もタダに。','まず🏛役場で補助を申請してから建てると半額だよ。堆肥舎は牛舎のすぐ南だ。']},
- {n:8,t:'丹波いちばんの農場へ',g:'atsushi',intro:['ここからは規模拡大！土地を広げ、牛舎を建て、母牛を増やそう。','認定農業者になればスーパーL資金も借りられる。丹波いちばんを目指そうぜ！']},
+const V83_CHAPTERS=[ // v88: 1吹き出し30字以内・3吹き出しまで。序盤(1〜3章)の案内役はあつし1人
+ {n:1,t:'丹波の暮らしをはじめよう',g:'atsushi',intro:['まずは大倉庫で🥔ポテサラを作ろう！']},
+ {n:2,t:'牛飼いデビュー',g:'atsushi',intro:['いよいよ牛を飼うぞ！🐂','牛舎を借りて、街のセリで牛を買おう。']},
+ {n:3,t:'就農の手続き',g:'atsushi',intro:['牛が増えたら、お金も要るな。','街で就農の手続きをしよう。']},
+ {n:4,t:'牧草を自給する',g:'yusuke',intro:['牧草担当のゆうすけです。','牧草を作れば、エサ代がタダになるよ。']},
+ {n:5,t:'季節を回して稼ぐ',g:'yusuke',intro:['あとは季節の作業だよ。','やる週が来たら、ここで知らせるね。']},
+ {n:6,t:'チームで回す',g:'naoto',intro:['加工担当のなおとです。','人を雇えば、仕事を任せられるよ。']},
+ {n:7,t:'循環型農業',g:'naoto',intro:['牛のフンは堆肥になるんだ。','堆肥舎を建てて、肥料を作ろう。']},
+ {n:8,t:'丹波いちばんの農場へ',g:'atsushi',intro:['ここからは規模拡大だ！','丹波いちばんを目指そうぜ！']},
 ];
 const V83_Q=[
  // ---- 第1章 ----
- {id:'proc',ch:1,old:0,s:'🥔 大倉庫でポテサラを作って売る',t:'東の🏭大倉庫の中の🥔ポテサラ加工場で「使う」(週1回)。丹波の野菜を加工して売り、最初の現金を稼ごう。',c:()=>state.procWeek>=0,r:200000,go:()=>({map:V83_FARM,x:44.9,z:32.4}),say:'加工場は大倉庫の入ってすぐ左。光る矢印の下で「使う」を押してね。'},
- {id:'riceHand',ch:1,old:12,s:'🌾 田んぼで田植え(4月1週だけ！)',t:'今週(4月1週)だけ田植えができる。農場の南西の🌾田んぼで「使う」→田植え。機械がなければ手植え(小規模・苗代も小さい)。秋10月に稲刈りできるよ。',c:()=>state.riceField!=='none'||state.riceBags>0||state.soldRiceBags>0,when:()=>isRicePlantWeek()&&state.riceField==='none',r:150000,go:()=>({map:V83_FARM,x:16.5,z:35.75}),say:'田植えは春のこの週だけ！田んぼのふちで「使う」だよ。'},
- // ---- 第2章 ----
- {id:'town',ch:2,s:'🏘 丹波の街へ行く',t:'左下の「🏘 街へ行く」ボタン、または農場の西の🌉橋を渡ると街に着くよ。',c:()=>!!(state.qv&&state.qv.flags.town)||state.newFarmer,r:0,go:()=>({map:V83_TOWN,x:61,z:31.5}),say:'左下の「街へ行く」ボタンでもすぐ行けるよ。'},
- {id:'newFarmer',hl:{row:/新規就農者/,btn:/認定/},ch:2,old:1,s:'🎓 農協で新規就農者の認定を受ける',t:'街の🚜農協で「使う」→メニューの🎓新規就農者の「認定を受ける」(光っているボタン)。',c:()=>state.newFarmer,r:300000,go:()=>({map:V83_TOWN,x:44.5,z:33.0}),say:'農協は大通りの東側。認定を受けると銀行でお金が借りられる！'},
- {id:'loan',hl:{row:/新規就農資金/,btn:/借りる/},ch:2,s:'🏦 銀行で新規就農資金を借りる',t:'街の🏦銀行で「使う」→新規就農資金の「借りる」(光っているボタン)。最初の3年は返済なし・無利息。牛や機械の元手にしよう。',c:()=>!!(state.startupLoan&&state.startupLoan.taken),when:()=>state.newFarmer,r:0,go:()=>({map:V83_TOWN,x:19.5,z:33.0}),say:'銀行は大通りの西の端。3,000万円あれば牛も機械も買えるよ。'},
- // ---- 第3章 ----
- {id:'barn',ch:3,old:3,s:'🏚 古い牛舎を借りる',t:'農場の🏚古い牛舎の南の入口で「使う」→借りる(月3万円)。',c:()=>hasBarn(),r:100000,go:()=>({map:V83_FARM,x:21.5,z:28.2}),say:'牛舎は農場のまん中。南の入口の前で「使う」だ。'},
- {id:'cow',hl:{btn:/預託で購入|購入/},ch:3,old:4,s:'🐂 街のセリでメス牛を買う',t:'街の🐂セリ市場で「使う」→メス牛を買う。与信100万円で買える(子牛の売上から返す)ので現金は減らないよ。',c:()=>state.cows.length>0||state.calves.length>0,when:()=>hasBarn(),r:300000,go:()=>({map:V83_TOWN,x:47.5,z:42.6}),say:'セリ市場は街の南東。まず1〜2頭から始めよう！'},
- {id:'feed',ch:3,old:5,s:'🌾 牛に餌やりをする',t:'牛舎の北の🌾牧草の山で「牧草をかかえる」→牛舎の中で「使う」(餌箱に入れる)と全頭に餌やり(週1回)。',c:()=>state.care.fedWeek>=0,when:()=>herdCount()>0,r:100000,go:()=>state.carryHay?({map:V83_FARM,x:18,z:15,lb:'餌箱'}):({map:V83_FARM,x:23,z:10.5,lb:'牧草の山'}),say:'牧草の山からかかえて、牛の前の餌箱へ運ぶんだ。'},
- {id:'clean',ch:3,old:6,s:'🧹 牛舎を掃除する',t:'牛舎の中で「使う」→🧹「フンを撤去する」(週1回・牛舎の中ならどこでもOK)。汚れたままだと病気になりやすい。',c:()=>state.care.cleanWeek>=0,when:()=>herdCount()>0,r:100000,go:()=>({map:V83_FARM,x:20.5,z:13.5}),say:'牛舎の中で「使う」を押せば、牛の後ろのフンを片付けられるよ。'},
- {id:'breed',hl:{btn:/種付け|牛メニューへ/},ch:3,old:7,s:'💉 母牛に種付けする',t:'牛舎の入口で「使う」→🐂牛メニュー→母牛の「💉種付け」(1回1万円・成功率80%)。約10ヶ月後に子牛が生まれる。',c:()=>state.cows.some(c=>c.preg>=0||(c.births||0)>0),when:()=>state.cows.some(c=>!c.sick&&!c.retired&&c.preg<0&&c.bredWeek!==state.weekN),r:150000,go:()=>({map:V83_FARM,x:21.5,z:28.2}),act:['🐂 牛メニューを開く',()=>{menuTab='herd';openMenu();}],say:'毎年1頭産ませるのが儲けのコツだ！'},
+ {id:'proc',ch:1,old:0,s:'🥔 ポテサラを作って売る',t:'東の🏭大倉庫の中の🥔ポテサラ加工場で「使う」(週1回)。丹波の野菜を加工して売り、最初の現金を稼ごう。',c:()=>state.procWeek>=0,r:200000,go:()=>({map:V83_FARM,x:44.9,z:32.4}),say:'大倉庫の光る所で「使う」だ！'},
+ {id:'riceHand',ch:1,old:12,s:'🌾 田植えをする(今週だけ)',t:'今週(4月1週)だけ田植えができる。農場の南西の🌾田んぼで「使う」→田植え。機械がなければ手植え(小規模・苗代も小さい)。秋10月に稲刈りできるよ。',c:()=>state.riceField!=='none'||state.riceBags>0||state.soldRiceBags>0,when:()=>isRicePlantWeek()&&state.riceField==='none',r:150000,go:()=>({map:V83_FARM,x:16.5,z:35.75}),say:'田植えは今週だけ！田んぼで「使う」'},
+ // ---- 第2章 牛飼いデビュー(v88: 制度の話は後回し。まず牛) ----
+ {id:'barn',ch:2,old:3,s:'🏚 牛舎を借りる',t:'農場の🏚古い牛舎の南の入口で「使う」→借りる(月3万円)。',c:()=>hasBarn(),r:100000,go:()=>({map:V83_FARM,x:21.5,z:28.2}),say:'牛舎の入口で「使う」だ'},
+ {id:'town',ch:2,s:'🏘 街へ行く',t:'左下の「🏘 街へ行く」ボタン、または農場の西の🌉橋を渡ると街に着くよ。',c:()=>!!(state.qv&&state.qv.flags.town)||state.newFarmer,r:0,go:()=>({map:V83_TOWN,x:61,z:31.5}),say:'街へ行こう！'},
+ {id:'cow',hl:{btn:/預託で購入|購入/},ch:2,old:4,s:'🐂 セリで牛を買う',t:'街の🐂セリ市場で「使う」→メス牛を買う。与信100万円で買える(子牛の売上から返す)ので現金は減らないよ。',c:()=>state.cows.length>0||state.calves.length>0,when:()=>hasBarn(),r:300000,go:()=>({map:V83_TOWN,x:47.5,z:42.6}),say:'セリ市場で牛を買おう'},
+ {id:'feed',ch:2,old:5,s:'🌾 牛に餌をやる',t:'牛舎の北の🌾牧草の山で「牧草をかかえる」→牛舎の中で「使う」(餌箱に入れる)と全頭に餌やり(週1回)。',c:()=>state.care.fedWeek>=0,when:()=>herdCount()>0,r:100000,go:()=>state.carryHay?({map:V83_FARM,x:18,z:15,lb:'餌箱'}):({map:V83_FARM,x:23,z:10.5,lb:'牧草の山'}),say:'牧草の山から運んで、牛にあげよう'},
+ {id:'clean',ch:2,old:6,s:'🧹 牛舎を掃除する',t:'牛舎の中で「使う」→🧹「フンを撤去する」(週1回・牛舎の中ならどこでもOK)。汚れたままだと病気になりやすい。',c:()=>state.care.cleanWeek>=0,when:()=>herdCount()>0,r:100000,go:()=>({map:V83_FARM,x:20.5,z:13.5}),say:'牛舎の中で「使う」で掃除だ'},
+ {id:'breed',hl:{btn:/種付け|牛メニューへ/},ch:2,old:7,s:'💉 種付けをする',t:'牛舎の入口で「使う」→🐂牛メニュー→母牛の「💉種付け」(1回1万円・成功率80%)。約10ヶ月後に子牛が生まれる。',c:()=>state.cows.some(c=>c.preg>=0||(c.births||0)>0),when:()=>state.cows.some(c=>!c.sick&&!c.retired&&c.preg<0&&c.bredWeek!==state.weekN),r:150000,go:()=>({map:V83_FARM,x:21.5,z:28.2}),act:['🐂 牛メニューを開く',()=>{menuTab='herd';openMenu();}],say:'牛メニューで種付けだ'},
+ // ---- 第3章 就農の手続き ----
+ {id:'newFarmer',hl:{row:/新規就農者/,btn:/認定/},ch:3,old:1,s:'🎓 農協で認定を受ける',t:'街の🚜農協で「使う」→メニューの🎓新規就農者の「認定を受ける」(光っているボタン)。',c:()=>state.newFarmer,r:300000,go:()=>({map:V83_TOWN,x:44.5,z:33.0}),say:'農協で「認定」を受けよう'},
+ {id:'loan',hl:{row:/新規就農資金/,btn:/借りる/},ch:3,s:'🏦 銀行でお金を借りる',t:'街の🏦銀行で「使う」→新規就農資金の「借りる」(光っているボタン)。最初の3年は返済なし・無利息。牛や機械の元手にしよう。',c:()=>!!(state.startupLoan&&state.startupLoan.taken),when:()=>state.newFarmer,r:0,go:()=>({map:V83_TOWN,x:19.5,z:33.0}),say:'銀行で就農資金を借りよう'},
  // ---- 第4章 ----
- {id:'pasture',hl:{row:/西の牧草地/},ch:4,s:'🏠 不動産屋で西の牧草地を買う',t:'街の🏠不動産屋で「使う」→「西の牧草地(基本)」を買う。牛舎の東の空き地が柵付きの牧草地になる。',c:()=>state.land.pasture1,r:100000,go:()=>({map:V83_TOWN,x:27.8,z:33.0}),say:'不動産屋は銀行のとなり。牧草地があると餌代がグッと下がるよ。'},
- {id:'grassSow',ch:4,old:2,s:'🌱 牧草地にタネをまく',t:'牛舎の東の🌿牧草地で「使う」→作付け(10万円)。刈り取りは🌸5月1週と🍂9月3週。',c:()=>state.grassSown||state.grassStock>0,when:()=>state.land.pasture1,r:100000,go:()=>({map:V83_FARM,x:37,z:14.5}),say:'牧草地の入口でタネまき。あとは季節を待つだけ！'},
- {id:'grassSet',hl:{row:()=>{const m={tractor:'トラクター',dumper:'ダンプベッセル',baler:'ロールベーラー'};const miss=GRASS_SET.filter(k=>effN(k)<1).map(k=>m[k]).filter(Boolean);return new RegExp('^\\S*\\s*('+(miss.join('|')||'該当なし')+')');}},ch:4,s:'🚜 農協で牧草の機械をそろえる',t:'牧草の刈り取りには🚜トラクター(最初からある)＋🛻ダンプベッセル＋🟡ロールベーラーの一式が必要。街の🚜農協で光っている行の機械を買おう。先に🏛役場で補助を申請すると牧草用は半額。刈り取りは🌸5月1週と🍂9月3週。',c:()=>grassSetsOwned()>=1,when:()=>(state.land.pasture1&&(state.grassSown||state.grassStock>0))&&v83Afford(4000000),r:100000,go:()=>({map:V83_TOWN,x:44.5,z:33.0}),say:'牧草を刈るには専用の機械がいるんだ。刈り取りの5月までにそろえておこう！'},
+ {id:'pasture',hl:{row:/西の牧草地/},ch:4,s:'🏠 牧草地を買う',t:'街の🏠不動産屋で「使う」→「西の牧草地(基本)」を買う。牛舎の東の空き地が柵付きの牧草地になる。',c:()=>state.land.pasture1,r:100000,go:()=>({map:V83_TOWN,x:27.8,z:33.0}),say:'不動産屋で牧草地を買おう'},
+ {id:'grassSow',ch:4,old:2,s:'🌱 牧草のタネをまく',t:'牛舎の東の🌿牧草地で「使う」→作付け(10万円)。刈り取りは🌸5月1週と🍂9月3週。',c:()=>state.grassSown||state.grassStock>0,when:()=>state.land.pasture1,r:100000,go:()=>({map:V83_FARM,x:37,z:14.5}),say:'牧草地でタネをまこう'},
+ {id:'grassSet',hl:{row:()=>{const m={tractor:'トラクター',dumper:'ダンプベッセル',baler:'ロールベーラー'};const miss=GRASS_SET.filter(k=>effN(k)<1).map(k=>m[k]).filter(Boolean);return new RegExp('^\\S*\\s*('+(miss.join('|')||'該当なし')+')');}},ch:4,s:'🚜 牧草の機械を買う',t:'牧草の刈り取りには🚜トラクター(最初からある)＋🛻ダンプベッセル＋🟡ロールベーラーの一式が必要。街の🚜農協で光っている行の機械を買おう。先に🏛役場で補助を申請すると牧草用は半額。刈り取りは🌸5月1週と🍂9月3週。',c:()=>grassSetsOwned()>=1,when:()=>(state.land.pasture1&&(state.grassSown||state.grassStock>0))&&v83Afford(4000000),r:100000,go:()=>({map:V83_TOWN,x:44.5,z:33.0}),say:'刈るには機械がいるよ'},
  // ---- 第5章(季節の作業=その週になったら割り込み) ----
- {id:'grassCut',ch:5,old:8,prio:true,s:'✂ 牧草を刈り取る(今週！)',t:'今週は牧草の刈り取り週。🌿牧草地で「使う」→✂刈り取り。ロールになって牛の餌の在庫になる。',c:()=>state.grassCutWeek>=0,when:()=>state.grassSown&&isGrassHarvestWeek()&&grassSetsOwned()>=1,r:150000,go:()=>({map:V83_FARM,x:37,z:14.5}),say:'刈り取りは今週だけ！急いで牧草地へ。'},
- {id:'water',ch:5,prio:true,s:'🚿 田んぼの水管理をする',t:'夏(5〜9月)は3〜4週おきに田んぼの水管理。🌾田んぼで「使う」。サボると収量が減るよ。',c:()=>(state.waterWeek||-1)>=0,when:()=>state.riceField==='planted'&&waterDue(),r:100000,go:()=>({map:V83_FARM,x:16.5,z:35.75}),say:'稲が水を欲しがってる！田んぼで「使う」だよ。'},
- {id:'harvest',ch:5,old:13,prio:true,s:'🌾 稲刈りをする',t:'稲が実った！🌾田んぼで「使う」→収穫。米袋は大倉庫に貯蔵される。',c:()=>state.riceBags>0||state.soldRiceBags>0,when:()=>state.riceField==='ready',r:200000,go:()=>({map:V83_FARM,x:16.5,z:35.75}),say:'実りの秋！田んぼで稲刈りだ。'},
- {id:'riceShip',ch:5,old:14,s:'🍚 精米して出荷する',t:'大倉庫の🍚精米機で「使う」→精米して出荷(1袋3万円)。',c:()=>state.soldRiceBags>0,when:()=>state.riceBags>0,r:300000,go:()=>({map:V83_FARM,x:60.5,z:32}),say:'精米機は大倉庫の奥。米は年1回の大きな収入だよ。'},
- {id:'calfSell',ch:5,old:9,prio:true,s:'🐮 育った子牛をセリで出荷',t:'週齢32週になった子牛を街の🐂セリ市場で売ろう(♀100万/♂120万・状態で±)。',c:()=>(state.calfSoldN||0)>0,when:()=>v83HasCalfReady(),r:300000,go:()=>({map:V83_TOWN,x:47.5,z:42.6}),say:'子牛が出荷できる大きさになったぞ！セリへ連れて行こう。'},
+ {id:'grassCut',ch:5,old:8,prio:true,s:'✂ 牧草を刈る(今週！)',t:'今週は牧草の刈り取り週。🌿牧草地で「使う」→✂刈り取り。ロールになって牛の餌の在庫になる。',c:()=>state.grassCutWeek>=0,when:()=>state.grassSown&&isGrassHarvestWeek()&&grassSetsOwned()>=1,r:150000,go:()=>({map:V83_FARM,x:37,z:14.5}),say:'今週は刈り取りだよ！'},
+ {id:'water',ch:5,prio:true,s:'🚿 田んぼの水やり',t:'夏(5〜9月)は3〜4週おきに田んぼの水管理。🌾田んぼで「使う」。サボると収量が減るよ。',c:()=>(state.waterWeek||-1)>=0,when:()=>state.riceField==='planted'&&waterDue(),r:100000,go:()=>({map:V83_FARM,x:16.5,z:35.75}),say:'田んぼに水をやろう'},
+ {id:'harvest',ch:5,old:13,prio:true,s:'🌾 稲刈りをする',t:'稲が実った！🌾田んぼで「使う」→収穫。米袋は大倉庫に貯蔵される。',c:()=>state.riceBags>0||state.soldRiceBags>0,when:()=>state.riceField==='ready',r:200000,go:()=>({map:V83_FARM,x:16.5,z:35.75}),say:'実りの秋！稲刈りだ'},
+ {id:'riceShip',ch:5,old:14,s:'🍚 米を精米して売る',t:'大倉庫の🍚精米機で「使う」→精米して出荷(1袋3万円)。',c:()=>state.soldRiceBags>0,when:()=>state.riceBags>0,r:300000,go:()=>({map:V83_FARM,x:60.5,z:32}),say:'精米機で米を売ろう'},
+ {id:'calfSell',ch:5,old:9,prio:true,s:'🐮 子牛をセリで売る',t:'週齢32週になった子牛を街の🐂セリ市場で売ろう(♀100万/♂120万・状態で±)。',c:()=>(state.calfSoldN||0)>0,when:()=>v83HasCalfReady(),r:300000,go:()=>({map:V83_TOWN,x:47.5,z:42.6}),say:'子牛をセリで売ろう'},
  // ---- 第6章 ----
- {id:'hire',hl:{btn:/雇う/},ch:6,old:10,s:'🤝 事務所で従業員を雇う',t:'大倉庫の奥の🏢事務所で「使う」→雇用(月給30万)→仕事を指示。雇用ボーナス180万円ももらえる。',c:()=>Object.values(state.staff).some(v=>v),when:()=>herdCount()>0||state.riceField!=='none',r:200000,go:()=>({map:V83_FARM,x:72.5,z:25.6}),say:'事務所は大倉庫のいちばん奥。人に任せれば放置で回るよ。'},
- {id:'riceSet',hl:{row:()=>{const m={tractor:'トラクター',planter:'田植え機',combine:'コンバイン',dryer:'乾燥機'};const miss=RICE_SET.filter(k=>effN(k)<1).map(k=>m[k]).filter(Boolean);return new RegExp('^\\S*\\s*('+(miss.join('|')||'該当なし')+')');}},ch:6,old:11,s:'🚜 農協で米の機械一式をそろえる',t:'街の🚜農協で、まだ持っていない🌱田植え機・🌾コンバイン・♨乾燥機をそろえる(🚜トラクターは最初から1台ある・光っている行の機械を買えばOK)。米用の機械は補助の対象外(定価)。乾燥機は中古でOK。',c:()=>v83RiceSet(),when:()=>v83Afford(9000000),r:500000,go:()=>({map:V83_TOWN,x:44.5,z:33.0}),say:'光っている行の機械だけ買えばOK。持っている物は買わなくていいよ！'},
+ {id:'hire',hl:{btn:/雇う/},ch:6,old:10,s:'🤝 人を雇う',t:'大倉庫の奥の🏢事務所で「使う」→雇用(月給30万)→仕事を指示。雇用ボーナス180万円ももらえる。',c:()=>Object.values(state.staff).some(v=>v),when:()=>herdCount()>0||state.riceField!=='none',r:200000,go:()=>({map:V83_FARM,x:72.5,z:25.6}),say:'事務所で人を雇おう'},
+ {id:'riceSet',hl:{row:()=>{const m={tractor:'トラクター',planter:'田植え機',combine:'コンバイン',dryer:'乾燥機'};const miss=RICE_SET.filter(k=>effN(k)<1).map(k=>m[k]).filter(Boolean);return new RegExp('^\\S*\\s*('+(miss.join('|')||'該当なし')+')');}},ch:6,old:11,s:'🚜 米の機械をそろえる',t:'街の🚜農協で、まだ持っていない🌱田植え機・🌾コンバイン・♨乾燥機をそろえる(🚜トラクターは最初から1台ある・光っている行の機械を買えばOK)。米用の機械は補助の対象外(定価)。乾燥機は中古でOK。',c:()=>v83RiceSet(),when:()=>v83Afford(9000000),r:500000,go:()=>({map:V83_TOWN,x:44.5,z:33.0}),say:'光る機械を買えばOK'},
  // ---- 第7章 ----
- {id:'shedSub',hl:{row:/堆肥舎/,btn:/申請/},ch:7,s:'🏛 役場で堆肥舎の補助を申請する',t:'街の🏛役場で「使う」→補助金の申請で「堆肥舎」を選ぶ。2週間ほどで承認→承認されてから建てると半額。',c:()=>state.compostShed||!!(state.subsidy&&state.subsidy.shed),when:()=>herdCount()>0,r:0,go:()=>({map:V83_TOWN,x:31.8,z:22.6}),say:'役場は駅の南。申請しないで買うと定価だから気をつけて。'},
- {id:'shed',ch:7,old:16,s:'🏭 牛舎の南に堆肥舎を建てる',t:'牛舎のすぐ南の🟫堆肥場で「使う」→🏭本格堆肥舎を建てる(補助の承認が下りてから建てると半額)。牛糞の処分費がゼロ・肥料の製造販売ができる。',c:()=>state.compostShed,when:()=>(herdCount()>0&&!(state.subsidy&&state.subsidy.shed&&state.subsidy.shed.st==='pending'))&&v83Afford(subApproved('shed')?7500000:15000000),r:300000,go:()=>({map:V83_FARM,x:V83_SHED.x+1.5,z:V83_SHED.z+1.5}),say:'牛舎を出てすぐ南が堆肥場。フンを運ぶのも近いよ。'},
- {id:'processor',hl:{row:/加工機/},ch:7,old:17,s:'🍱 農協で食品加工機を買う',t:'街の🚜農協で🍱食品加工機を買うと、ポテサラなど加工品の売値が1.5倍に。',c:()=>effN('processor')>=1,when:()=>v83Afford(1500000),r:200000,go:()=>({map:V83_TOWN,x:44.5,z:33.0}),say:'加工機があれば加工の利益がグッと伸びるよ。'},
+ {id:'shedSub',hl:{row:/堆肥舎/,btn:/申請/},ch:7,s:'🏛 役場で補助を申請',t:'街の🏛役場で「使う」→補助金の申請で「堆肥舎」を選ぶ。2週間ほどで承認→承認されてから建てると半額。',c:()=>state.compostShed||!!(state.subsidy&&state.subsidy.shed),when:()=>herdCount()>0,r:0,go:()=>({map:V83_TOWN,x:31.8,z:22.6}),say:'役場で補助を申請しよう'},
+ {id:'shed',ch:7,old:16,s:'🏭 堆肥舎を建てる',t:'牛舎のすぐ南の🟫堆肥場で「使う」→🏭本格堆肥舎を建てる(補助の承認が下りてから建てると半額)。牛糞の処分費がゼロ・肥料の製造販売ができる。',c:()=>state.compostShed,when:()=>(herdCount()>0&&!(state.subsidy&&state.subsidy.shed&&state.subsidy.shed.st==='pending'))&&v83Afford(subApproved('shed')?7500000:15000000),r:300000,go:()=>({map:V83_FARM,x:V83_SHED.x+1.5,z:V83_SHED.z+1.5}),say:'牛舎の南に建てよう'},
+ {id:'processor',hl:{row:/加工機/},ch:7,old:17,s:'🍱 加工機を買う',t:'街の🚜農協で🍱食品加工機を買うと、ポテサラなど加工品の売値が1.5倍に。',c:()=>effN('processor')>=1,when:()=>v83Afford(1500000),r:200000,go:()=>({map:V83_TOWN,x:44.5,z:33.0}),say:'加工機で売値が上がるよ'},
  // ---- 第8章 ----
- {id:'land',hl:{row:/栗園|棚田|畑/},ch:8,old:15,s:'🏠 不動産屋で土地を広げる',t:'街の🏠不動産屋で🌰栗園・棚田の拡張などを買って規模拡大しよう。',c:()=>state.land.orchard||state.land.rice2||state.land.grass2||state.land.field2||state.land.rice3,when:()=>v83Afford(2000000),r:200000,go:()=>({map:V83_TOWN,x:27.8,z:33.0}),say:'栗園なら秋に栗を一括収穫して瓶詰めで高く売れる！'},
- {id:'newBarn',hl:{row:/北の第二牛舎|北へ増築/},ch:8,old:18,s:'⛰ 牛舎を増やして増頭',t:'街の🏠不動産屋で「🏠 北の第二牛舎(大牛舎)」を建てよう(光っている行)。建てた後は同じ不動産屋から北の平原に別棟を増築できる。',c:()=>state.newBarns>0||state.land.barn2,when:()=>v83Afford(3000000),r:300000,go:()=>({map:V83_TOWN,x:27.8,z:33.0}),say:'牛舎が増えたらセリで母牛をどんどん買い足そう！'},
- {id:'cert',hl:{row:/認定農業者/},ch:8,old:19,s:'🏅 認定農業者になる',t:'3年目以降、加工以外の売上が累計2,000万円を超えたら🚜農協で「認定農業者」に。スーパーL資金が借りられる。',c:()=>state.certFarmer,when:()=>{try{return certFarmerOk();}catch(e){return false;}},r:500000,go:()=>({map:V83_TOWN,x:44.5,z:33.0}),say:'認定農業者になれば大きな投資もできるぞ。'},
- {id:'cows10',hl:{btn:/預託で購入|購入/},ch:8,old:20,s:'🐂 母牛を10頭に増やす',t:'🐂セリで母牛を買い足して10頭体制へ。世話は従業員に任せよう(1人で母牛60頭まで)。',c:()=>state.cows.length>=10,r:500000,go:()=>({map:V83_TOWN,x:47.5,z:42.6}),say:'10頭いれば立派な繁殖農家だ！'},
- {id:'final',ch:8,s:'🌟 丹波いちばんの農場を目指そう',t:'牛・米・牧草・栗・加工・肥料の柱と設備投資で利益を最大化！📊事務所の経営分析で資金繰りもチェックしよう。',c:()=>false,r:0,go:()=>null,say:'ここからは自由に経営だ！'},
+ {id:'land',hl:{row:/栗園|棚田|畑/},ch:8,old:15,s:'🏠 土地を広げる',t:'街の🏠不動産屋で🌰栗園・棚田の拡張などを買って規模拡大しよう。',c:()=>state.land.orchard||state.land.rice2||state.land.grass2||state.land.field2||state.land.rice3,when:()=>v83Afford(2000000),r:200000,go:()=>({map:V83_TOWN,x:27.8,z:33.0}),say:'土地を広げよう'},
+ {id:'newBarn',hl:{row:/北の第二牛舎|北へ増築/},ch:8,old:18,s:'⛰ 牛舎を増やす',t:'街の🏠不動産屋で「🏠 北の第二牛舎(大牛舎)」を建てよう(光っている行)。建てた後は同じ不動産屋から北の平原に別棟を増築できる。',c:()=>state.newBarns>0||state.land.barn2,when:()=>v83Afford(3000000),r:300000,go:()=>({map:V83_TOWN,x:27.8,z:33.0}),say:'牛舎を増やそう'},
+ {id:'cert',hl:{row:/認定農業者/},ch:8,old:19,s:'🏅 認定農業者になる',t:'3年目以降、加工以外の売上が累計2,000万円を超えたら🚜農協で「認定農業者」に。スーパーL資金が借りられる。',c:()=>state.certFarmer,when:()=>{try{return certFarmerOk();}catch(e){return false;}},r:500000,go:()=>({map:V83_TOWN,x:44.5,z:33.0}),say:'認定農業者になろう'},
+ {id:'cows10',hl:{btn:/預託で購入|購入/},ch:8,old:20,s:'🐂 母牛を10頭に',t:'🐂セリで母牛を買い足して10頭体制へ。世話は従業員に任せよう(1人で母牛60頭まで)。',c:()=>state.cows.length>=10,r:500000,go:()=>({map:V83_TOWN,x:47.5,z:42.6}),say:'母牛を10頭にしよう'},
+ {id:'final',ch:8,s:'🌟 丹波いちばんへ',t:'牛・米・牧草・栗・加工・肥料の柱と設備投資で利益を最大化！📊事務所の経営分析で資金繰りもチェックしよう。',c:()=>false,r:0,go:()=>null,say:'ここからは自由に経営だ！'},
 ];
 const V83_SHED={x:18.5,z:30};
 // v85: 2年目以降の季節の作業。一度きりの目標を済ませた後も、その週になったらナビで案内する(2年目の田植えを誰も教えてくれなかった)
 const V83_PADDY=()=>({map:V83_FARM,x:16.5,z:35.75});
 const V83_SEASON=[
- {id:'s_fix',ch:5,hl:{btn:/修理/},s:'🔧 機械が故障中！修理屋で直そう',t:'今週の作業に使う機械が壊れている。街の🔧修理屋で「使う」→修理(光っているボタン)。直したら作業に戻ろう。',when:()=>{const br=k=>{try{return machineBroken(k);}catch(e){return false;}};return (isRicePlantWeek()&&state.riceField==='none'&&(br('planter')||(br('tractor')&&effN('planter')>=1)))||(state.riceField==='ready'&&RICE_SET.some(br))||(state.grassSown&&isGrassHarvestWeek()&&state.grassCutWeek!==state.weekN&&GRASS_SET.some(br));},go:()=>({map:V83_TOWN,x:13.5,z:30.2}),say:'機械が壊れてる！街の修理屋の鉄男さんに直してもらおう。'},
- {id:'s_plant',ch:5,s:'🌾 今週は田植え週！(4月1週だけ)',t:'春の田植えは4月1週だけ。🌾田んぼで「使う」→田植え。🤝事務所で従業員に🌾米を指示しておけば自動でやってくれるよ。',when:()=>state.qv.done.riceHand&&isRicePlantWeek()&&state.riceField==='none'&&!staffWithJob('rice'),go:V83_PADDY,say:'今年も田植えの週だ！田んぼで「使う」だよ。'},
- {id:'s_water',ch:5,s:'🚿 田んぼの水管理(夏は3〜4週おき)',t:'夏(5〜9月)は3〜4週おきに田んぼの水管理。🌾田んぼで「使う」。',when:()=>state.qv.done.water&&state.riceField==='planted'&&waterDue()&&!staffWithJob('rice'),go:V83_PADDY},
- {id:'s_harv',ch:5,s:'🌾 稲刈りをする(実った！)',t:'稲が実った！🌾田んぼで「使う」→収穫。米袋は大倉庫へ。そのあと🍚精米機で出荷しよう。',when:()=>state.qv.done.harvest&&state.riceField==='ready'&&!staffWithJob('rice'),go:V83_PADDY},
- {id:'s_grass',ch:5,s:'✂ 牧草の刈り取り週(今週！)',t:'今週は牧草の刈り取り週。🌿牧草地で「使う」→✂刈り取り。',when:()=>state.qv.done.grassCut&&state.grassSown&&isGrassHarvestWeek()&&state.grassCutWeek!==state.weekN&&grassSetsOwned()>=1&&!staffWithJob('grass'),go:()=>({map:V83_FARM,x:37,z:14.5})},
- {id:'s_breed',ch:5,hl:{btn:/種付け|牛メニューへ/},s:'💉 まだ種付けしていない母牛がいる',t:'牛舎の入口で「使う」→🐂牛メニュー→「💉種付け」。子牛が生まれないと牛の収入が入らないよ(1回1万円・成功率80%)。🤝従業員に🐂牛の世話を指示すれば自動。',when:()=>state.qv.done.breed&&!staffWithJob('cow')&&state.cows.some(c=>!c.sick&&!c.retired&&c.preg<0&&c.bredWeek!==state.weekN)&&committedCalves()<calfCap(),go:()=>({map:V83_FARM,x:21.5,z:28.2}),act:['🐂 牛メニューを開く',()=>{menuTab='herd';openMenu();}]},
- {id:'s_proc',ch:1,s:'🥔 今週のポテサラを作って売る(週1回)',t:'大倉庫の🥔ポテサラ加工場で「使う」(週1回・利益7.5万円)。序盤のいちばん大事な収入だよ。🤝従業員に🥔加工を指示すれば自動。',when:()=>state.qv.done.proc&&state.procWeek!==state.weekN&&!staffWithJob('proc')&&curMap==='farm',go:()=>({map:V83_FARM,x:44.9,z:32.4})},
- {id:'s_calf',ch:5,s:'🐮 育った子牛をセリで出荷',t:'週齢32週になった子牛を街の🐂セリ市場で売ろう。',when:()=>state.qv.done.calfSell&&v83HasCalfReady()&&!staffWithJob('cow'),go:()=>({map:V83_TOWN,x:47.5,z:42.6})},
+ {id:'s_fix',ch:5,hl:{btn:/修理/},s:'🔧 修理屋で機械を直す',t:'今週の作業に使う機械が壊れている。街の🔧修理屋で「使う」→修理(光っているボタン)。直したら作業に戻ろう。',when:()=>{const br=k=>{try{return machineBroken(k);}catch(e){return false;}};return (isRicePlantWeek()&&state.riceField==='none'&&(br('planter')||(br('tractor')&&effN('planter')>=1)))||(state.riceField==='ready'&&RICE_SET.some(br))||(state.grassSown&&isGrassHarvestWeek()&&state.grassCutWeek!==state.weekN&&GRASS_SET.some(br));},go:()=>({map:V83_TOWN,x:13.5,z:30.2}),say:'機械を直してもらおう'},
+ {id:'s_plant',ch:5,s:'🌾 田植えの週だ！',t:'春の田植えは4月1週だけ。🌾田んぼで「使う」→田植え。🤝事務所で従業員に🌾米を指示しておけば自動でやってくれるよ。',when:()=>state.qv.done.riceHand&&isRicePlantWeek()&&state.riceField==='none'&&!staffWithJob('rice'),go:V83_PADDY,say:'今年も田植えの週だ！'},
+ {id:'s_water',ch:5,s:'🚿 田んぼの水やり',t:'夏(5〜9月)は3〜4週おきに田んぼの水管理。🌾田んぼで「使う」。',when:()=>state.qv.done.water&&state.riceField==='planted'&&waterDue()&&!staffWithJob('rice'),go:V83_PADDY},
+ {id:'s_harv',ch:5,s:'🌾 稲刈りをする',t:'稲が実った！🌾田んぼで「使う」→収穫。米袋は大倉庫へ。そのあと🍚精米機で出荷しよう。',when:()=>state.qv.done.harvest&&state.riceField==='ready'&&!staffWithJob('rice'),go:V83_PADDY},
+ {id:'s_grass',ch:5,s:'✂ 牧草を刈る(今週！)',t:'今週は牧草の刈り取り週。🌿牧草地で「使う」→✂刈り取り。',when:()=>state.qv.done.grassCut&&state.grassSown&&isGrassHarvestWeek()&&state.grassCutWeek!==state.weekN&&grassSetsOwned()>=1&&!staffWithJob('grass'),go:()=>({map:V83_FARM,x:37,z:14.5})},
+ {id:'s_breed',ch:5,hl:{btn:/種付け|牛メニューへ/},s:'💉 種付けをする',t:'牛舎の入口で「使う」→🐂牛メニュー→「💉種付け」。子牛が生まれないと牛の収入が入らないよ(1回1万円・成功率80%)。🤝従業員に🐂牛の世話を指示すれば自動。',when:()=>state.qv.done.breed&&!staffWithJob('cow')&&state.cows.some(c=>!c.sick&&!c.retired&&c.preg<0&&c.bredWeek!==state.weekN)&&committedCalves()<calfCap(),go:()=>({map:V83_FARM,x:21.5,z:28.2}),act:['🐂 牛メニューを開く',()=>{menuTab='herd';openMenu();}]},
+ {id:'s_proc',ch:1,s:'🥔 今週のポテサラ',t:'大倉庫の🥔ポテサラ加工場で「使う」(週1回・利益7.5万円)。序盤のいちばん大事な収入だよ。🤝従業員に🥔加工を指示すれば自動。',when:()=>state.qv.done.proc&&state.procWeek!==state.weekN&&!staffWithJob('proc')&&curMap==='farm',go:()=>({map:V83_FARM,x:44.9,z:32.4})},
+ {id:'s_calf',ch:5,s:'🐮 子牛をセリで売る',t:'週齢32週になった子牛を街の🐂セリ市場で売ろう。',when:()=>state.qv.done.calfSell&&v83HasCalfReady()&&!staffWithJob('cow'),go:()=>({map:V83_TOWN,x:47.5,z:42.6})},
 ];
 for(const q of V83_SEASON){q.c=()=>false;q.r=0;}
  // 本格堆肥舎の柱の左上(牛舎の南入口のすぐ南西)
 function v83QState(){
   if(!state.qv){
-    state.qv={v:1,done:{},said:{},ch:{},flags:{},fresh:(state.weekN||0)===0&&!(state.questDone>0)};
+    state.qv={v:1,done:{},said:{},ch:{},flags:{},fresh:(state.weekN||0)===0&&!(state.questDone>0),v88:window.v84New?1:0,tips:{},ui:{}};
     // 既存セーブ: 旧クエストの報酬済み/いま達成している物は既読(報酬なし)
     for(const q of V83_Q){
       let d=false;try{d=q.c();}catch(e){}
@@ -87,6 +87,10 @@ function v83QState(){
     // 既に進んでいる章の導入会話は出さない(いまの章だけ出す)
     const cur=v83Current();
     for(const c of V83_CHAPTERS)if(cur&&c.n<cur.ch)state.qv.ch[c.n]=1;
+  }
+  if(state.qv.v88===undefined){ // v88以前の進行データ: 新しいチュートリアルは出さない(UIは全部出す)。章の並べ替えで導入会話が再び出ないよう済み扱い
+    state.qv.v88=0;state.qv.tips=state.qv.tips||{};state.qv.ui=state.qv.ui||{};
+    for(const c of V83_CHAPTERS)state.qv.ch[c.n]=1;
   }
   if(!state.qv.v85){state.qv.v85=1;if(!state.qv.fresh||(state.weekN||0)>0){for(const id of ['grassSet']){const q=V83_Q.find(x=>x.id===id);let d=false;try{d=q.c();}catch(e){}if(d)state.qv.done[id]=1;}}}
   return state.qv;
@@ -126,7 +130,7 @@ function v83UpdateQuest(){
     if(d){qv.done[q.id]=1;
       if(q.r)addSale(q.r,'grant');
       try{fanfare();}catch(e){}
-      v83Banner('🎉 クエスト達成！',q.s.replace(/^\S+\s/,'')+(q.r?'<br>協力金 <b>+'+man(q.r)+'</b>':''));
+      v83Banner('🎉 できた！',q.s.replace(/^\S+\s/,'').replace(/\(.*?\)/g,'')+(q.r?'<br><b>+'+man(q.r)+'</b>':'')); // v88: ほめる(短く)
     }
   }
   state.questDone=Object.keys(qv.done).length; // 実績などの互換用(数)
@@ -275,6 +279,7 @@ function v83NavTick(dt){
   v83ChkT+=dt;if(v83ChkT>0.4){v83ChkT=0;let need=false;const qv=state.qv;
     for(const q of V83_Q){if(qv.done[q.id])continue;try{if(q.c()){need=true;break;}}catch(e){}}
     if(need||v83Current()!==v83LastQ){try{v83UpdateQuest();}catch(e){}}}
+  try{v88Tick(dt);}catch(e){}
   v83NavInit();if(!v83Nav)return;
   const N=v83Nav;N.t+=dt;
   const q=v83Current();let r=null;
@@ -320,4 +325,58 @@ function v83NavTick(dt){
     ar.style.visibility='visible';ar.style.transform='rotate('+ang+'rad)';
   }
   if(ds)ds.textContent=dist<2.6?' ここ！「使う」':(r.here?' あと'+Math.round(dist)+'m':' '+r.lb+'へ');
+}
+// =====================================================================
+// v88: 序盤は「やらせて覚える」。案内役はあつし1人、1回に教えるのは1つ。
+//  - 画面のボタンは最初は少なく、使う時が来たら出す(段階的開示)。出た時にあつしが1行で教える
+//  - 文字は1吹き出し30字以内。絵(矢印・光・道しるべ)で伝わることは文字にしない
+//  - 新規ゲームだけ(state.qv.v88===1)。以前からのセーブはUIを全部出し、ヒントも出さない
+// =====================================================================
+(function(){
+  const st=document.createElement('style');
+  st.textContent=`body.v88h-week #weekBtnWrap,body.v88h-week #day,body.v88h-map #mapBtn,body.v88h-menu #menuBtn,body.v88h-menu #zoomBtns,body.v88h-menu #place{display:none!important;}
+  .v88glow{animation:v88g 0.9s ease-in-out infinite!important;}
+  @keyframes v88g{0%,100%{filter:drop-shadow(0 0 0 rgba(255,210,60,0));transform:scale(1);}50%{filter:drop-shadow(0 0 12px rgba(255,200,40,1));transform:scale(1.08);}}`;
+  document.head.appendChild(st);
+})();
+const V88_GUIDE='atsushi';
+function v88On(){return !!(typeof state!=='undefined'&&state&&state.qv&&state.qv.v88===1);}
+function v88Say(line,sel){ // あつしが1行で教える+ボタンを光らせる
+  try{const n={key:V88_GUIDE,cfg:CHARS[V88_GUIDE]};showTalk(n,line);}catch(e){}
+  if(sel){const el=document.querySelector(sel);if(el){el.classList.add('v88glow');setTimeout(()=>el.classList.remove('v88glow'),6000);}}
+}
+function v88Unlocks(){ // 使う時が来たか
+  const qv=state.qv,d=qv.done,q=v83Current();
+  let rt=null;try{rt=q&&q.go?v83Route(q.go()):null;}catch(e){}
+  return {
+    map: curMap!=='farm'||!!(rt&&rt.btn)||!!d.town,
+    week:(state.weekN||0)>0||!!d.breed||!q||q.id==='final'||(!rt&&!(q&&q.hl)),
+    menu:(state.weekN||0)>0||!!d.loan,
+  };
+}
+const V88_TIPS=[ // 1つずつ。出す条件と1行
+  {id:'use',when:()=>{const q=v83Current();if(!q||q.id!=='proc'||curMap!=='farm')return false;const g=q.go();return Math.hypot(g.x-player.x,g.z-player.z)<3.2;},
+   t:()=>(typeof IS_DESKTOP!=='undefined'&&IS_DESKTOP)?'ここで「使う」(Eキー)だ！':'ここで「使う」を押そう！',sel:'#useBtn'},
+  {id:'map',when:()=>state.qv.ui.map,t:()=>'このボタンで街へ行けるぞ',sel:'#mapBtn'},
+  {id:'quest',when:()=>!!state.qv.done.cow,t:()=>'上の目標をタップすると、くわしく出るぞ',sel:'#quest'},
+  {id:'week',when:()=>state.qv.ui.week,t:()=>'仕事が済んだら「次の週へ」だ',sel:'#weekBtn'},
+  {id:'menu',when:()=>state.qv.ui.menu,t:()=>'メニューで牛やお金を見られるぞ',sel:'#menuOpenBtn'},
+];
+let v88T=0,v88LastTip=-99;
+function v88Tick(dt){
+  if(typeof state==='undefined'||!state||!state.qv)return;
+  const qv=state.qv;qv.ui=qv.ui||{};qv.tips=qv.tips||{};
+  const on=v88On();
+  const b=document.body;
+  if(!on){b.classList.remove('v88h-week','v88h-map','v88h-menu');return;}
+  v88T+=dt;if(v88T<0.4)return;v88T=0;
+  const u=v88Unlocks();
+  for(const k of ['map','week','menu'])if(u[k])qv.ui[k]=1;
+  b.classList.toggle('v88h-week',!qv.ui.week);b.classList.toggle('v88h-map',!qv.ui.map);b.classList.toggle('v88h-menu',!qv.ui.menu);
+  if(window.v84Active||window.v84Hold)return;
+  const now=performance.now()/1000;if(now-v88LastTip<7)return; // 一度に1つ
+  const talk=document.getElementById('talk');if(talk&&talk.classList.contains('on'))return;
+  const mn=document.getElementById('menu'),fs=document.getElementById('fiscal');if((mn&&mn.style.display==='flex')||(fs&&fs.style.display==='flex'))return;
+  for(const tp of V88_TIPS){if(qv.tips[tp.id])continue;let ok=false;try{ok=tp.when();}catch(e){}
+    if(ok){qv.tips[tp.id]=1;v88LastTip=now;v88Say(tp.t(),tp.sel);break;}}
 }

@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v87</title>
-<meta name="tamba-build" content="v87">
+<title>丹波農商 牧場物語 v88</title>
+<meta name="tamba-build" content="v88">
 <meta name="description" content="丹波農商(兵庫県丹波市)のリアルな農業経営を、スマホで遊べる牧場ゲームで体験。米・黒毛和牛・牧草・栗・野菜を育てて会社を大きくしよう。">
 <meta name="theme-color" content="#3f8a3a">
 <meta name="mobile-web-app-capable" content="yes">
@@ -213,6 +213,7 @@
   #talkBody{min-height:0!important;padding:8px 12px 8px 22px!important;}
   #talkText{font-size:13px!important;line-height:1.5!important;}
   #talk{max-width:500px!important;}
+  #menuBox.v88s .row .info small,#menuBox.v88s p.sub2,#menuBox.v88s > p:not(:has(button)),#menuBox.v88s .v88detail{display:none!important;}
   /* v85: 会話窓が「タップ:〜」の案内と左の⚙🎥ボタンに重なっていた→案内は会話窓の上へ、スマホは会話窓を左ボタンの右から */
   body:has(#talk.on) #actHint{bottom:calc(240px + env(safe-area-inset-bottom))!important;}
   @media (max-width:700px){#talk{left:54px!important;right:8px!important;bottom:calc(126px + env(safe-area-inset-bottom))!important;}}
@@ -258,14 +259,11 @@
 <div id="updBanner">🆕 新しいバージョンがあります<button id="updBtn">更新する</button></div>
 <div id="glbNote">3Dキャラ読み込み中…</div>
 <div class="panel" id="pcGuide">
-  <h3>🖥 PC操作ガイド</h3>
-  <div class="gl"><span class="gk">🖱 クリック</span>クリックした場所へ歩く</div>
-  <div class="gl"><span class="gk">WASD / 矢印キー</span>移動（Shiftで走る）</div>
-  <div class="gl"><span class="gk">🖱 ドラッグ</span>カメラを回す</div>
-  <div class="gl"><span class="gk">🖱 ホイール / 🔍±</span>ズーム（引き↔寄り）</div>
-  <div class="gl"><span class="gk">E / スペース</span>使う・取る（近くの物）</div>
-  <div class="gl"><span class="gk">M</span>メニュー</div>
-  <button id="pcGuideClose">閉じる（しばらくすると自動で消えます）</button>
+  <h3>🖥 PCの操作</h3>
+  <div class="gl"><span class="gk">クリック / WASD</span>歩く</div>
+  <div class="gl"><span class="gk">E / スペース</span>使う</div>
+  <div class="gl"><span class="gk">ドラッグ / ホイール</span>カメラ</div>
+  <button id="pcGuideClose">閉じる</button>
 </div>
 <div id="toast"></div>
 <div class="ov" id="menu"><div class="panel ovbox" id="menuBox"></div></div>
@@ -290,14 +288,14 @@
 <script src="lib/DRACOLoader.js"></script>
 <script src="v83char.js"></script>
 <script src="v83_game.js"></script>
-<script src="v83_quest.js?b=v86"></script>
-<script src="v84_opening.js?b=v84"></script>
+<script src="v83_quest.js?b=v88"></script>
+<script src="v84_opening.js?b=v88"></script>
 <script>
 // v81: 色はsRGBで書かれているので、リニアに変換してから使う(トーンマッピング前提の正しい発色)。
 (function(){const C=THREE.Color.prototype,oHex=C.setHex,oStyle=C.setStyle;let inStyle=false;
   C.setHex=function(h){oHex.call(this,h);if(!inStyle)this.convertSRGBToLinear();return this;};
   C.setStyle=function(st){inStyle=true;try{oStyle.call(this,st);}finally{inStyle=false;}return this.convertSRGBToLinear();};})();
-const GAME_BUILD='v87';
+const GAME_BUILD='v88';
 /* =====================================================================
    丹波農商 牧場物語 v24 — 牛まわりの大改修(屋根バグ修正・牛舎拡大・繋留と散歩・糞は足元)
    v24: v23の全機能を維持したまま牛まわりを4点改修。セーブはv20キー(tamba_v20_save)を共用。
@@ -618,73 +616,73 @@ const HERO={walk:'char_min/mhero_walk.glb',run:'char_min/mhero_run.glb',
   vox:{skin:'#f0c49a',cheek:'#ff8a6a',hair:'#4a3018',cap:'#e0b84f',shirt:'#4a7ad8',pants:'#3a5aa8',shoe:'#8a5a2b'}};
 const CHARS={
   atsushi:{name:'あつしさん',urls:['char_min/t_atsushi.glb','char_min/matsushi_walk.glb'],role:'牧場のお兄さん',skin:'#e8b98c',cheek:'#ff7a5a',hair:'#1c1712',cap:'#111',shirt:'#20386a',pants:'#2a2a2a',shoe:'#5a3a1a',spot:'barn',
-    line:'牛は毎日 餌やりと牛舎掃除！サボると健康が下がって子牛が安くなるよ🐂',
-    line2:'僕を雇って「牛の世話」を指示すれば毎日の世話も種付けもセリも全部自動！(事務所で雇用・月給30万円)'},
+    line:'牛の世話は週1回。餌と掃除を忘れずにな🐂',
+    line2:'僕を雇えば、牛の世話を任せられるぞ'},
   yusuke:{name:'ゆうすけさん',urls:['char_min/t_yusuke.glb','char_min/myusuke_walk.glb'],role:'牧草・栗・お米のお兄さん',skin:'#e5b184',cheek:'#e88a6a',hair:'#6a4526',beard:true,shirt:'#3a3a3f',pants:'#33302a',shoe:'#2a2a2a',spot:'pasture',
-    line:'米の作業は田植え(4月)・水管理(5〜9月)・収穫(10月)だけ。閑散期は別の仕事をしよう🌾',
-    line2:'僕を雇って「米」か「牧草」を指示すれば全部自動！季節で指示を変えるのがコツだよ(事務所で雇用・月給30万円)'},
+    line:'米は春に植えて、秋に刈るよ🌾',
+    line2:'僕を雇えば、米や牧草を任せられるよ'},
   naoto:{name:'なおとさん',urls:['char_min/t_naoto.glb','char_min/mnaoto_walk.glb'],role:'加工・堆肥のお兄さん',skin:'#eac199',cheek:'#e89a7a',hair:'#241a12',glasses:true,ponytail:true,shirt:'#2f5fa8',pants:'#22262a',shoe:'#333',spot:'compost',
-    line:'牛糞は🧹掃除して牛舎に溜めて、月1回「処理」する(1頭500円)。🏭堆肥舎を建てれば肥料にして売れるよ！',
-    line2:'僕を雇って「堆肥」を指示すれば、ふん回収も肥料の出荷も自動だよ(事務所で雇用・月給30万円)'},
+    line:'フンは堆肥舎で肥料になるんだ',
+    line2:'僕を雇えば、堆肥づくりを任せられるよ'},
   ryunosuke:{name:'りゅうのすけさん',urls:['char_min/mnaoto_walk.glb'],role:'牛と豚のお兄さん',skin:'#e0aa7c',cheek:'#e07a5a',hair:'#0f0d0a',cap:'#7a1f1f',shirt:'#2f6a3a',pants:'#2a2a30',shoe:'#3a2a1a',spot:'barn2', // v56
-    line:'牛も豚も任せて！増えた頭数はもう1人で見きれないから、僕みたいな世話係を増やすといいよ🐂🐖',
-    line2:'僕を雇って「牛の世話(第一牛舎/第二牛舎)」や「豚の放牧」を指示すれば全部自動！世話係は牛舎ごとに1人ずつ(1人で母牛60頭まで)。どっちの牛舎を任せるか決めてね(事務所で雇用・月給30万円)'},
+    line:'牛も豚も任せて！🐂🐖',
+    line2:'僕を雇えば、牛や豚の世話は自動だよ'},
   ami:{name:'あみちゃん',urls:['char_min/shufu_walk.glb'],role:'食品加工のお姉さん',skin:'#f3d2b6',cheek:'#f0a0a8',hair:'#4a2c18',ponytail:true,shirt:'#d76a8a',pants:'#5a4a6a',shoe:'#b04a6a',spot:'proc', // v56
-    line:'丹波の野菜でポテサラや加工品を作るのが得意！加工は毎週コツコツが大事だよ🥔',
-    line2:'私を雇って「加工(ポテサラ)」を指示すれば、ポテサラ作りも農産物の加工販売も自動でやるよ(事務所で雇用・月給30万円)'},
+    line:'ポテサラ作りは任せて！🥔',
+    line2:'私を雇えば、加工を任せられるよ'},
 };
 // ---------- v19: 街の登場人物(Meshy新住人6役+住民)。model=char_min/m{model}_walk.glb ----------
 const TOWN_CHARS={
   yakuba:{model:'yakuba',name:'役場の山田さん',role:'役場職員',menu:'yakuba',pos:[31.5,16.5],
     skin:'#eec096',cheek:'#e8907a',hair:'#2a2118',shirt:'#5a6a7a',pants:'#3a4148',shoe:'#333',
-    line:'補助金の申請はここ役場で！承認されると新品の機械・牛舎・堆肥舎が半額になるよ🏛',
-    line2:'申請→2日で承認→90日以内の購入が半額。申請しないで買うと定価だから気をつけて！'},
+    line:'補助金の申請はここだよ🏛',
+    line2:'申請してから買うと半額になるよ'},
   ginko:{model:'ginko',name:'銀行の丹波さん',role:'銀行員',menu:'bank',pos:[17.5,39.0],
     skin:'#eec096',cheek:'#e8907a',hair:'#1a1512',shirt:'#2a3a5a',pants:'#22262e',shoe:'#222',
-    line:'丹波銀行です。直近の決算が黒字なら、売上高と同じ額まで無利息で融資しますよ🏦',
-    line2:'赤字だと貸せません…毎年の決算を黒字にするのが信用の第一歩です'},
+    line:'丹波銀行です。融資の相談はこちら🏦',
+    line2:'決算が黒字なら貸せますよ'},
   fudosan:{model:'ojiichan',c3:'fudosan',urls:['char_min/ojiichan_walk.glb'],name:'不動産屋の登さん',role:'不動産屋',menu:'land',pos:[26.5,38.8], // v30: なおとと同じ見た目だったので専用モデル(ojiichan)に変更
     skin:'#e8c9a8',cheek:'#e0907a',hair:'#8a8a8a',shirt:'#6a5a3a',pants:'#3a352a',shoe:'#333',
-    line:'土地をお探しですか？西の牧草地・東の棚田・北の第二牛舎、いい区画が揃ってますよ🏠',
-    line2:'土地を買えば農場の世界が広がる。生産規模の拡大は経営の王道です'},
+    line:'土地をお探しですか？🏠',
+    line2:'土地を広げれば農場も広がりますよ'},
   nokyo:{model:'nokyo',name:'農協の米田さん',role:'農協職員',menu:'ja',pos:[42.0,39.2],
     skin:'#e8b98c',cheek:'#e8907a',hair:'#1c1712',cap:'#2f8a4a',shirt:'#2f8a4a',pants:'#33383f',shoe:'#333',
-    line:'農協です。新品の機械や牛舎はうちの資材窓口へ🚜 役場の補助金を使えば半額ですよ',
-    line2:'牛が病気の時はうちに来て。獣医の先生に往診をお願いできるよ'},
+    line:'農協です。機械や牛舎はこちら🚜',
+    line2:'牛が病気の時も、うちに来てね'},
   juui:{model:'juui',name:'獣医の犬飼先生',role:'獣医',menu:'ja',pos:[44.5,40.0],
     skin:'#eec8a0',cheek:'#e8907a',hair:'#4a4a4a',shirt:'#f0f0f0',pants:'#3a4148',shoe:'#333',
-    line:'牛が病気になったら農協で呼んでくれ。往診料はかかるが、放っておくと最悪死んでしまうぞ🩺',
-    line2:'牛舎が汚れていると病気になりやすい。毎日の掃除が一番の予防だ'},
+    line:'牛が病気なら、農協で呼んでくれ🩺',
+    line2:'掃除が一番の病気予防だぞ'},
   shuriya:{model:'shuriya',name:'修理屋の鉄男さん',role:'修理屋',menu:'repair',pos:[11.0,24.8],
     skin:'#e5a97c',cheek:'#e88a6a',hair:'#111',cap:'#c23b22',shirt:'#3a3a3f',pants:'#2a2e33',shoe:'#222',
-    line:'機械が壊れたら俺のところへ！トラクターも精米機も直すぜ🔧',
-    line2:'中古の機械はよく壊れる。農協で新品に買い替えるのも手だぞ(補助金で半額！)'},
+    line:'機械が壊れたら俺に任せろ！🔧',
+    line2:'中古の機械はよく壊れるぞ'},
   seriman:{model:'seriman',name:'競り人の勝さん',role:'競り人',menu:'auction',pos:[48.0,44.5],
     skin:'#e0a577',cheek:'#e88a6a',hair:'#1c1712',cap:'#111',shirt:'#7a3a2a',pants:'#2a2a2a',shoe:'#5a3a1a',
-    line:'セリ市場へようこそ！メス牛は与信100万で買える。子牛は100万、8産後の親牛は50万だ🐂',
-    line2:'健康な牛ほど子牛が高く売れる。毎日の世話と病気の治療を怠るなよ！'},
+    line:'セリ市場へようこそ！🐂',
+    line2:'健康な牛ほど高く売れるぞ'},
   // ---- v20: 街の一般住民4人(あつし等の農場キャラとは別人)。専用GLB(urls[0])が
   //      無い場合は既存NPCモデルを色替え+サイズ違いで別人化(urls[1]にフォールバック) ----
   res1:{model:'obaachan',urls:['char_min/obaachan_walk.glb','char_min/mginko_walk.glb'],tint:0xd8a8c8,h:1.32,wspd:0.9,
     name:'トメおばあちゃん',role:'住民',pos:[12,31.5],wander:{pts:[[8,31.5],[29,31.5],[24,29.5],[8,31.5]]},
     skin:'#e8c8a8',cheek:'#e8907a',hair:'#c8c8c8',shirt:'#8a5a7a',pants:'#5a4a5a',shoe:'#3a3a3a',
-    line:'この街は丹波の台所。農協の黒豆コロッケがうまいんじゃよ',
-    line2:'昔はうちも牛を飼っておってなあ。毎日の世話が牛への愛情じゃ'},
+    line:'この街は丹波の台所じゃよ',
+    line2:'毎日の世話が牛への愛情じゃ'},
   res2:{model:'ojiichan',urls:['char_min/ojiichan_walk.glb','char_min/mnokyo_walk.glb'],tint:0xb8a878,h:1.42,wspd:1.0,
     name:'ゴンゾウおじいちゃん',role:'住民',pos:[45,31.5],wander:{pts:[[38,31.5],[60,31.5],[52,31.5]]},
     skin:'#e0b088',cheek:'#e88a6a',hair:'#d8d8d8',beard:true,shirt:'#6a6a5a',pants:'#4a4a3a',shoe:'#3a3a3a',
-    line:'わしの若い頃は牛が財産での。8産までしっかり産ませたもんじゃ',
-    line2:'山を切り開いて牛舎を建てる…夢のある話じゃのう⛰'},
+    line:'わしの若い頃は牛が財産での',
+    line2:'牛舎を建てる…夢のある話じゃ⛰'},
   res3:{model:'shufu',urls:['char_min/shufu_walk.glb','char_min/mjuui_walk.glb'],tint:0xf0b0a0,h:1.5,wspd:1.4,
     name:'主婦の花子さん',role:'住民',pos:[32.5,40],wander:{pts:[[32.5,12],[32.5,55],[32.5,36]]},
     skin:'#f0c8a8',cheek:'#ff8a7a',hair:'#5a3a2a',shirt:'#d87a8a',pants:'#7a5a6a',shoe:'#8a4a4a',
-    line:'広場の噴水は街の自慢よ⛲ 夜は街灯がきれいなの',
-    line2:'丹波のお米は本当においしいわ。農家さんに感謝ね🍚'},
+    line:'広場の噴水は街の自慢よ⛲',
+    line2:'丹波のお米はおいしいわ🍚'},
   res4:{model:'kodomo',urls:['char_min/kodomo_walk.glb','char_min/mseriman_walk.glb'],tint:0xf0d878,h:1.02,wspd:2.6,
     name:'子どものタロウ',role:'住民',pos:[25,22],wander:{pts:[[22,21.8],[29.5,21.8],[29.5,28],[22,28]]},
     skin:'#f0c8a0',cheek:'#ff8a6a',hair:'#2a1a10',shirt:'#e8b83f',pants:'#3a5aa8',shoe:'#c23b22',
-    line:'ぼく大きくなったら牛のお医者さんになるんだ！🐂',
-    line2:'噴水のまわりを走るの、たのしー！⛲'},
+    line:'大きくなったら牛のお医者さん！🐂',
+    line2:'噴水のまわり、たのしー！⛲'},
 };
 
 // ---------- ブロック定義 ----------
@@ -2905,9 +2903,8 @@ function doRicePlant(){
    else if(state.money>=need*ECON.FERT_PRICE){addExpense(need*ECON.FERT_PRICE,'other','rice');state.riceFert=true;}}
   buildRiceVisual(0);
   fanfare();
-  toast('🌾 田植え完了(苗代'+man(cost)+')！'+(state.riceFert?('🌿元肥も散布('+(state.compostShed?'堆肥舎の肥料で自給タダ':'肥料代'+man(10*ECON.FERT_PRICE))+')→収量+15%✨'):'(肥料代不足で元肥なし)')+'。'+wkLabel(ECON.RICE_HARVEST_WEEK)+'に'+riceBagsYield()+'袋見込み');
-  toast('🚿 夏(5〜9月)は🌾稲マークをタップして3〜4週おきに水管理！サボると収量ダウン');
-  if(state.riceHandMode)toast('⚠ 機械一式が無いので<b>手植えの極小規模</b>(約0.5町ぶん)だけ…(不足: '+riceMissing().join('・')+') 🚜農協で一式(トラクター+田植え機+コンバイン+乾燥機)を揃えよう');
+  toast('🌾 田植えできた！秋に稲刈りだ'); // v88: 水管理や肥料は、その時が来たらナビで
+  if(state.riceHandMode){}
   else{
     if(effN('combine')<1||effN('dryer')<1)toast('⚠ 秋の収穫には🌾コンバインと♨乾燥機も必須！'+wkLabel(ECON.RICE_HARVEST_WEEK)+'までに🚜農協で揃えないと刈れないよ(不足: '+RICE_SET.filter(k=>effN(k)<1).map(k=>MACH_META[k].em+MACH_META[k].n).join('・')+')');
     if(riceSetsNeeded()>riceCapacity())toast('⚠ 田んぼ'+haLabel(riceHaTotal())+'に対して回せる一式が足りない！('+opsLine('rice')+') 刈り遅れのロスが出るよ');
@@ -2985,7 +2982,7 @@ function riceFieldAction(){
   if(state.riceField==='ready'){doRiceHarvest();return;}
   if(state.riceField==='planted'){
     if(waterDue()){doRiceWater(null);return;} // v42: 夏はいつでも水管理OK
-    toast('🌾 稲は生育中！'+(isWaterSeason()?'✅水管理は最近やったよ(3〜4週おきでOK)。':'🚿水管理は夏(5〜9月)に3〜4週おき。')+'収穫は'+wkLabel(ECON.RICE_HARVEST_WEEK)+'。');
+    toast('🌾 稲は育っているよ');
     return;
   }
   if(isRicePlantWeek())doRicePlant(); // v25: 週ベース
@@ -4057,11 +4054,18 @@ function fanfare(){sfxSeq([[523,.12],[659,.12],[784,.14],[1047,.3,'triangle',.08
 function mooSfx(){sfx(140,0.4,'sawtooth',0.05);setTimeout(()=>sfx(110,0.3,'sawtooth',0.04),150);}
 
 // ---------- UI: トースト / HUD ----------
+function v88Short(m){ // v88: 1行・30字前後に。長い文は最初の一文だけ見せる
+  const s=String(m).replace(/<[^>]+>/g,'');if([...s].length<=32)return s;
+  const re=/[！。!？]/g;let k;while((k=re.exec(s))){const head=s.slice(0,k.index+1);const n=[...head].length;if(n>=6&&n<=36)return head;if(n>36)break;}
+  const c=s.search(/[（(]/);if(c>=6&&[...s.slice(0,c)].length<=34)return s.slice(0,c);
+  return s;
+}
 function toast(msg){
   const t=document.getElementById('toast');
-  if(t.children.length>3)t.removeChild(t.firstChild);
-  const e=document.createElement('div');e.className='tst';e.textContent=msg;t.appendChild(e);
-  setTimeout(()=>e.remove(),2300);
+  if(t.children.length>2)t.removeChild(t.firstChild);
+  const tx=v88Short(msg);
+  const e=document.createElement('div');e.className='tst';e.textContent=tx;t.appendChild(e);
+  setTimeout(()=>e.remove(),Math.min(4200,1800+[...tx].length*60));
 }
 function timeLabel(){
   const t=state.time;
@@ -4130,12 +4134,13 @@ function checkDailyLogin(){
   if(!state)return;
   const today=ymd(new Date());
   if(state.lastLogin===today)return; // 今日はもらった
+  if(window.v84New&&!state.lastLogin){state.lastLogin=today;state.loginStreak=1;return;} // v88: 始めた日は出さない
   const yest=ymd(new Date(Date.now()-86400000));
   state.loginStreak=(state.lastLogin===yest)?(state.loginStreak||0)+1:1;
   state.lastLogin=today;
   const bonus=100000+Math.min((state.loginStreak-1),6)*50000; // 10万〜最大40万(7日連続以上)
   addSale(bonus,'grant');
-  setTimeout(()=>{toast('🎁 ログインボーナス！'+state.loginStreak+'日連続 +'+man(bonus)+'（毎日ひらくと増える・最大40万）');fanfare();},1600);
+  setTimeout(()=>{toast('🎁 ログインボーナス +'+man(bonus));fanfare();},1600);
 }
 const ACHIEVEMENTS=[
   {id:'cow1',s:'🐂 はじめての牛',d:'牛を1頭飼う',c:()=>state.cows.length>=1,r:100000},
@@ -4156,7 +4161,7 @@ function checkAchievements(){
   for(const a of ACHIEVEMENTS){
     if(!state.claimedAch[a.id]&&a.c()){
       state.claimedAch[a.id]=1;addSale(a.r,'grant');
-      toast('🏆 実績「'+a.s+'」達成！ごほうび +'+man(a.r));fanfare();
+      toast('🏆 '+a.s+' +'+man(a.r));fanfare();
     }
   }
 }
@@ -4404,8 +4409,8 @@ function doFeed(who){
   const what=parts.join('＋');
   const nurse=state.calves.filter(c=>isNursing(c)).length;
   if(!who){
-    toast('✅ 全'+n+'頭に餌やり完了！('+what+')。よく食べた牛は太って高く売れるよ〔左上の🐂餌✅で確認〕');
-    if(nurse>0)toast('🍼 授乳中の仔牛'+nurse+'頭に、母牛のミルクを飲ませた(生後'+ECON.NURSE_WEEKS+'週まで毎週)');
+    toast('✅ 牛に餌をあげた！');
+
     sfx(520,.07,'sine',.05);
     if(cowMeshes.length)heartBurst(cowMeshes[0].position.x,cowMeshes[0].position.y,cowMeshes[0].position.z);
   }
@@ -4425,7 +4430,7 @@ function doClean(who){
   state.barnDung=Math.min(ECON.BARN_DUNG_CAP,state.barnDung+removed); // v35: 集めたフンは牛舎内の糞の山へ
   updateBarnDungMesh();
   if(!who){
-    toast((thorough?'🧹 放し飼い中に念入り掃除！':'🧹 牛の後ろのアイスルを掃除！')+'フン'+removed+'個を牛舎の🟤糞の山へ(いま'+state.barnDung+'/'+ECON.BARN_DUNG_CAP+'・月1回「処理」で片付く。汚れ'+state.care.dirt+')');
+    toast('🧹 牛舎がきれいになった！');
     sfx(300,.06,'sine',.05);
   }
   updateCareChip();
@@ -4615,7 +4620,7 @@ function nearestAction(wx,wz){
   if(herdCount()>0){
     if(state.care.fedWeek!==state.weekN){
       // v43: 半径を大きく=牛舎のどこからでも届く。かかえる→餌箱に入れると全頭に給餌(1箇所でOK)
-      if(!state.carryHay)cand(23,10.5,6.5,'🌾 牧草をかかえる',()=>{if(!removeHayPileBlock()){toast('🌾 牧草の山が空っぽ！次の週になると補充されるよ(🌿牧草地を持っていると豊富)');return;}state.carryHay=true;toast('🌾 牧草を一束かかえた！🐂牛の前の餌箱まで運んで「入れる」と全頭に餌やり');sfx(500,.06,'sine',.05);updateActHint&&updateActHint();});
+      if(!state.carryHay)cand(23,10.5,6.5,'🌾 牧草をかかえる',()=>{if(!removeHayPileBlock()){toast('🌾 牧草の山が空っぽ！次の週になると補充されるよ(🌿牧草地を持っていると豊富)');return;}state.carryHay=true;toast('🌾 牧草を持った！牛舎の中へ');sfx(500,.06,'sine',.05);updateActHint&&updateActHint();});
       else cand(18,15,7.5,'🌾 餌箱に入れる(全'+herdCount()+'頭に餌やり)',()=>{doFeed(null);state.carryHay=false;});
     }
     if(state.care.cleanWeek!==state.weekN)cand(16,15,8,'🧹 フンを撤去する(掃除)',()=>doClean(null)); // v43: 半径を大きく=牛舎内どこでも掃除OK
@@ -4667,7 +4672,7 @@ function doAction(){
   ac(); // iOSサウンド解禁
   const a=nearestAction(player.x,player.z);
   if(a&&a.d<REACH+0.6){v83Face(a);a.fn();return;}
-  toast('近くに触れるものがないよ（畑や牛に近づいてね）');
+  toast('近くに何もないよ');
 }
 // タップ位置のワールド座標で対象を探す。近ければ即実行/遠ければ歩いて実行
 function tapAt(wx,wz){
@@ -4693,7 +4698,7 @@ function tapAt(wx,wz){
 function updateActHint(){
   const h=document.getElementById('actHint');if(!h)return;
   const a=nearestAction(player.x,player.z);
-  if(a&&a.d<REACH+0.6){h.textContent='👆 タップ: '+a.label;h.style.display='block';}
+  if(a&&a.d<REACH+0.6){h.textContent='👆 '+a.label.replace(/\s*[(（][^)）]*[)）]/g,'');h.style.display='block';}
   else h.style.display='none';
 }
 
@@ -4785,8 +4790,8 @@ function rentBarn(){
   ensureBarnBuilt();
   updateBarnSign();
   fanfare();
-  toast('🏚 古い牛舎を借りた！(家賃 月3万円・母牛'+ECON.BARN_CAP+'頭+子牛'+ECON.BARN_CAP_CALF+'頭まで)');
-  setTimeout(()=>toast('🐂 セリ市場でメス牛を買おう(与信100万円=現金は減らない)。牛は毎日世話が要るよ！'),1800);
+  toast('🏚 牛舎を借りた！');
+
   updateHUD();
 }
 
@@ -4932,8 +4937,7 @@ function buyCowCredit(){
   spawnCowMesh(cow,false);
   assignCowSlots(); // v24: 新入りに定位置(繋留スロット)を割り当て
   mooSfx();
-  toast('🐂 '+cow.name+'を預託で導入！牛代'+man(ECON.COW_PRICE)+'は現金が減らず借金に(初回手数料2%＝'+man(fee)+'だけ支払い)。預託枠 '+yotakuCount()+'/'+ECON.YOTAKU_CAP+'頭');
-  toast('💡 子牛を売ると半分が返済に充当(2頭で完済)。完済すると預託枠が空く。預託残高には年利1.8%');
+  toast('🐂 '+cow.name+'が来た！');
   updateHUD();renderMenu();
 }
 function breedCow(id){
@@ -4947,7 +4951,7 @@ function breedCow(id){
   addExpense(ECON.BREED_COST,'breed','cow'); // v38: 種付け代(人工授精)1回1万円
   if(Math.random()<ECON.BREED_RATE){
     c.preg=0;
-    toast('💉 '+c.name+'の種付けに成功！(種付け代−'+man(ECON.BREED_COST)+')40週後に出産だよ');sfx(700,.1,'sine',.05);
+    toast('💉 種付け成功！約10か月で子牛だ');sfx(700,.1,'sine',.05);
   }else{
     toast('💉 '+c.name+'の種付けは失敗…(種付け代−'+man(ECON.BREED_COST)+'・成功率80%)。来週また挑戦しよう');
   }
@@ -5020,13 +5024,13 @@ function bankRepay(amount){
 // ---------- v28: 食品加工の創業収入 ＋ 制度融資(新規就農資金/スーパーL) ＋ 資格 ----------
 // 食品加工(黒豆の煮豆・栗の渋皮煮など)。週1回。売上25万・材料/人件費17.5万→利益7.5万/週(月100万売上・利益30万)。
 function doProcess(who){
-  if(state.procWeek===state.weekN){if(!who)toast('🍱 食品加工は週1回。⏭次の週でまた加工できるよ');return false;}
+  if(state.procWeek===state.weekN){if(!who)toast('🥔 今週はもう作ったよ');return false;}
   state.procWeek=state.weekN;
   const mult=(state.machines&&state.machines.processor&&state.machines.processor.lvl&&!machineBroken('processor'))?1.6:1; // 🍱加工機で増量
   const sale=Math.round(ECON.FOOD_PROC_SALE*mult),cost=ECON.FOOD_PROC_COST;
   addExpense(cost,'other','other');addSale(sale,'proc');
   if(!who){
-    toast('🍱 食品加工して出荷！売上+'+man(sale)+'・材料/人件費−'+man(cost)+'＝利益'+man(sale-cost)+(mult>1?'(🍱加工機で増量)':''));
+    toast('🥔 ポテサラが売れた！ +'+man(sale-cost)); // v88: 短く(内訳は帳簿で)
     sfx(560,.07,'sine',.05);fanfare();
   }
   updateHUD();
@@ -5166,7 +5170,7 @@ function refreshPigs(){
 function certifyNewFarmer(){
   if(state.newFarmer){toast('🎓 もう新規就農者に認定されているよ');return;}
   state.newFarmer=true;fanfare();
-  toast('🎓 新規就農者に認定！🏦銀行で「新規就農資金3,000万円」(7年・最初の3年は返済なし・無利息)が借りられるよ');
+  toast('🎓 新規就農者になった！');
   updateHUD();renderMenu();
 }
 function certFarmerOk(){return state.year>=ECON.CERT_YEARS&&(state.cumSales?state.cumSales.farm:0)>=ECON.CERT_SALES_REQ;}
@@ -5185,7 +5189,7 @@ function borrowStartup(){
   state.startupLoan={taken:true,remain:ECON.STARTUP_LOAN,loanYear:state.year};
   state.money+=ECON.STARTUP_LOAN;
   sfxSeq([[600,.08],[800,.1]]);fanfare();
-  toast('🏦 新規就農資金'+man(ECON.STARTUP_LOAN)+'を借入！最初の3年は返済なし・4年目から年'+man(ECON.STARTUP_LOAN/(ECON.STARTUP_TERM-ECON.STARTUP_GRACE))+'を無利息返済');
+  toast('🏦 '+man(ECON.STARTUP_LOAN)+'を借りた！');
   updateHUD();renderMenu();
 }
 // 銀行: スーパーL資金(直近売上と同額まで・10年均等・無利息)
@@ -5816,16 +5820,15 @@ function pushWeekLog(notes){
   if(state.weekLog.length>60)state.weekLog.shift();
 }
 function showWeekReport(notes){
+  // v88: 何もない週は画面を止めない。ある週も3行まで・1行は短く(全文は「くわしく」=これまでの記録で)
   pushWeekLog(notes);
+  if(!notes||!notes.length){toast('📅 '+ymdLabel());return;}
   const box=document.getElementById('fiscalBox');
-  let h='<h2>📅 '+ymdLabel()+' の出来事</h2>';
-  if(notes&&notes.length){
-    h+='<div style="max-height:52vh;overflow:auto;margin:6px 0">';
-    notes.forEach(t=>{h+='<p style="background:rgba(255,253,245,.75);border:1px solid #d8c7a0;border-radius:8px;padding:7px 10px;margin:5px 0;font-size:12.5px;color:#5a3714">'+t+'</p>';});
-    h+='</div>';
-  }else h+='<p>特に変わったことはなかったよ。次の週へどうぞ。</p>';
-  h+='<button class="close" style="background:#3a8a3a;border-color:#1f5a1f;box-shadow:0 3px 0 #1f5a1f" onclick="closeFiscal()">✅ 確認して進む</button>';
-  h+='<button class="close" onclick="showWeekLog()">📋 過去の記録を見る</button>';
+  let h='<h2>📅 '+ymdLabel()+'</h2><div style="margin:6px 0">';
+  notes.slice(0,3).forEach(t=>{h+='<p style="background:rgba(255,253,245,.75);border:1px solid #d8c7a0;border-radius:8px;padding:7px 10px;margin:5px 0;font-size:13px;color:#5a3714">'+v88Short(t)+'</p>';});
+  if(notes.length>3)h+='<p style="font-size:12px;color:#8a6a45;margin:2px 0">ほか'+(notes.length-3)+'件</p>';
+  h+='</div><button class="close" style="background:#3a8a3a;border-color:#1f5a1f;box-shadow:0 3px 0 #1f5a1f" onclick="closeFiscal()">✅ OK</button>';
+  h+='<button class="close" onclick="showWeekLog()">📋 くわしく</button>';
   box.innerHTML=h;
   document.getElementById('fiscal').style.display='flex';
 }
@@ -6193,6 +6196,7 @@ function openMenu(){
   if(['yakuba','ja','repair'].includes(menuTab)&&curMap!=='town')menuTab='ledger';
   document.getElementById('menu').style.display='flex';renderMenu();
 }
+function v88MenuSimple(){return state&&(state.menuSimple===true||(state.menuSimple===undefined&&state.qv&&state.qv.v88===1));}
 function closeMenu(){document.getElementById('menu').style.display='none';saveGame(false);}
 function renderMenu(){
   const box=document.getElementById('menuBox');
@@ -6201,6 +6205,7 @@ function renderMenu(){
     '<div class="tabs">'+tab('ach','🏆 実績')+tab('ledger','📒 帳簿')+tab('biz','📊 分析')+tab('wh','📦 倉庫')+tab('cows','🏚 牛舎')+tab('herd','🐂 牛')+((state.abandonedLand>0||state.pigs.length>0)?tab('pig','🐖 豚'):'')+(state.land.orchard?tab('chestnut','🌰 栗'):'')+tab('auction','🐂 セリ')+tab('bank','🏦 銀行')+tab('staff','🤝 指示')+tab('land','🏠 不動産屋')+tab('diy','🔨 DIY')+(((state.restaurants&&state.restaurants.length)||curMap==='tokyo'||menuTab==='food')?tab('food','🍴 飲食'):'')+
     (menuTab==='yakuba'?tab('yakuba','🏛 役場'):'')+(menuTab==='ja'?tab('ja','🚜 農協'):'')+(menuTab==='repair'?tab('repair','🔧 修理屋'):'')+ // v19: 街の施設タブ(現地でだけ開く)
     tab('set','⚙')+'</div>';
+  if(typeof v88On==='function'&&v88On()&&!(state.qv.ui&&state.qv.ui.menu)){const k=html.indexOf('<div class="tabs">');html=html.slice(0,k)+'<div class="tabs">'+tab(menuTab,({ja:'🚜 農協',bank:'🏦 銀行',auction:'🐂 セリ',land:'🏠 不動産屋',yakuba:'🏛 役場',repair:'🔧 修理屋',cows:'🏚 牛舎',herd:'🐂 牛',wh:'📦 倉庫',staff:'🤝 指示'})[menuTab]||'⚙')+'</div>';} // v88: 段階的開示
   if(menuTab==='ach')html+=achHTML();
   else if(menuTab==='herd')html+=cowListHTML();
   else if(menuTab==='ledger')html+=ledgerHTML();
@@ -6223,6 +6228,10 @@ function renderMenu(){
   html+='<button class="close" style="background:linear-gradient(#ffd25e,#f0a020);border-color:#b07010;box-shadow:0 3px 0 #b07010;color:#5a3510" onclick="v84Opening(true)">📖 ゲームの説明をもう一度見る</button>';
   html+='<button class="close" onclick="closeMenu()">閉じる</button>';
   html+='<button class="close" style="background:#8a7a5a;border-color:#5a4a2a;box-shadow:0 3px 0 #5a4a2a;font-size:13px" onclick="backToTitle()">🏠 タイトルに戻る</button>'; // v39
+  // v88: かんたん表示(説明文をたたむ)。新しく始めた人は最初からかんたん、くわしく見たい人はボタンで
+  const simple=v88MenuSimple();
+  html+='<button class="close" style="font-size:13px" onclick="state.menuSimple=!v88MenuSimple();renderMenu()">'+(simple?'📖 説明をくわしく表示':'📖 説明をたたむ(かんたん表示)')+'</button>';
+  box.classList.toggle('v88s',simple);
   box.innerHTML=html;
   if(menuTab==='biz')setTimeout(drawBizCharts,0); // v65: innerHTML反映後にcanvasへ描画
 }
@@ -6324,7 +6333,7 @@ function jaHTML(){
   }
   h+='<p style="margin-top:8px"><b>🛒 資材の窓口(実売価格)</b> '+(subApproved('machine')?'<span class="prof">🏛機械の補助 承認済(🌿牧草用が半額)</span>':'<span style="color:#c03030">機械の補助 未申請(🏛役場で申請すると🌿牧草用が半額)</span>')+'</p>';
   // v64: 機械は必須の前提(一式)。現況を窓口にも表示
-  h+='<div style="font-size:11.5px;background:#f2ead6;border:1px solid #d8c8a0;border-radius:6px;padding:6px;margin:4px 0">'+opsStatusHTML('rice')+'<br>'+opsStatusHTML('grass')+'<br>📏 <b>1人＋一式＝陸続き5町まで</b>。5町超や飛地(東の棚田/東の牧草地)には別の一式＋担当がもう1人必要。⚠<b>米用の機械は補助対象外(定価)・🌿牧草用は🏛補助で半額</b></div>';
+  h+='<div class="v88detail" style="font-size:11.5px;background:#f2ead6;border:1px solid #d8c8a0;border-radius:6px;padding:6px;margin:4px 0">'+opsStatusHTML('rice')+'<br>'+opsStatusHTML('grass')+'<br>📏 <b>1人＋一式＝陸続き5町まで</b>。5町超や飛地(東の棚田/東の牧草地)には別の一式＋担当がもう1人必要。⚠<b>米用の機械は補助対象外(定価)・🌿牧草用は🏛補助で半額</b></div>';
   // v20/v64: トラクターは小型150万/中型500万(米用=定価)/牧草用400万(補助対象)。台数制(飛地・5町超はもう1台)
   {
     const st=state.machines.tractor;
@@ -7579,7 +7588,7 @@ function switchMap(target){
     const gLand=walkY(Math.floor(player.x),Math.floor(player.z),3.2); // v70: 東京駅ホームは高架デッキ(y8)の真下=topYだとデッキの上に乗ってしまうので、一番下の歩ける床に着地
     player.y=(gLand<=WH)?gLand:topY(Math.floor(player.x),Math.floor(player.z))+1;player.vy=0;player.onGround=true;
     camera.position.set(player.x-Math.sin(camYaw)*8,player.y+6,player.z-Math.cos(camYaw)*8);
-    toast(target==='town'?'🏘 丹波の街に着いた！役場・銀行・農協・修理屋・セリ市場・不動産屋があるよ'
+    toast(target==='town'?'🏘 街に着いた！'
       :(target==='tokyo'?'🗼 東京に着いた！⚾野球場・🍜高架下・🛍モール・🛎ホテルに🍴飲食店を出店できるよ(帰りは東京駅の🚄看板)'
       :'🌾 橋を渡って農場に帰ってきた！'));
     updateHUD();updateMachineBadges();saveGame(false);
@@ -8096,7 +8105,7 @@ function animate(ts){
       while(dd>Math.PI)dd-=Math.PI*2;while(dd<-Math.PI)dd+=Math.PI*2;
       n.mesh.rotation.y+=dd*Math.min(1,dt*6);
     }
-    if(d<3&&ts/1000-n.lastTalk>25){
+    if(false&&d<3&&ts/1000-n.lastTalk>25){ // v88: 勝手に話しかけない
       n.lastTalk=ts/1000;
       showTalk(n,n.cfg.line); // v81
     }
