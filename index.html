@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v86</title>
-<meta name="tamba-build" content="v86">
+<title>丹波農商 牧場物語 v87</title>
+<meta name="tamba-build" content="v87">
 <meta name="description" content="丹波農商(兵庫県丹波市)のリアルな農業経営を、スマホで遊べる牧場ゲームで体験。米・黒毛和牛・牧草・栗・野菜を育てて会社を大きくしよう。">
 <meta name="theme-color" content="#3f8a3a">
 <meta name="mobile-web-app-capable" content="yes">
@@ -297,7 +297,7 @@
 (function(){const C=THREE.Color.prototype,oHex=C.setHex,oStyle=C.setStyle;let inStyle=false;
   C.setHex=function(h){oHex.call(this,h);if(!inStyle)this.convertSRGBToLinear();return this;};
   C.setStyle=function(st){inStyle=true;try{oStyle.call(this,st);}finally{inStyle=false;}return this.convertSRGBToLinear();};})();
-const GAME_BUILD='v86';
+const GAME_BUILD='v87';
 /* =====================================================================
    丹波農商 牧場物語 v24 — 牛まわりの大改修(屋根バグ修正・牛舎拡大・繋留と散歩・糞は足元)
    v24: v23の全機能を維持したまま牛まわりを4点改修。セーブはv20キー(tamba_v20_save)を共用。
@@ -2108,6 +2108,8 @@ function v81PigGeo(){
 }
 // ---- 会話ウィンドウ(立ち絵つき) ----
 const V81_PORTRAITS={hero:1,atsushi:1,yusuke:1,naoto:1,ryunosuke:1,ami:1,yakuba:1,ginko:1,juui:1,nokyo:1,seriman:1,shuriya:1,fudosan:1,obaachan:1,ojiichan:1,shufu:1,kodomo:1};
+// v87: りゅうのすけを本人(秋山さん)の写真に合わせて作り直し。SWはキャッシュ優先なので新しいファイル名で配信
+const V87_FILE={ryunosuke:'ryunosuke2'};
 function portraitKeyOf(n){if(!n)return null;if(n.cfg&&n.cfg.menu==='land')return 'fudosan';return V81_PORTRAITS[n.key]?n.key:null;}
 let v81TalkTimer=null;
 function showTalk(n,line){
@@ -2115,7 +2117,7 @@ function showTalk(n,line){
   const el=document.getElementById('talk');if(!el){toast('💬 '+n.cfg.name+'「'+line+'」');return;}
   try{if(n&&n.rig&&n.rig.v83)v83Nod(n.rig);}catch(e){}
   const pk=portraitKeyOf(n),img=document.getElementById('talkImg');
-  if(pk){img.src='art/p_'+(pk==='hero'?'hero_nh':pk)+'.webp';el.classList.remove('noimg');}else{img.removeAttribute('src');el.classList.add('noimg');}
+  if(pk){img.src='art/p_'+(pk==='hero'?'hero_nh':(V87_FILE[pk]||pk))+'.webp';el.classList.remove('noimg');}else{img.removeAttribute('src');el.classList.add('noimg');}
   document.getElementById('talkName').textContent=n.cfg.name+(n.cfg.role?'  ·  '+n.cfg.role:'');
   document.getElementById('talkText').textContent=line;
   el.classList.remove('on');void el.offsetWidth;el.classList.add('on');
@@ -3797,7 +3799,7 @@ function loadNPCGLBs(){
           // v83: 全員を設計図→3Dトゥーンに統一(同じ骨格・同じモーション)
           const ck=n.cfg.c3||n.key;
           if(!V83_KEYS[ck])throw new Error('no v83 model '+ck);
-          const R=await v83LoadChar(ck,n.cfg.h||CHAR_H);
+          const R=await v83LoadChar(V87_FILE[ck]||ck,n.cfg.h||CHAR_H);
           n.rig=R.rig;const wrap=R.wrap;
           ui=n.urls.length; // 代替URLは使わない
           if(n.vox){n.mesh.remove(n.vox);n.vox=null;}
@@ -5429,7 +5431,7 @@ function assignJob(k,job){ // v44: 単一指定→トグルに統合。'指示�
 // v44: 従業員に話しかけて、その場で雇用/仕事の指示ができる(1人に複数OK)
 function openStaffTalk(k){
   const m=staffMeta(k);const hired=state.staff[k];
-  showIconInfo({t:'👤 '+m.name+(hired?'(雇用中)':''),img:V81_PORTRAITS[k]?'art/p_'+k+'.webp':null,
+  showIconInfo({t:'👤 '+m.name+(hired?'(雇用中)':''),img:V81_PORTRAITS[k]?'art/p_'+(V87_FILE[k]||k)+'.webp':null,
     b:()=>hired
       ? '担当: '+jobLabel(k)+loadBarHTML(k)+'勤続'+(staffYears(k)+1)+'年目・今の月給'+man(staffSalary(k))+'<br>⚠ 解雇はできません／毎年+'+man(ECON.EMP_RAISE)+'の自動昇給あり<br>下のボタンで仕事を指示(複数OK・もう一度押すと外す)。作業量100%を超えるとミスが出るよ。' // v62: 労働量バー
       : (m.line2||m.line)+'<br><br>⚠ 一度雇うと解雇できません。毎年+'+man(ECON.EMP_RAISE)+'の自動昇給で人件費が増えます。',
