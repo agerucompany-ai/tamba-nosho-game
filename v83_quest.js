@@ -95,7 +95,7 @@ function v83Current(){
   const qv=state.qv;if(!qv)return null;
   const ok=q=>{if(qv.done[q.id])return false;try{return q.when?q.when():true;}catch(e){return false;}};
   for(const q of V83_Q)if(q.prio&&ok(q))return q;
-  for(const q of V83_SEASON){try{if(q.when())return q;}catch(e){}}
+  if(state.navSeason!==false)for(const q of V83_SEASON){try{if(q.when())return q;}catch(e){}} // v86: メニュー⚙でオフにできる
   for(const q of V83_Q)if(!q.prio&&ok(q))return q;
   return null;
 }
@@ -165,6 +165,7 @@ function v83ShowQuestInfo(){
   const btns=[];
   if(q&&q.act)btns.push(q.act);
   btns.push([state.qv.navOff?'🧭 道しるべを表示する':'🧭 道しるべを隠す',()=>{state.qv.navOff=!state.qv.navOff;}]);
+  btns.push([state.navSeason!==false?'🗓 毎週・毎年の作業の案内をオフ':'🗓 毎週・毎年の作業の案内をオン',()=>{toggleNavSeason();}]);
   showIconInfo({t:'🎯 いまの目標',b:body,btns});
 }
 // ---- 経路探索(歩ける床のグリッドでA*。壁・柵・水・高い段差・看板/木の当たり判定をよける) ----

@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>丹波農商 牧場物語 v85</title>
-<meta name="tamba-build" content="v85">
+<title>丹波農商 牧場物語 v86</title>
+<meta name="tamba-build" content="v86">
 <meta name="description" content="丹波農商(兵庫県丹波市)のリアルな農業経営を、スマホで遊べる牧場ゲームで体験。米・黒毛和牛・牧草・栗・野菜を育てて会社を大きくしよう。">
 <meta name="theme-color" content="#3f8a3a">
 <meta name="mobile-web-app-capable" content="yes">
@@ -290,14 +290,14 @@
 <script src="lib/DRACOLoader.js"></script>
 <script src="v83char.js"></script>
 <script src="v83_game.js"></script>
-<script src="v83_quest.js?b=v85"></script>
+<script src="v83_quest.js?b=v86"></script>
 <script src="v84_opening.js?b=v84"></script>
 <script>
 // v81: 色はsRGBで書かれているので、リニアに変換してから使う(トーンマッピング前提の正しい発色)。
 (function(){const C=THREE.Color.prototype,oHex=C.setHex,oStyle=C.setStyle;let inStyle=false;
   C.setHex=function(h){oHex.call(this,h);if(!inStyle)this.convertSRGBToLinear();return this;};
   C.setStyle=function(st){inStyle=true;try{oStyle.call(this,st);}finally{inStyle=false;}return this.convertSRGBToLinear();};})();
-const GAME_BUILD='v85';
+const GAME_BUILD='v86';
 /* =====================================================================
    丹波農商 牧場物語 v24 — 牛まわりの大改修(屋根バグ修正・牛舎拡大・繋留と散歩・糞は足元)
    v24: v23の全機能を維持したまま牛まわりを4点改修。セーブはv20キー(tamba_v20_save)を共用。
@@ -881,6 +881,7 @@ function man(n){const v=n/10000;return (v%1===0?v:v.toFixed(1))+'万円';}
 const SAVE_KEY='tamba_v28_save'; // v30: このキーを恒久固定(以後バージョンでも絶対に変えない=現在のセーブを保持)。新フィールドはmergeStateで既定値補完するのでデータは消えない
 let state=null;
 function freshState(){return{
+  navSeason:true, // v86: 毎年・毎週の作業の案内(ポテサラ・種付け・田植え等)。メニュー⚙で切替
   v:25,money:10000000,day:1,time:0.28,
   year:1,week:14,weekN:0,absWeek:0, // v25: 1年目4月1週目(4月相当)開始。weekN=通算週数
   res:{veg:0,negi:0,bean:0,edamame:0,chestnut:0,compost:0,manure:0,veg_seed:0,negi_seed:0,bean_seed:0,edamame_seed:0},
@@ -3716,6 +3717,44 @@ function finishLoading(ok){
   }
 }
 // 主人公：mhero_walk.glb＋mhero_run.glbを読み、完了したらボクセルと差し替え
+// v86: 主人公が壁・建物に隠れた時だけ、壁ごしに輪郭(シルエット)を見せる。
+//  しくみ: 同じ骨で動く「影の体」を、世界(壁)の後・主人公本体の前に描く。深度テストは「奥にある所だけ通す」(GreaterDepth)。
+//  主人公本体はその後に描くので、見えている所は本体で上書きされ、隠れている所にだけシルエットが残る(自分の体どうしの重なりは出ない)。
+//  さらに「体が壁に隠れている時」だけ表示=草や足元の段差では出ない。普段の見た目は変えない。
+let v86Ghost=[],v86GhostOn=false,v86GhostA=0;
+const V86_GHOST_MAT=new THREE.MeshBasicMaterial({color:0x8fd4ff,skinning:true,transparent:false,depthWrite:false,depthFunc:THREE.GreaterDepth,
+  blending:THREE.CustomBlending,blendEquation:THREE.AddEquation,blendSrc:THREE.SrcAlphaFactor,blendDst:THREE.OneMinusSrcAlphaFactor,opacity:0.5,toneMapped:false,fog:false});
+function v86BuildGhost(){
+  if(!avatarGlb||v86Ghost.length)return;
+  const src=[];
+  avatarGlb.traverse(o=>{if(o.isSkinnedMesh&&!o.userData.v83Outline&&!o.userData.v81Outline&&!(o.userData&&o.userData.tex))src.push(o);});
+  // 主人公本体は影の体のあと(renderOrder 2)に描く。順番だけの変更なので見た目は同じ。
+  avatarGlb.traverse(o=>{if(o.isMesh&&o.renderOrder<2)o.renderOrder=2;});
+  for(const m of src){
+    const g=new THREE.SkinnedMesh(m.geometry,V86_GHOST_MAT);
+    g.bind(m.skeleton,m.bindMatrix);g.bindMode=m.bindMode;
+    g.position.copy(m.position);g.quaternion.copy(m.quaternion);g.scale.copy(m.scale);
+    g.frustumCulled=false;g.castShadow=false;g.receiveShadow=false;g.renderOrder=1;g.visible=false;g.userData.v86Ghost=true;
+    m.parent.add(g);v86Ghost.push(g);
+  }
+}
+function v86PlayerHidden(){ // カメラから体(胸と腰)へのまっすぐな線が、ブロックに遮られているか
+  if(!camera||!player)return false;
+  const c=camera.position;let hit=0;
+  for(const h of [0.6,1.1]){
+    const tx=player.x,ty=player.y+h,tz=player.z;const dx=tx-c.x,dy=ty-c.y,dz=tz-c.z;const L=Math.hypot(dx,dy,dz);
+    for(let t=0.3;t<L-0.45;t+=0.2){const k=t/L;const b=getB(Math.floor(c.x+dx*k),Math.floor(c.y+dy*k),Math.floor(c.z+dz*k));if(b&&!BI[b].water){hit++;break;}}
+  }
+  return hit>0;
+}
+function v86GhostTick(dt){
+  if(!v86Ghost.length)return;
+  const want=v86PlayerHidden();
+  v86GhostA+=((want?1:0)-v86GhostA)*Math.min(1,dt*10); // ふわっと出し入れ
+  const on=v86GhostA>0.02;
+  V86_GHOST_MAT.opacity=0.6*v86GhostA;
+  if(on!==v86GhostOn){v86GhostOn=on;for(const g of v86Ghost)g.visible=on;}
+}
 function loadPlayerGLB(){
   const note=document.getElementById('glbNote');
   if(!getLoader()){finishLoading(false);loadNPCGLBs();return;}
@@ -3731,6 +3770,7 @@ function loadPlayerGLB(){
       avatarGlb=wrap;
       if(avatarVox){avatar.remove(avatarVox);avatarVox=null;}
       avatar.add(avatarGlb);
+      try{v86BuildGhost();}catch(e){window.__v4dbg.errors.push('ghost:'+(e&&e.message||e));}
       note.style.display='none';
       window.__v4dbg.playerGlb=true;
       finishLoading(true); // v15: ここで初めて画面を見せる(最初からMeshyキャラ)
@@ -4544,7 +4584,7 @@ function nearestAction(wx,wz){
   // v22: 街の入口(橋の西岸)。バス停は廃止
   cand(1.5,21.5,3.0,'🏘 街へ入る(橋の西)',()=>switchMap('town'));
   // v19: 故障中の機械(修理屋への案内) v20: 大倉庫内の設置場所に合わせた
-  const mc=(x,z,k)=>{if(machineBroken(k))cand(x,z,2.2,'⚠ '+MACH_META[k].n+'が故障中！',()=>{
+  const mc=(x,z,k)=>{if(machineBroken(k))cand(x,z,k==='processor'?1.3:2.2,'⚠ '+MACH_META[k].n+'が故障中！',()=>{
     showConfirm('⚠ '+MACH_META[k].n+'が故障中','🔧街の修理屋で修理('+man(machRepairCost(k))+')すると再稼働するよ。'+MACH_META[k].stop+'。<br>街へ行く？(🌉川の橋を渡って向かってもOK)',()=>switchMap('town'),'🏘 街へ行く','やめる');});};
   for(const k in MACH_POS)if(machineOwned(k))mc(MACH_POS[k][0],MACH_POS[k][1],k);
   // v14: 施設（倉庫・牛舎・牧草地）※v21: 旧銀行/旧セリ/旧事務所は更地化 v22: 🛒購買屋台は撤去(出荷箱に集約)
@@ -6835,6 +6875,7 @@ function setHTML(){
   return '<p>設定・セーブ</p>'+
   '<div class="row"><div class="em">💾</div><div class="info"><b>セーブ</b><small>自動でも30秒ごとに保存されるよ</small></div><button class="buy" onclick="saveGame(true)">保存</button></div>'+
   '<div class="row"><div class="em">🔊</div><div class="info"><b>効果音</b><small>音のオン/オフ</small></div><button class="buy" onclick="toggleSound()">'+(state.sound?'ON':'OFF')+'</button></div>'+
+  '<div class="row"><div class="em">🧭</div><div class="info"><b>毎週・毎年の作業の案内</b><small>ポテサラ・種付け・田植え・稲刈りなど、くり返しの作業を目標とナビで知らせる(本筋の目標と説明はいつも出るよ)</small></div><button class="buy" onclick="toggleNavSeason()">'+(state.navSeason!==false?'ON':'OFF')+'</button></div>'+
   '<div class="row"><div class="em">🗑</div><div class="info"><b>最初から</b><small>データを消してやり直す（2回押してね）</small></div><button class="buy orange" onclick="resetGame()">リセット</button></div>'+
   '<p style="font-size:11.5px">📖 遊び方：画面の好きな所に指を置くとジョイスティックが出て動けるよ（大きく倒すと走る！）。ちょんとタップするとそこへ歩く。カメラは2本目の指でドラッグ。PCはクリック移動・WASD（Shiftで走る）・E/スペース=使う・M=メニュー。<br>⏱ 時間は「⏭ 次の週へ」で1週間進むよ。餌やり・掃除は週1回。3月末に決算＋税金。従業員に仕事を指示すれば自動でやってくれる（放置経営）。</p>';
 }
@@ -6844,6 +6885,7 @@ function resetGame(){
   localStorage.removeItem(SAVE_KEY);location.reload();
 }
 function toggleSound(){state.sound=!state.sound;renderMenu();}
+function toggleNavSeason(){state.navSeason=(state.navSeason===false);try{saveGame(false);}catch(e){}renderMenu();try{v83UpdateQuest();}catch(e){}toast(state.navSeason?'🧭 毎週・毎年の作業の案内をオンにしたよ':'🧭 毎週・毎年の作業の案内をオフにしたよ(本筋の目標は出るよ)');} // v86
 
 // ========== v19: 街マップ（生成・装飾・農場⇔街の切替） ==========
 let curMap='farm',mapBusy=false;
@@ -8097,6 +8139,7 @@ function animate(ts){
     cMax=Math.min(cMax,v85CamLim);}
   camera.position.lerp(cFrom.clone().add(cDir.multiplyScalar(cMax)),Math.min(1,dt*8));
   camera.lookAt(player.x,player.y+1.4,player.z);
+  try{v86GhostTick(dt);}catch(e){}
   // --- 昼夜（夜は3倍速で朝が来る） ---
   const isNight=state.time>0.52;
   state.time+=dt/240*(isNight?3:1);
